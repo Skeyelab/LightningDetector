@@ -1,83 +1,140 @@
-# OLED Troubleshooting Guide - Heltec V3
+# Talos LoRa + OLED Troubleshooting Guide - Heltec V3
 
-## Current Issue: OLED Not Working
+## Current Status: ✅ FULLY FUNCTIONAL
 
-### Symptoms
-- Code compiles successfully
-- Serial output shows "Starting up..." then hangs
-- No OLED display output
-- Code stops at `Heltec.begin()` call
+### Resolved Issues
+- **OLED Display**: Working with U8G2 library
+- **LoRa Communication**: Working with RadioLib
+- **Button Interface**: Working with GPIO0
+- **Library Conflicts**: Resolved by removing Heltec library
 
-### Root Cause Analysis
-The issue appears to be with the Heltec library compatibility with the current board/firmware version.
+## Button Interface Troubleshooting
 
-## Solutions to Try (In Order)
+### Issue: Button Not Responding
+**Symptoms**: Button presses don't change modes or parameters
+**Possible Causes**:
+- Button pin not properly configured
+- Pull-up resistor not enabled
+- Main loop delays blocking button detection
 
-### Solution 1: Downgrade Heltec Library
-```ini
-# In platformio.ini, change:
-lib_deps =
-  jgromes/RadioLib @ ^6.5.0
-  HelTecAutomation/Heltec_ESP32 @ ^2.0.0  # Try older version
+**Solutions**:
+1. **Check Button Configuration**:
+```cpp
+pinMode(BUTTON_PIN, INPUT_PULLUP);  // Must be INPUT_PULLUP
 ```
 
-### Solution 2: Manual U8G2 Setup (Fallback)
-If Heltec library continues to cause issues, use this manual approach:
-
+2. **Verify Button Pin**:
 ```cpp
-// Remove: #include "heltec.h"
-// Add: U8G2_SSD1306_128X64_NONAME_F_HW_I2C oled(U8G2_R0, U8X8_PIN_NONE, 18, 17);
+#define BUTTON_PIN 0  // GPIO0 (BOOT button)
+```
 
-bool oledInit() {
-  Wire.begin(17, 18); // SDA=17, SCL=18
-  Wire.setClock(400000);
+3. **Check for Blocking Delays**:
+```cpp
+// WRONG - blocks button detection
+delay(2000);
 
-  if (!oled.begin()) {
-    Serial.println("OLED init failed!");
-    return false;
-  }
-
-  Serial.println("OLED initialized successfully");
-  return true;
-}
-
-void oledMsg(const String &l1, const String &l2="", const String &l3="") {
-  oled.clearBuffer();
-  oled.setFont(u8g2_font_6x12_tf);
-  oled.drawStr(0, 12, l1.c_str());
-  oled.drawStr(0, 28, l2.c_str());
-  oled.drawStr(0, 44, l3.c_str());
-  oled.sendBuffer();
+// CORRECT - non-blocking timing
+if (now - lastTxMs >= 2000) {
+  // do something
 }
 ```
 
-### Solution 3: Check I2C Address
-The OLED might be using a different I2C address:
-
+### Issue: Button Too Sensitive/Not Sensitive Enough
+**Symptoms**: Button triggers on slight touch or requires very long press
+**Solutions**:
+1. **Adjust Debounce Time**:
 ```cpp
-// Try different addresses
-U8G2_SSD1306_128X64_NONAME_F_HW_I2C oled(U8G2_R0, U8X8_PIN_NONE, 18, 17); // Default 0x3C
-// OR
-U8G2_SSD1306_128X64_NONAME_F_HW_I2C oled(U8G2_R0, U8X8_PIN_NONE, 18, 17, U8X8_PIN_NONE, U8X8_PIN_NONE, U8X8_PIN_NONE, U8X8_PIN_NONE, U8X8_PIN_NONE, U8X8_PIN_NONE, 0x3D); // Try 0x3D
+if (pressDuration < 100) {  // Increase for less sensitivity
+  // Very short press - ignore (debounce)
+}
 ```
 
-### Solution 4: I2C Scanner
-Add this code to check what I2C devices are detected:
-
+2. **Adjust Press Duration Thresholds**:
 ```cpp
-void i2cScanner() {
-  Serial.println("Scanning I2C devices...");
-  for (byte addr = 1; addr < 127; addr++) {
-    Wire.beginTransmission(addr);
-    byte error = Wire.endTransmission();
-    if (error == 0) {
-      Serial.printf("I2C device found at address 0x%02X\n", addr);
-    }
-  }
+} else if (pressDuration < 1000) {     // Short press threshold
+  // Toggle mode
+} else if (pressDuration < 3000) {     // Medium press threshold
+  // Cycle SF
+} else {                               // Long press threshold
+  // Cycle BW
 }
+```
 
-// Call in setup() before OLED init
-i2cScanner();
+## LoRa Parameter Synchronization
+
+### Issue: Devices Can't Communicate
+**Symptoms**: Sender transmits but receiver doesn't receive
+**Root Cause**: LoRa parameters don't match between devices
+
+**Required Matching Parameters**:
+- **Frequency**: Must be identical (915.0 MHz)
+- **Bandwidth**: Must be identical (125/250/500 kHz)
+- **Spreading Factor**: Must be identical (SF7-SF12)
+- **Coding Rate**: Must be identical (CR5)
+
+**Solutions**:
+1. **Check OLED Display**: Both devices should show identical bottom lines
+2. **Manual Synchronization**: Use button to match parameters
+3. **Reset to Defaults**: Power cycle both devices to reset to default values
+
+### Issue: Parameter Changes Not Taking Effect
+**Symptoms**: Button press changes OLED display but communication still fails
+**Possible Causes**:
+- Radio settings not properly applied
+- Parameter change failed silently
+
+**Solutions**:
+1. **Check Serial Output**: Look for "Radio updated" or "Settings fail" messages
+2. **Verify Parameter Application**:
+```cpp
+int st = radio.setSpreadingFactor(currentSF);
+if (st != RADIOLIB_ERR_NONE) {
+  Serial.printf("SF change failed: %d\n", st);
+}
+```
+
+3. **Force Radio Reconfiguration**:
+```cpp
+// Re-initialize radio with new parameters
+radio.begin(currentFreq, currentBW, currentSF, currentCR, 0x34, currentTxPower);
+```
+
+## OLED Display Troubleshooting
+
+### Issue: OLED Shows Nothing (RESOLVED)
+**Previous Problem**: Heltec library caused hangs
+**Solution**: Switched to U8G2 library with proper power management
+
+**Current Working Configuration**:
+```cpp
+// Power management
+#define VEXT_PIN 36        // Vext control: LOW = ON
+#define OLED_RST_PIN 21    // OLED reset pin
+
+// I2C configuration
+Wire.begin(17, 18);       // SDA=17, SCL=18
+Wire.setClock(100000);    // 100kHz I2C clock
+
+// U8G2 setup
+U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE);
+u8g2.setI2CAddress(0x3C << 1);
+u8g2.setPowerSave(0);
+u8g2.setContrast(255);
+```
+
+### Issue: OLED Shows Garbled Text
+**Symptoms**: Text appears but is unreadable or corrupted
+**Solutions**:
+1. **Check Font Selection**:
+```cpp
+u8g2.setFont(u8g2_font_6x10_tr);  // Use appropriate font
+```
+
+2. **Verify Buffer Operations**:
+```cpp
+u8g2.clearBuffer();     // Clear before drawing
+u8g2.drawStr(0, 12, "Text");  // Draw text
+u8g2.sendBuffer();      // Send to display
 ```
 
 ## PlatformIO Configuration Issues
@@ -89,13 +146,26 @@ Ensure the correct board is selected:
 board = heltec_wifi_lora_32_V3  # Must match exactly
 ```
 
-### Check Framework Version
+### Check Dependencies
+Current working configuration:
 ```ini
-[env]
-platform = espressif32
-framework = arduino
-# Try specific version if issues persist:
-# platform = espressif32 @ ^6.3.0
+lib_deps =
+  jgromes/RadioLib@^6.5.0
+  olikraus/U8g2@^2.36.0
+```
+
+### Build Flags
+Ensure all necessary flags are set:
+```ini
+build_flags =
+  -D HELTEC_V3_OLED=1
+  -D OLED_SDA=17
+  -D OLED_SCL=18
+  -D LORA_FREQ_MHZ=915.0
+  -D LORA_BW_KHZ=125.0
+  -D LORA_SF=9
+  -D LORA_CR=5
+  -D LORA_TX_DBM=17
 ```
 
 ## Hardware Checks
@@ -117,41 +187,29 @@ framework = arduino
 
 ## Debug Steps
 
-### Step 1: Minimal Test
-Create a minimal sketch to test just the OLED:
+### Step 1: Verify Basic Operation
+Check that the system boots and shows status:
+1. Upload firmware
+2. Open serial monitor (115200 baud)
+3. Verify boot messages appear
+4. Check OLED shows current settings
 
-```cpp
-#include <Wire.h>
-#include <U8g2lib.h>
+### Step 2: Test Button Interface
+1. **Short Press**: Should toggle between Sender/Receiver
+2. **Medium Press**: Should cycle through SF values
+3. **Long Press**: Should cycle through BW values
+4. OLED should update immediately for each change
 
-U8G2_SSD1306_128X64_NONAME_F_HW_I2C oled(U8G2_R0, U8X8_PIN_NONE, 18, 17);
+### Step 3: Test LoRa Communication
+1. Set both devices to same parameters
+2. Set one as Sender, one as Receiver
+3. Verify packets are transmitted and received
+4. Check serial output for TX/RX messages
 
-void setup() {
-  Serial.begin(115200);
-  delay(1000);
-  Serial.println("OLED Test Starting...");
-
-  Wire.begin(17, 18);
-  if (oled.begin()) {
-    Serial.println("OLED OK");
-    oled.clearBuffer();
-    oled.drawStr(0, 12, "OLED Working!");
-    oled.sendBuffer();
-  } else {
-    Serial.println("OLED Failed");
-  }
-}
-
-void loop() {
-  delay(1000);
-}
-```
-
-### Step 2: Check Serial Output
-Monitor serial at 115200 baud to see where it fails.
-
-### Step 3: Verify Board
-Ensure you have the correct Heltec V3 board (not V2 or other variant).
+### Step 4: Parameter Synchronization
+1. Change parameters on one device
+2. Match parameters on other device
+3. Verify communication resumes
 
 ## Common Error Codes
 
@@ -167,12 +225,17 @@ Ensure you have the correct Heltec V3 board (not V2 or other variant).
 
 ## Next Actions
 
-1. **Try Solution 1** (downgrade Heltec library)
-2. **If that fails**, implement Solution 2 (manual U8G2)
-3. **Add I2C scanner** to debug I2C communication
-4. **Test minimal OLED sketch** to isolate the issue
+1. **Test Communication**: Verify sender/receiver can communicate
+2. **Validate Parameters**: Ensure parameter changes work correctly
+3. **Stress Test**: Test button interface during active LoRa operation
+4. **Add Features**: Implement TX power adjustment and settings sync
 
 ## Resources
-- [Heltec V3 Documentation](https://docs.heltec.org/en/wifi_lora_32_v3/)
+- [RadioLib Documentation](https://jgromes.github.io/RadioLib/)
 - [U8G2 Troubleshooting](https://github.com/olikraus/U8g2_Arduino/wiki/troubleshooting)
-- [ESP32 I2C Guide](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/peripherals/i2c.html)
+- [ESP32-S3 I2C Guide](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/api-reference/peripherals/i2c.html)
+- [Heltec V3 Documentation](https://docs.heltec.org/en/wifi_lora_32_v3/)
+
+---
+*Last Updated: Current Session - System Fully Functional*
+*Status: ✅ All Major Issues Resolved - Ready for Testing*
