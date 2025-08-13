@@ -72,6 +72,16 @@ static int currentBwIndex = 0;
 static int currentSfIndex = 2; // Start with SF9
 static int currentTxIndex = 2; // Start with 17 dBm
 
+// Config broadcast state (sender)
+static bool pendingConfigBroadcast = false;
+static float pendingFreq = 0;
+static float pendingBW = 0;
+static int pendingSF = 0;
+static int pendingCR = 0;
+static int pendingTxPower = 0;
+static uint32_t cfgLastTxMs = 0;
+static int cfgRemaining = 0;
+
 static void oledMsg(const char* l1, const char* l2 = nullptr, const char* l3 = nullptr) {
   u8g2.clearBuffer();
   u8g2.setFont(u8g2_font_6x10_tr);
@@ -112,6 +122,18 @@ static void oledRole() {
 
 static void oledSettings() {
   oledMsg("Settings", "Updated");
+}
+
+static void startConfigBroadcast(float newFreq, float newBW, int newSF, int newCR, int newTxPower) {
+  pendingConfigBroadcast = true;
+  pendingFreq = newFreq;
+  pendingBW = newBW;
+  pendingSF = newSF;
+  pendingCR = newCR;
+  pendingTxPower = newTxPower;
+  cfgLastTxMs = 0;
+  cfgRemaining = 8; // send several times for reliability
+  oledMsg("Syncing...", "Sending config");
 }
 
 static void initDisplay() {
@@ -213,16 +235,30 @@ static void updateButton() {
       Serial.printf("Switched mode -> %s\n", isSender ? "Sender" : "Receiver");
     } else if (pressDuration < 3000) {
       // Medium press - cycle SF
-      currentSfIndex = (currentSfIndex + 1) % (sizeof(sfValues) / sizeof(sfValues[0]));
-      currentSF = sfValues[currentSfIndex];
-      updateRadioSettings();
-      Serial.printf("SF changed to %d\n", currentSF);
+      if (isSender) {
+        int nextIndex = (currentSfIndex + 1) % (sizeof(sfValues) / sizeof(sfValues[0]));
+        int nextSF = sfValues[nextIndex];
+        startConfigBroadcast(currentFreq, currentBW, nextSF, currentCR, currentTxPower);
+        Serial.printf("SF change requested -> %d (broadcasting to receiver)\n", nextSF);
+      } else {
+        currentSfIndex = (currentSfIndex + 1) % (sizeof(sfValues) / sizeof(sfValues[0]));
+        currentSF = sfValues[currentSfIndex];
+        updateRadioSettings();
+        Serial.printf("SF changed to %d\n", currentSF);
+      }
     } else {
       // Long press - cycle BW
-      currentBwIndex = (currentBwIndex + 1) % (sizeof(bwValues) / sizeof(bwValues[0]));
-      currentBW = bwValues[currentBwIndex];
-      updateRadioSettings();
-      Serial.printf("BW changed to %.0f kHz\n", currentBW);
+      if (isSender) {
+        int nextIndex = (currentBwIndex + 1) % (sizeof(bwValues) / sizeof(bwValues[0]));
+        float nextBW = bwValues[nextIndex];
+        startConfigBroadcast(currentFreq, nextBW, currentSF, currentCR, currentTxPower);
+        Serial.printf("BW change requested -> %.0f kHz (broadcasting to receiver)\n", nextBW);
+      } else {
+        currentBwIndex = (currentBwIndex + 1) % (sizeof(bwValues) / sizeof(bwValues[0]));
+        currentBW = bwValues[currentBwIndex];
+        updateRadioSettings();
+        Serial.printf("BW changed to %.0f kHz\n", currentBW);
+      }
     }
 
     lastButtonMs = now;
@@ -270,20 +306,60 @@ void loop() {
   updateButton();
 
   if (isSender) {
-    // Non-blocking TX every 2 seconds
-    if (now - lastTxMs >= 2000) {
-      char msg[48];
-      snprintf(msg, sizeof(msg), "PING seq=%lu", (unsigned long)seq++);
-      int st = radio.transmit(msg);
-      if (st == RADIOLIB_ERR_NONE) {
-        Serial.printf("[TX] %s OK\n", msg);
-        oledMsg("TX OK", msg);
-      } else {
-        char e[24]; snprintf(e, sizeof(e), "err %d", st);
-        Serial.printf("[TX] %s FAIL %s\n", msg, e);
-        oledMsg("TX FAIL", msg, e);
+    if (pendingConfigBroadcast) {
+      if (now - lastTxMs >= 50 && now - cfgLastTxMs >= 300) {
+        char msg[64];
+        snprintf(msg, sizeof(msg), "CFG F=%.1f BW=%.0f SF=%d CR=%d TX=%d",
+                 pendingFreq, pendingBW, pendingSF, pendingCR, pendingTxPower);
+        int st = radio.transmit(msg);
+        if (st == RADIOLIB_ERR_NONE) {
+          Serial.printf("[TX] %s OK\n", msg);
+        } else {
+          Serial.printf("[TX] %s FAIL %d\n", msg, st);
+        }
+        cfgLastTxMs = now;
+        cfgRemaining--;
+        if (cfgRemaining <= 0) {
+          // Apply the new settings on the transmitter after broadcasting
+          currentFreq = pendingFreq;
+          currentBW = pendingBW;
+          currentSF = pendingSF;
+          currentCR = pendingCR;
+          currentTxPower = pendingTxPower;
+
+          // Update index trackers to reflect applied settings
+          for (size_t i = 0; i < (sizeof(sfValues) / sizeof(sfValues[0])); i++) {
+            if (sfValues[i] == currentSF) { currentSfIndex = i; break; }
+          }
+          for (size_t i = 0; i < (sizeof(bwValues) / sizeof(bwValues[0])); i++) {
+            if (bwValues[i] == currentBW) { currentBwIndex = i; break; }
+          }
+          for (size_t i = 0; i < (sizeof(txPowerValues) / sizeof(txPowerValues[0])); i++) {
+            if (txPowerValues[i] == currentTxPower) { currentTxIndex = i; break; }
+          }
+
+          updateRadioSettings();
+          oledMsg("Sync complete", "TX switched");
+          pendingConfigBroadcast = false;
+          lastTxMs = now; // reset TX timer
+        }
       }
-      lastTxMs = now;
+    } else {
+      // Non-blocking TX every 2 seconds
+      if (now - lastTxMs >= 2000) {
+        char msg[48];
+        snprintf(msg, sizeof(msg), "PING seq=%lu", (unsigned long)seq++);
+        int st = radio.transmit(msg);
+        if (st == RADIOLIB_ERR_NONE) {
+          Serial.printf("[TX] %s OK\n", msg);
+          oledMsg("TX OK", msg);
+        } else {
+          char e[24]; snprintf(e, sizeof(e), "err %d", st);
+          Serial.printf("[TX] %s FAIL %s\n", msg, e);
+          oledMsg("TX FAIL", msg, e);
+        }
+        lastTxMs = now;
+      }
     }
   } else {
     // Non-blocking RX every 50ms
@@ -300,9 +376,45 @@ void loop() {
         lastPacketTime = now;
         packetCount++;
 
-        char l2[20]; snprintf(l2, sizeof(l2), "RSSI %.1f", rssi);
-        Serial.printf("[RX] %s | %s | SNR %.1f | PKT:%lu\n", rx.c_str(), l2, snr, packetCount);
-        oledMsg("RX", rx.c_str(), l2);
+        if (rx.startsWith("CFG ")) {
+          float nf = currentFreq;
+          float nb = currentBW;
+          int nsf = currentSF;
+          int ncr = currentCR;
+          int ntx = currentTxPower;
+          int parsed = sscanf(rx.c_str(), "CFG F=%f BW=%f SF=%d CR=%d TX=%d", &nf, &nb, &nsf, &ncr, &ntx);
+          if (parsed == 5) {
+            currentFreq = nf;
+            currentBW = nb;
+            currentSF = nsf;
+            currentCR = ncr;
+            currentTxPower = ntx;
+
+            // Update index trackers to reflect applied settings
+            for (size_t i = 0; i < (sizeof(sfValues) / sizeof(sfValues[0])); i++) {
+              if (sfValues[i] == currentSF) { currentSfIndex = i; break; }
+            }
+            for (size_t i = 0; i < (sizeof(bwValues) / sizeof(bwValues[0])); i++) {
+              if (bwValues[i] == currentBW) { currentBwIndex = i; break; }
+            }
+            for (size_t i = 0; i < (sizeof(txPowerValues) / sizeof(txPowerValues[0])); i++) {
+              if (txPowerValues[i] == currentTxPower) { currentTxIndex = i; break; }
+            }
+
+            updateRadioSettings();
+            char l2[20]; snprintf(l2, sizeof(l2), "RSSI %.1f", rssi);
+            Serial.printf("[RX] APPLIED %s | SNR %.1f | PKT:%lu\n", rx.c_str(), snr, packetCount);
+            oledMsg("SYNC", rx.c_str(), l2);
+          } else {
+            char l2[20]; snprintf(l2, sizeof(l2), "RSSI %.1f", rssi);
+            Serial.printf("[RX] CFG PARSE FAIL | %s | SNR %.1f | PKT:%lu\n", rx.c_str(), snr, packetCount);
+            oledMsg("RX", rx.c_str(), l2);
+          }
+        } else {
+          char l2[20]; snprintf(l2, sizeof(l2), "RSSI %.1f", rssi);
+          Serial.printf("[RX] %s | %s | SNR %.1f | PKT:%lu\n", rx.c_str(), l2, snr, packetCount);
+          oledMsg("RX", rx.c_str(), l2);
+        }
       } else if (st != RADIOLIB_ERR_RX_TIMEOUT) {
         errorCount++;
         char e[24]; snprintf(e, sizeof(e), "err %d", st);
