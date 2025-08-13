@@ -52,7 +52,7 @@ jobs:
         ls -la .pio/build/${{ matrix.environment }}/
 
     - name: Upload Build Artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: firmware-${{ matrix.environment }}
         path: .pio/build/${{ matrix.environment }}/firmware.bin
