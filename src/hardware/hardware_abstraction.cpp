@@ -569,7 +569,12 @@ namespace HardwareAbstraction {
                 case 20: channel = ADC1_CHANNEL_9; break; // GPIO10
                 default: return Result::ERROR_INVALID_PARAMETER;
             }
+            #else
+            // Mock channel for testing
+            int channel = pin % 10;
+            #endif
 
+            #ifdef ARDUINO
             // Configure channel
             esp_err_t ret = adc1_config_channel_atten(channel, ADC_ATTEN);
             if (ret != ESP_OK) {
