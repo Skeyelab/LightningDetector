@@ -1,4 +1,4 @@
-# Talos LoRa Lightning Detector Prototype - Project Status
+# LtngDet LoRa Lightning Detector Prototype - Project Status
 
 ## Project Overview
 **Goal**: Build a prototype for a LoRa-connected lightning detection system with two Heltec WiFi LoRa 32 V3 boards (ESP32-S3 + SX1262 + OLED)
@@ -145,7 +145,7 @@
 
 ## File Structure
 ```
-talos-pio-heltec-v3-oled/
+LtngDet-pio-heltec-v3-oled/
 ├── platformio.ini          # Build configuration
 ├── src/
 │   └── main.cpp            # Main application code
