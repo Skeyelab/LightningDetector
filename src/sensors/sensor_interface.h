@@ -61,7 +61,7 @@ namespace SensorSystem {
     // Sensor callback types
     typedef std::function<void(const Reading&)> ReadingCallback;
     typedef std::function<void(const char* sensorId, uint32_t errorCode)> ErrorCallback;
-    typedef std::function<void(const char* sensorId)> StateChangeCallback;
+    typedef std::function<void(const char* sensorId, State state)> StateChangeCallback;
 
     // Base sensor interface
     class ISensor {
