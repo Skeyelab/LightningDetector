@@ -4,6 +4,8 @@
 #include <SPI.h>
 #include <RadioLib.h>
 #include <Preferences.h>
+#include "app_logic.h"
+#include "config.h"
 
 // Vext power control and OLED reset (Heltec V3)
 #define VEXT_PIN 36        // Vext control: LOW = ON
@@ -290,13 +292,12 @@ static void broadcastConfigOnControlChannel(uint8_t times, uint32_t intervalMs) 
   radio.setDio2AsRfSwitch(true);
   radio.setCRC(true);
 
-  char msg[64];
-  snprintf(msg, sizeof(msg), "CFG F=%.1f BW=%.0f SF=%d CR=%d TX=%d",
-           currentFreq, currentBW, currentSF, currentCR, currentTxPower);
+  RadioConfig cfg{currentFreq, currentBW, currentSF, currentCR, currentTxPower};
+  std::string msg = cfg.toControlMessage();
 
   for (uint8_t i = 0; i < times; i++) {
-    int tx = radio.transmit(msg);
-    Serial.printf("[CTRL][TX] %s %s\n", msg, tx == RADIOLIB_ERR_NONE ? "OK" : "FAIL");
+    int tx = radio.transmit(msg.c_str());
+    Serial.printf("[CTRL][TX] %s %s\n", msg.c_str(), tx == RADIOLIB_ERR_NONE ? "OK" : "FAIL");
     delay(intervalMs);
   }
 
@@ -325,18 +326,13 @@ static void tryReceiveConfigOnControlChannel(uint32_t durationMs) {
     String rx;
     int r = radio.receive(rx);
     if (r == RADIOLIB_ERR_NONE && rx.startsWith("CFG ")) {
-      float nf = currentFreq;
-      float nb = currentBW;
-      int nsf = currentSF;
-      int ncr = currentCR;
-      int ntx = currentTxPower;
-      int parsed = sscanf(rx.c_str(), "CFG F=%f BW=%f SF=%d CR=%d TX=%d", &nf, &nb, &nsf, &ncr, &ntx);
-      if (parsed == 5) {
-        currentFreq = nf;
-        currentBW = nb;
-        currentSF = nsf;
-        currentCR = ncr;
-        currentTxPower = ntx;
+      RadioConfig cfg{};
+      if (RadioConfig::parseControlMessage(std::string(rx.c_str()), cfg)) {
+        currentFreq = cfg.frequencyMHz;
+        currentBW = cfg.bandwidthKHz;
+        currentSF = cfg.spreadingFactor;
+        currentCR = cfg.codingRate;
+        currentTxPower = cfg.txPowerDbm;
         computeIndicesFromCurrent();
         savePersistedSettings();
         Serial.printf("[CTRL][RX] applied %s\n", rx.c_str());
@@ -371,43 +367,45 @@ static void updateButton() {
     buttonPressed = false;
     uint32_t pressDuration = now - buttonPressMs;
 
-    if (pressDuration < 100) {
-      // Very short press - ignore (debounce)
-    } else if (pressDuration < 1000) {
-      // Short press - toggle mode
-      isSender = !isSender;
-      seq = 0;
-      savePersistedRole();
-      oledRole();
-      Serial.printf("Switched mode -> %s\n", isSender ? "Sender" : "Receiver");
-    } else if (pressDuration < 3000) {
-      // Medium press - cycle SF
-      if (isSender) {
-        int nextIndex = (currentSfIndex + 1) % (sizeof(sfValues) / sizeof(sfValues[0]));
-        int nextSF = sfValues[nextIndex];
-        startConfigBroadcast(currentFreq, currentBW, nextSF, currentCR, currentTxPower);
-        Serial.printf("SF change requested -> %d (broadcasting to receiver)\n", nextSF);
-      } else {
-        currentSfIndex = (currentSfIndex + 1) % (sizeof(sfValues) / sizeof(sfValues[0]));
-        currentSF = sfValues[currentSfIndex];
-        updateRadioSettings();
-        savePersistedSettings();
-        Serial.printf("SF changed to %d\n", currentSF);
-      }
-    } else {
-      // Long press - cycle BW
-      if (isSender) {
-        int nextIndex = (currentBwIndex + 1) % (sizeof(bwValues) / sizeof(bwValues[0]));
-        float nextBW = bwValues[nextIndex];
-        startConfigBroadcast(currentFreq, nextBW, currentSF, currentCR, currentTxPower);
-        Serial.printf("BW change requested -> %.0f kHz (broadcasting to receiver)\n", nextBW);
-      } else {
-        currentBwIndex = (currentBwIndex + 1) % (sizeof(bwValues) / sizeof(bwValues[0]));
-        currentBW = bwValues[currentBwIndex];
-        updateRadioSettings();
-        savePersistedSettings();
-        Serial.printf("BW changed to %.0f kHz\n", currentBW);
-      }
+    ButtonAction action = classifyPress(pressDuration);
+    switch (action) {
+      case ButtonAction::Ignore:
+        break;
+      case ButtonAction::ToggleMode:
+        isSender = !isSender;
+        seq = 0;
+        savePersistedRole();
+        oledRole();
+        Serial.printf("Switched mode -> %s\n", isSender ? "Sender" : "Receiver");
+        break;
+      case ButtonAction::CycleSF:
+        if (isSender) {
+          int nextIndex = (currentSfIndex + 1) % (sizeof(sfValues) / sizeof(sfValues[0]));
+          int nextSF = sfValues[nextIndex];
+          startConfigBroadcast(currentFreq, currentBW, nextSF, currentCR, currentTxPower);
+          Serial.printf("SF change requested -> %d (broadcasting to receiver)\n", nextSF);
+        } else {
+          currentSfIndex = (currentSfIndex + 1) % (sizeof(sfValues) / sizeof(sfValues[0]));
+          currentSF = sfValues[currentSfIndex];
+          updateRadioSettings();
+          savePersistedSettings();
+          Serial.printf("SF changed to %d\n", currentSF);
+        }
+        break;
+      case ButtonAction::CycleBW:
+        if (isSender) {
+          int nextIndex = (currentBwIndex + 1) % (sizeof(bwValues) / sizeof(bwValues[0]));
+          float nextBW = bwValues[nextIndex];
+          startConfigBroadcast(currentFreq, nextBW, currentSF, currentCR, currentTxPower);
+          Serial.printf("BW change requested -> %.0f kHz (broadcasting to receiver)\n", nextBW);
+        } else {
+          currentBwIndex = (currentBwIndex + 1) % (sizeof(bwValues) / sizeof(bwValues[0]));
+          currentBW = bwValues[currentBwIndex];
+          updateRadioSettings();
+          savePersistedSettings();
+          Serial.printf("BW changed to %.0f kHz\n", currentBW);
+        }
+        break;
     }
 
     lastButtonMs = now;
@@ -474,14 +472,13 @@ void loop() {
   if (isSender) {
     if (pendingConfigBroadcast) {
       if (now - lastTxMs >= 50 && now - cfgLastTxMs >= 300) {
-        char msg[64];
-        snprintf(msg, sizeof(msg), "CFG F=%.1f BW=%.0f SF=%d CR=%d TX=%d",
-                 pendingFreq, pendingBW, pendingSF, pendingCR, pendingTxPower);
-        int st = radio.transmit(msg);
+        RadioConfig cfg{pendingFreq, pendingBW, pendingSF, pendingCR, pendingTxPower};
+        std::string msg = cfg.toControlMessage();
+        int st = radio.transmit(msg.c_str());
         if (st == RADIOLIB_ERR_NONE) {
-          Serial.printf("[TX] %s OK\n", msg);
+          Serial.printf("[TX] %s OK\n", msg.c_str());
         } else {
-          Serial.printf("[TX] %s FAIL %d\n", msg, st);
+          Serial.printf("[TX] %s FAIL %d\n", msg.c_str(), st);
         }
         cfgLastTxMs = now;
         cfgRemaining--;
@@ -514,19 +511,18 @@ void loop() {
     } else {
       // Non-blocking TX every 2 seconds
       if (now - lastTxMs >= 2000) {
-        char msg[48];
-        snprintf(msg, sizeof(msg), "PING seq=%lu", (unsigned long)seq++);
-        int st = radio.transmit(msg);
+        std::string msg = formatTxMessage(seq++);
+        int st = radio.transmit(msg.c_str());
         if (st == RADIOLIB_ERR_NONE) {
-          Serial.printf("[TX] %s OK\n", msg);
+          Serial.printf("[TX] %s OK\n", msg.c_str());
           // Show ping on two lines
           unsigned long usedSeq = (unsigned long)(seq - 1);
           char seqLine[20]; snprintf(seqLine, sizeof(seqLine), "seq=%lu", usedSeq);
           oledMsg("PING", seqLine);
         } else {
           char e[24]; snprintf(e, sizeof(e), "err %d", st);
-          Serial.printf("[TX] %s FAIL %s\n", msg, e);
-          oledMsg("TX FAIL", msg, e);
+          Serial.printf("[TX] %s FAIL %s\n", msg.c_str(), e);
+          oledMsg("TX FAIL", msg.c_str(), e);
         }
         lastTxMs = now;
       }
@@ -547,18 +543,13 @@ void loop() {
         packetCount++;
 
         if (rx.startsWith("CFG ")) {
-          float nf = currentFreq;
-          float nb = currentBW;
-          int nsf = currentSF;
-          int ncr = currentCR;
-          int ntx = currentTxPower;
-          int parsed = sscanf(rx.c_str(), "CFG F=%f BW=%f SF=%d CR=%d TX=%d", &nf, &nb, &nsf, &ncr, &ntx);
-          if (parsed == 5) {
-            currentFreq = nf;
-            currentBW = nb;
-            currentSF = nsf;
-            currentCR = ncr;
-            currentTxPower = ntx;
+          RadioConfig cfg{};
+          if (RadioConfig::parseControlMessage(std::string(rx.c_str()), cfg)) {
+            currentFreq = cfg.frequencyMHz;
+            currentBW = cfg.bandwidthKHz;
+            currentSF = cfg.spreadingFactor;
+            currentCR = cfg.codingRate;
+            currentTxPower = cfg.txPowerDbm;
 
             // Update index trackers to reflect applied settings
             for (size_t i = 0; i < (sizeof(sfValues) / sizeof(sfValues[0])); i++) {

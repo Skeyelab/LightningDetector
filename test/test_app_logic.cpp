@@ -1,5 +1,5 @@
 // Keep this test minimal and host-friendly
-#include <unity.h>
+#include "miniunity/unity.h"
 #include "app_logic.h"
 
 void test_classifyPress() {
@@ -22,12 +22,4 @@ void test_cycleIndex() {
 void test_formatTxMessage() {
   TEST_ASSERT_EQUAL_STRING("PING seq=0", formatTxMessage(0).c_str());
   TEST_ASSERT_EQUAL_STRING("PING seq=42", formatTxMessage(42).c_str());
-}
-
-int main(int argc, char **argv) {
-  UNITY_BEGIN();
-  RUN_TEST(test_classifyPress);
-  RUN_TEST(test_cycleIndex);
-  RUN_TEST(test_formatTxMessage);
-  return UNITY_END();
 }
