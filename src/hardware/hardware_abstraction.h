@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <cstddef>
 
 // Hardware Abstraction Layer (HAL)
 // Provides a clean interface to hardware components for better testability
