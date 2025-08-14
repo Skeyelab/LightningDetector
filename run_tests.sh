@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# Test runner script for Talos PIO Heltec V3 OLED project
+# Test runner script for LtngDet PIO Heltec V3 OLED project
 # Runs all unit tests individually to avoid symbol conflicts
 
 echo "=========================================="
-echo "Running Unit Tests for Talos PIO Project"
+echo "Running Unit Tests for LtngDet PIO Project"
 echo "=========================================="
 
 # Function to run a single test file

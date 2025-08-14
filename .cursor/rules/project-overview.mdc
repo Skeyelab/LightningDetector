@@ -1,4 +1,4 @@
-# Talos PIO Heltec V3 OLED Project Overview
+# LtngDet PIO Heltec V3 OLED Project Overview
 
 ## Project Purpose
 This is a **LoRa lightning detection system prototype** built on Heltec WiFi LoRa 32 V3 boards (ESP32-S3 + SX1262 + OLED). The system consists of sender and receiver nodes that communicate via LoRa radio for lightning detection and data transmission.
@@ -125,5 +125,5 @@ pio run -e sender --target upload && pio device monitor
 This project represents a complete embedded system prototype with professional-grade libraries, responsive user interface, and robust communication protocols - ready for lightning sensor integration and field deployment.
 ---
 alwaysApply: true
-description: Comprehensive overview of the Talos PIO Heltec V3 OLED project - a LoRa lightning detection system prototype
+description: Comprehensive overview of the LtngDet PIO Heltec V3 OLED project - a LoRa lightning detection system prototype
 ---
