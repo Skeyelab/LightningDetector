@@ -1,13 +1,31 @@
-## Setup summary
+# Session Notes - LtngDet PIO Heltec V3 OLED Project
 
-- Project: LtngDet LoRa + OLED (Heltec V3, ESP32S3)
-- Build system: PlatformIO (espressif32, Arduino framework)
-- Envs: `sender`, `receiver`
-- Key libs: RadioLib, U8g2, ArduinoOTA, Update, WiFi
-- OTA: WiFi OTA on receiver (`espota` with password), LoRa OTA bridging
-- WiFi: Multi-network support with automatic fallback and manual selection
+## Setup Summary
+- **Project**: LtngDet PIO Heltec V3 OLED (LoRa Lightning Detector)
+- **Framework**: PlatformIO with ESP32 Arduino core
+- **Hardware**: Heltec WiFi Kit 32 V3 with OLED display
+- **Architecture**: Modular framework with hardware abstraction layers
+- **Testing**: Google Test framework with 38 test cases
+- **CI/CD**: GitHub Actions with comprehensive caching
 
 ### Session log
+
+#### 2025-08-14 20:26 UTC
+- Context: Completed project rebranding from Talos to LtngDet throughout codebase
+- Changes:
+  - Renamed all local references from 'talos' to 'LtngDet' in project files
+  - Updated run_tests.sh, NEW_TESTS_NEEDED.md, and project-overview.mdc
+  - Updated SESSION_NOTES.md with new GitHub repository URLs
+  - Created PR #16 for project rebranding
+- Commands run:
+  - `git add -A && git commit -m "refactor: rename project from Talos to LtngDet throughout codebase"`
+  - `git push origin refactor1`
+- Files touched:
+  - `run_tests.sh`, `NEW_TESTS_NEEDED.md`, `.cursor/rules/project-overview.mdc`, `SESSION_NOTES.md`
+- Pull Request: [#16 Project Rebranding](https://github.com/Skeyelab/LtngDet-pio-heltec-v3-oled/pull/16) (23 additions, 23 deletions, 5 files changed)
+- Next steps:
+  - Review and merge PR #16 for project rebranding
+  - Continue with existing implementation roadmap from PR #15
 
 #### 2025-01-27 20:45 UTC
 - Context: Successfully fixed all compilation issues and achieved 100% test pass rate. All 8 test suites now pass with 67 total test cases.
