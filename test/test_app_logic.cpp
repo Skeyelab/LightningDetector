@@ -1,5 +1,5 @@
 // Keep this test minimal and host-friendly
-#include "miniunity/unity.h"
+#include "unity_compat.h"
 #include "app_logic.h"
 
 void test_classifyPress() {

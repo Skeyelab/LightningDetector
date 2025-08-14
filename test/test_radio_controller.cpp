@@ -1,4 +1,4 @@
-#include "miniunity/unity.h"
+#include "unity_compat.h"
 #include "radio_controller.h"
 
 void test_radio_controller_header_compiles() {

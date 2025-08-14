@@ -1,4 +1,4 @@
-#include "miniunity/unity.h"
+#include "unity_compat.h"
 #include "display_status.h"
 
 void test_display_status_renders_lines_and_footer() {

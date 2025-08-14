@@ -1,4 +1,4 @@
-#include "miniunity/unity.h"
+#include "unity_compat.h"
 
 // Declarations of test functions
 void test_classifyPress();

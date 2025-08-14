@@ -1,4 +1,4 @@
-#include "miniunity/unity.h"
+#include "unity_compat.h"
 #include "radio_state.h"
 
 void test_radio_state_format() {

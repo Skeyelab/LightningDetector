@@ -1,4 +1,4 @@
-#include "miniunity/unity.h"
+#include "unity_compat.h"
 #include "config.h"
 
 void test_control_message_format() {
