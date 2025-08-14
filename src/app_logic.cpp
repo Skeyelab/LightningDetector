@@ -1,5 +1,5 @@
 #include "app_logic.h"
-#include <stdio.h>
+#include <cstdio>
 
 ButtonAction classifyPress(uint32_t pressDurationMs) {
   if (pressDurationMs < 100) return ButtonAction::Ignore;

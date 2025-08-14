@@ -40,7 +40,7 @@ public:
 // Test helper: Find network by location
 int findNetworkByLocation(const char* location) {
     for (int i = 0; i < NUM_WIFI_NETWORKS; i++) {
-        if (strcmp(wifiNetworks[i].location, location) == 0) {
+        if (strcmp(WIFI_NETWORKS[i].location, location) == 0) {
             return i;
         }
     }
@@ -50,7 +50,7 @@ int findNetworkByLocation(const char* location) {
 // Test helper: Find network by priority
 int findNetworkByPriority(int priority) {
     for (int i = 0; i < NUM_WIFI_NETWORKS; i++) {
-        if (wifiNetworks[i].priority == priority) {
+        if (WIFI_NETWORKS[i].priority == priority) {
             return i;
         }
     }
@@ -72,7 +72,7 @@ void getPriorityOrder(int* orderArray, int maxSize) {
     // Fill with network indices in priority order
     for (int priority = 1; priority <= NUM_WIFI_NETWORKS; priority++) {
         for (int i = 0; i < NUM_WIFI_NETWORKS; i++) {
-            if (wifiNetworks[i].priority == priority && (priority - 1) < maxSize) {
+            if (WIFI_NETWORKS[i].priority == priority && (priority - 1) < maxSize) {
                 orderArray[priority - 1] = i;
                 break;
             }
@@ -88,10 +88,10 @@ void test_wifi_network_configuration() {
 
     // Test that each network has required fields
     for (int i = 0; i < NUM_WIFI_NETWORKS; i++) {
-        TEST_ASSERT_NOT_NULL(wifiNetworks[i].ssid);
-        TEST_ASSERT_NOT_NULL(wifiNetworks[i].password);
-        TEST_ASSERT_NOT_NULL(wifiNetworks[i].location);
-        TEST_ASSERT_GREATER_THAN(0, wifiNetworks[i].priority);
+        TEST_ASSERT_NOT_NULL(WIFI_NETWORKS[i].ssid);
+        TEST_ASSERT_NOT_NULL(WIFI_NETWORKS[i].password);
+        TEST_ASSERT_NOT_NULL(WIFI_NETWORKS[i].location);
+        TEST_ASSERT_GREATER_THAN(0, WIFI_NETWORKS[i].priority);
     }
 }
 
@@ -105,7 +105,7 @@ void test_findNetworkByLocation() {
 
     // Verify the found network actually has the right location
     if (homeIndex != -1) {
-        TEST_ASSERT_EQUAL_STRING("Home", wifiNetworks[homeIndex].location);
+        TEST_ASSERT_EQUAL_STRING("Home", WIFI_NETWORKS[homeIndex].location);
     }
 
     // Test non-existent location
@@ -119,7 +119,7 @@ void test_findNetworkByPriority() {
     TEST_ASSERT_NOT_EQUAL(-1, priority1Index);
 
     if (priority1Index != -1) {
-        TEST_ASSERT_EQUAL(1, wifiNetworks[priority1Index].priority);
+        TEST_ASSERT_EQUAL(1, WIFI_NETWORKS[priority1Index].priority);
     }
 
     // Test invalid priority
@@ -151,7 +151,7 @@ void test_getPriorityOrder() {
         if (orderArray[i] != -1) {
             TEST_ASSERT_TRUE(isValidNetworkIndex(orderArray[i]));
             // Priority should match position + 1
-            TEST_ASSERT_EQUAL(i + 1, wifiNetworks[orderArray[i]].priority);
+            TEST_ASSERT_EQUAL(i + 1, WIFI_NETWORKS[orderArray[i]].priority);
         }
     }
 
@@ -192,7 +192,7 @@ void test_network_priorities_are_sequential() {
     bool foundPriorities[NUM_WIFI_NETWORKS + 1] = {false}; // index 0 unused
 
     for (int i = 0; i < NUM_WIFI_NETWORKS; i++) {
-        int priority = wifiNetworks[i].priority;
+        int priority = WIFI_NETWORKS[i].priority;
         TEST_ASSERT_GREATER_THAN(0, priority);
         TEST_ASSERT_LESS_OR_EQUAL(NUM_WIFI_NETWORKS, priority);
 

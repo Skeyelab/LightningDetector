@@ -54,6 +54,10 @@ test_suites=(
     "WiFi Manager:test/test_wifi_manager.cpp"
     "WiFi Logic:test/test_wifi_logic.cpp"
     "Integration:test/test_integration.cpp"
+    "Modular Architecture:test/test_modular_architecture.cpp"
+    "State Machine:test/test_state_machine.cpp"
+    "Error Handler:test/test_error_handler.cpp"
+    "Sensor Framework:test/test_sensor_framework.cpp"
 )
 
 for suite in "${test_suites[@]}"; do

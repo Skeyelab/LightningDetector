@@ -31,7 +31,7 @@ void saveNetworkMode() {
 // Get current network location string
 const char* getCurrentNetworkLocation() {
   if (currentConnectedNetworkIndex >= 0 && currentConnectedNetworkIndex < NUM_WIFI_NETWORKS) {
-    return wifiNetworks[currentConnectedNetworkIndex].location;
+    return WIFI_NETWORKS[currentConnectedNetworkIndex].location;
   }
   return "Unknown";
 }
@@ -48,7 +48,7 @@ bool connectToSpecificNetwork(int networkIndex) {
     return false;
   }
 
-  const WiFiNetwork& network = wifiNetworks[networkIndex];
+  const WiFiNetwork& network = WIFI_NETWORKS[networkIndex];
   Serial.printf("WiFi Manager: Attempting to connect to %s (%s)...\n",
                 network.ssid, network.location);
 
@@ -89,9 +89,9 @@ bool connectWithAutoFallback() {
   for (int attempt = 0; attempt < NUM_WIFI_NETWORKS; attempt++) {
     // Find network with this priority
     for (int i = 0; i < NUM_WIFI_NETWORKS; i++) {
-      if (wifiNetworks[i].priority == (attempt + 1)) {
+      if (WIFI_NETWORKS[i].priority == (attempt + 1)) {
         Serial.printf("WiFi Manager: Trying priority %d network: %s\n",
-                      attempt + 1, wifiNetworks[i].ssid);
+                      attempt + 1, WIFI_NETWORKS[i].ssid);
 
         if (connectToSpecificNetwork(i)) {
           return true;
@@ -115,7 +115,7 @@ bool connectToHomeNetwork() {
   Serial.println("WiFi Manager: Manual mode - connecting to home network...");
 
   for (int i = 0; i < NUM_WIFI_NETWORKS; i++) {
-    if (strcmp(wifiNetworks[i].location, "Home") == 0) {
+    if (strcmp(WIFI_NETWORKS[i].location, "Home") == 0) {
       return connectToSpecificNetwork(i);
     }
   }
@@ -129,7 +129,7 @@ bool connectToWorkNetwork() {
   Serial.println("WiFi Manager: Manual mode - connecting to work network...");
 
   for (int i = 0; i < NUM_WIFI_NETWORKS; i++) {
-    if (strcmp(wifiNetworks[i].location, "Work") == 0) {
+    if (strcmp(WIFI_NETWORKS[i].location, "Work") == 0) {
       return connectToSpecificNetwork(i);
     }
   }
@@ -200,7 +200,7 @@ bool checkWiFiConnection() {
 // Get current WiFi status string
 const char* getWiFiStatusString() {
   if (currentConnectedNetworkIndex >= 0 && currentConnectedNetworkIndex < NUM_WIFI_NETWORKS) {
-    const WiFiNetwork& network = wifiNetworks[currentConnectedNetworkIndex];
+    const WiFiNetwork& network = WIFI_NETWORKS[currentConnectedNetworkIndex];
     static char statusStr[32];
     snprintf(statusStr, sizeof(statusStr), "%s", network.location);
     return statusStr;
@@ -212,7 +212,7 @@ const char* getWiFiStatusString() {
 void printConfiguredNetworks() {
   Serial.println("WiFi Manager: Configured networks:");
   for (int i = 0; i < NUM_WIFI_NETWORKS; i++) {
-    const WiFiNetwork& network = wifiNetworks[i];
+    const WiFiNetwork& network = WIFI_NETWORKS[i];
     Serial.printf("  [%d] %s (%s) - Priority %d\n",
                   i, network.ssid, network.location, network.priority);
   }
