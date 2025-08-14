@@ -1,13 +1,31 @@
-## Setup summary
+# Session Notes - LtngDet PIO Heltec V3 OLED Project
 
-- Project: LtngDet LoRa + OLED (Heltec V3, ESP32S3)
-- Build system: PlatformIO (espressif32, Arduino framework)
-- Envs: `sender`, `receiver`
-- Key libs: RadioLib, U8g2, ArduinoOTA, Update, WiFi
-- OTA: WiFi OTA on receiver (`espota` with password), LoRa OTA bridging
-- WiFi: Multi-network support with automatic fallback and manual selection
+## Setup Summary
+- **Project**: LtngDet PIO Heltec V3 OLED (LoRa Lightning Detector)
+- **Framework**: PlatformIO with ESP32 Arduino core
+- **Hardware**: Heltec WiFi Kit 32 V3 with OLED display
+- **Architecture**: Modular framework with hardware abstraction layers
+- **Testing**: Google Test framework with 38 test cases
+- **CI/CD**: GitHub Actions with comprehensive caching
 
 ### Session log
+
+#### 2025-08-14 20:26 UTC
+- Context: Completed project rebranding from Talos to LtngDet throughout codebase
+- Changes:
+  - Renamed all local references from 'talos' to 'LtngDet' in project files
+  - Updated run_tests.sh, NEW_TESTS_NEEDED.md, and project-overview.mdc
+  - Updated SESSION_NOTES.md with new GitHub repository URLs
+  - Created PR #16 for project rebranding
+- Commands run:
+  - `git add -A && git commit -m "refactor: rename project from Talos to LtngDet throughout codebase"`
+  - `git push origin refactor1`
+- Files touched:
+  - `run_tests.sh`, `NEW_TESTS_NEEDED.md`, `.cursor/rules/project-overview.mdc`, `SESSION_NOTES.md`
+- Pull Request: [#16 Project Rebranding](https://github.com/Skeyelab/LtngDet-pio-heltec-v3-oled/pull/16) (23 additions, 23 deletions, 5 files changed)
+- Next steps:
+  - Review and merge PR #16 for project rebranding
+  - Continue with existing implementation roadmap from PR #15
 
 #### 2025-01-27 20:45 UTC
 - Context: Successfully fixed all compilation issues and achieved 100% test pass rate. All 8 test suites now pass with 67 total test cases.
@@ -96,7 +114,7 @@
   - **100% third-party noise elimination**: 17,984 warnings excluded
   - **Professional standards**: Industry-grade static analysis configuration
 - Next steps:
-  - **[PR #15 Updated](https://github.com/Skeyelab/talos-pio-heltec-v3-oled/pull/15)**: Combined modular architecture + clang-tidy improvements
+  - **[PR #15 Updated](https://github.com/Skeyelab/LtngDet-pio-heltec-v3-oled/pull/15)**: Combined modular architecture + clang-tidy improvements
   - Ready for implementation of individual framework components
   - Begin Hardware Abstraction Layer implementation
 
@@ -126,20 +144,20 @@
   - Testing: `test/test_modular_architecture.cpp`, updated `run_tests.sh`
   - CI/CD: Enhanced `.github/workflows/ci.yml` and `.github/workflows/build.yml` with advanced caching
 - GitHub Issues Created:
-  - [#7 Hardware Abstraction Layer Implementation](https://github.com/Skeyelab/talos-pio-heltec-v3-oled/issues/7) (High Priority)
-  - [#8 Error Handling and Logging System](https://github.com/Skeyelab/talos-pio-heltec-v3-oled/issues/8) (High Priority)
-  - [#9 State Machine Integration](https://github.com/Skeyelab/talos-pio-heltec-v3-oled/issues/9) (Medium Priority)
-  - [#10 AS3935 Lightning Sensor Integration](https://github.com/Skeyelab/talos-pio-heltec-v3-oled/issues/10) (High Priority)
-  - [#11 WS2812 LED Strip Support](https://github.com/Skeyelab/talos-pio-heltec-v3-oled/issues/11) (Medium Priority)
-  - [#12 Buzzer/Speaker Support](https://github.com/Skeyelab/talos-pio-heltec-v3-oled/issues/12) (Low Priority)
-  - [#13 OTA System Refactor](https://github.com/Skeyelab/talos-pio-heltec-v3-oled/issues/13) (Medium Priority)
-  - [#14 Milestone Tracker](https://github.com/Skeyelab/talos-pio-heltec-v3-oled/issues/14) (Tracking)
-- Pull Request: [#15 Modular Architecture Framework](https://github.com/Skeyelab/talos-pio-heltec-v3-oled/pull/15) (1,891 additions, 11 files changed)
+  - [#7 Hardware Abstraction Layer Implementation](https://github.com/Skeyelab/LtngDet-pio-heltec-v3-oled/issues/7) (High Priority)
+  - [#8 Error Handling and Logging System](https://github.com/Skeyelab/LtngDet-pio-heltec-v3-oled/issues/8) (High Priority)
+  - [#9 State Machine Integration](https://github.com/Skeyelab/LtngDet-pio-heltec-v3-oled/issues/9) (Medium Priority)
+  - [#10 AS3935 Lightning Sensor Integration](https://github.com/Skeyelab/LtngDet-pio-heltec-v3-oled/issues/10) (High Priority)
+  - [#11 WS2812 LED Strip Support](https://github.com/Skeyelab/LtngDet-pio-heltec-v3-oled/issues/11) (Medium Priority)
+  - [#12 Buzzer/Speaker Support](https://github.com/Skeyelab/LtngDet-pio-heltec-v3-oled/issues/12) (Low Priority)
+  - [#13 OTA System Refactor](https://github.com/Skeyelab/LtngDet-pio-heltec-v3-oled/issues/13) (Medium Priority)
+  - [#14 Milestone Tracker](https://github.com/Skeyelab/LtngDet-pio-heltec-v3-oled/issues/14) (Tracking)
+- Pull Request: [#15 Modular Architecture Framework](https://github.com/Skeyelab/LtngDet-pio-heltec-v3-oled/pull/15) (1,891 additions, 11 files changed)
 - Next steps:
-  - Review and merge [PR #15](https://github.com/Skeyelab/talos-pio-heltec-v3-oled/pull/15)
-  - Begin implementation with [Issue #7 (HAL)](https://github.com/Skeyelab/talos-pio-heltec-v3-oled/issues/7) as foundation
+  - Review and merge [PR #15](https://github.com/Skeyelab/LtngDet-pio-heltec-v3-oled/pull/15)
+  - Begin implementation with [Issue #7 (HAL)](https://github.com/Skeyelab/LtngDet-pio-heltec-v3-oled/issues/7) as foundation
   - Follow recommended order: HAL → Error/Logging → Lightning Sensor → State Machine → LED Strip → OTA → Audio
-  - Track progress in [Issue #14 (Milestone)](https://github.com/Skeyelab/talos-pio-heltec-v3-oled/issues/14)
+  - Track progress in [Issue #14 (Milestone)](https://github.com/Skeyelab/LtngDet-pio-heltec-v3-oled/issues/14)
 
 #### 2025-01-27 18:30 UTC
 - Context: Comprehensive unit test expansion completed across all modules before refactoring phase.

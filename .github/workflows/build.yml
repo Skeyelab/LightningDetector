@@ -2,7 +2,7 @@ name: Build PlatformIO Project
 
 on:
   push:
-    branches: [ main, feature-1 ]
+    branches: [ main ]
   pull_request:
     branches: [ main ]
 

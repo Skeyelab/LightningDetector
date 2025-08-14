@@ -1,6 +1,6 @@
 # New Tests Needed After Refactoring
 
-This document outlines the comprehensive testing needs for the refactored Talos PIO Heltec V3 OLED project.
+This document outlines the comprehensive testing needs for the refactored LtngDet PIO Heltec V3 OLED project.
 
 ## 🎉 Current Status: 100% Test Pass Rate Achieved!
 
