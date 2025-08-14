@@ -80,5 +80,5 @@ jobs:
 
     - name: Run PlatformIO Check
       run: |
-        pio check -e sender
-        pio check -e receiver
+        pio check -e sender-check
+        pio check -e receiver-check
