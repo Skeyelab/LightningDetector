@@ -8,6 +8,7 @@
 #include "config.h"
 #include "radio_state.h"
 #include "display_status.h"
+#include "radio_controller.h"
 
 #ifdef ENABLE_WIFI_OTA
 #include <WiFi.h>
@@ -82,6 +83,7 @@ static uint32_t firmwareVersion = 0x010000; // Version 1.0.0
 #endif
 
 SX1262 radio = new Module(PIN_LORA_NSS, PIN_LORA_DIO1, PIN_LORA_RST, PIN_LORA_BUSY);
+static RadioController radioCtrl(radio);
 static Preferences prefs;
 
 static bool isSender = true;
@@ -291,19 +293,8 @@ static void initDisplay() {
 }
 
 static void updateRadioSettings() {
-  int st = radio.setFrequency(currentFreq);
-  if (st == RADIOLIB_ERR_NONE) {
-    st = radio.setBandwidth(currentBW);
-  }
-  if (st == RADIOLIB_ERR_NONE) {
-    st = radio.setSpreadingFactor(currentSF);
-  }
-  if (st == RADIOLIB_ERR_NONE) {
-    st = radio.setCodingRate(currentCR);
-  }
-  if (st == RADIOLIB_ERR_NONE) {
-    st = radio.setOutputPower(currentTxPower);
-  }
+  RadioState s{currentFreq, currentBW, currentSF, currentCR, currentTxPower};
+  int st = radioCtrl.applySettings(s);
 
   if (st != RADIOLIB_ERR_NONE) {
     Serial.printf("Failed to update radio settings: %d\n", st);
@@ -317,26 +308,24 @@ static void updateRadioSettings() {
 
 static void initRadioOrHalt() {
   Serial.println("Initializing LoRa radio...");
-  int st = radio.begin(currentFreq, currentBW, currentSF, currentCR, 0x34, currentTxPower);
+  RadioState s{currentFreq, currentBW, currentSF, currentCR, currentTxPower};
+  int st = radioCtrl.beginOperational(s, 0x34);
   if (st != RADIOLIB_ERR_NONE) {
     char buf[48]; snprintf(buf, sizeof(buf), "Radio fail %d", st);
     oledMsg("Radio init", buf);
     while (true) { Serial.println(buf); delay(1000); }
   }
-  radio.setDio2AsRfSwitch(true);
-  radio.setCRC(true);
   oledSettings();
 }
 
 static void broadcastConfigOnControlChannel(uint8_t times, uint32_t intervalMs) {
   // Switch to control channel
-  int st = radio.begin(CTRL_FREQ_MHZ, CTRL_BW_KHZ, CTRL_SF, CTRL_CR, 0x34, currentTxPower);
+  RadioState temp{CTRL_FREQ_MHZ, CTRL_BW_KHZ, CTRL_SF, CTRL_CR, currentTxPower};
+  int st = radioCtrl.beginOperational(temp, 0x34);
   if (st != RADIOLIB_ERR_NONE) {
     Serial.printf("[CTRL] begin fail %d\n", st);
     return;
   }
-  radio.setDio2AsRfSwitch(true);
-  radio.setCRC(true);
 
   RadioConfig cfg{currentFreq, currentBW, currentSF, currentCR, currentTxPower};
   std::string msg = cfg.toControlMessage();
@@ -348,24 +337,20 @@ static void broadcastConfigOnControlChannel(uint8_t times, uint32_t intervalMs) 
   }
 
   // Restore operational settings
-  st = radio.begin(currentFreq, currentBW, currentSF, currentCR, 0x34, currentTxPower);
+  st = radioCtrl.beginOperational(RadioState{currentFreq, currentBW, currentSF, currentCR, currentTxPower}, 0x34);
   if (st != RADIOLIB_ERR_NONE) {
     Serial.printf("[CTRL] restore begin fail %d\n", st);
-  } else {
-    radio.setDio2AsRfSwitch(true);
-    radio.setCRC(true);
   }
 }
 
 static void tryReceiveConfigOnControlChannel(uint32_t durationMs) {
   // Switch to control channel
-  int st = radio.begin(CTRL_FREQ_MHZ, CTRL_BW_KHZ, CTRL_SF, CTRL_CR, 0x34, currentTxPower);
+  RadioState temp{CTRL_FREQ_MHZ, CTRL_BW_KHZ, CTRL_SF, CTRL_CR, currentTxPower};
+  int st = radioCtrl.beginOperational(temp, 0x34);
   if (st != RADIOLIB_ERR_NONE) {
     Serial.printf("[CTRL] begin fail %d\n", st);
     return;
   }
-  radio.setDio2AsRfSwitch(true);
-  radio.setCRC(true);
 
   uint32_t start = millis();
   while (millis() - start < durationMs) {
@@ -389,12 +374,9 @@ static void tryReceiveConfigOnControlChannel(uint32_t durationMs) {
   }
 
   // Restore operational settings (applied ones if updated)
-  st = radio.begin(currentFreq, currentBW, currentSF, currentCR, 0x34, currentTxPower);
+  st = radioCtrl.beginOperational(RadioState{currentFreq, currentBW, currentSF, currentCR, currentTxPower}, 0x34);
   if (st != RADIOLIB_ERR_NONE) {
     Serial.printf("[CTRL] restore begin fail %d\n", st);
-  } else {
-    radio.setDio2AsRfSwitch(true);
-    radio.setCRC(true);
   }
 }
 
