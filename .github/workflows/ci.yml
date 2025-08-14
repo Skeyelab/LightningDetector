@@ -16,7 +16,7 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     - name: Cache PlatformIO
       uses: actions/cache@v4
@@ -66,7 +66,7 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     - name: Setup Python
       uses: actions/setup-python@v4
@@ -80,5 +80,5 @@ jobs:
 
     - name: Run PlatformIO Check
       run: |
-        pio check -e sender
-        pio check -e receiver
+        pio check -e sender-check
+        pio check -e receiver-check

@@ -68,7 +68,7 @@ U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE);
 
 // WiFi and OTA Configuration (Receiver only)
 #ifdef ENABLE_WIFI_OTA
-#include "wifi_config.h"
+#include "wifi_manager.h"
 
 // Firmware storage for LoRa OTA cascade updates
 static uint8_t storedFirmware[64 * 1024]; // 64KB buffer for firmware storage (reduced for DRAM)
@@ -154,8 +154,9 @@ static void drawStatusBar() {
   if (!isSender) {
     // WiFi status
     if (wifiConnected) {
-      u8g2.drawStr(xPos, yPos, "WiFi");
-      xPos += 25;
+      const char* location = getCurrentNetworkLocation();
+      u8g2.drawStr(xPos, yPos, location);
+      xPos += (strlen(location) * 6); // Approximate character width
     } else {
       u8g2.drawStr(xPos, yPos, "NoWiFi");
       xPos += 20;
@@ -453,18 +454,73 @@ static void updateButton() {
       oledRole();
       Serial.printf("Switched mode -> %s\n", isSender ? "Sender" : "Receiver");
     } else if (pressDuration < 3000) {
-      // Medium press - cycle SF
+      // Medium press - cycle SF (sender) or network mode (receiver)
       if (isSender) {
         int nextIndex = (currentSfIndex + 1) % (sizeof(sfValues) / sizeof(sfValues[0]));
         int nextSF = sfValues[nextIndex];
         startConfigBroadcast(currentFreq, currentBW, nextSF, currentCR, currentTxPower);
         Serial.printf("SF change requested -> %d (broadcasting to receiver)\n", nextSF);
       } else {
+#ifdef ENABLE_WIFI_OTA
+        // Cycle through network modes for receiver
+        NetworkSelectionMode currentMode = currentNetworkMode;
+        NetworkSelectionMode nextMode;
+
+        switch (currentMode) {
+          case NetworkSelectionMode::AUTO:
+            nextMode = NetworkSelectionMode::MANUAL_HOME;
+            break;
+          case NetworkSelectionMode::MANUAL_HOME:
+            nextMode = NetworkSelectionMode::MANUAL_WORK;
+            break;
+          case NetworkSelectionMode::MANUAL_WORK:
+            nextMode = NetworkSelectionMode::AUTO;
+            break;
+          default:
+            nextMode = NetworkSelectionMode::AUTO;
+        }
+
+        setNetworkMode(nextMode);
+
+        // Show network mode change on display
+        const char* modeStr;
+        switch (nextMode) {
+          case NetworkSelectionMode::AUTO:
+            modeStr = "Auto";
+            break;
+          case NetworkSelectionMode::MANUAL_HOME:
+            modeStr = "Home";
+            break;
+          case NetworkSelectionMode::MANUAL_WORK:
+            modeStr = "Work";
+            break;
+          default:
+            modeStr = "Auto";
+        }
+
+        oledMsg("Network Mode", modeStr);
+        Serial.printf("Network mode changed to %s\n", modeStr);
+
+        // Reconnect with new mode
+        if (wifiConnected) {
+          WiFi.disconnect();
+          delay(1000);
+          if (connectToWiFi()) {
+            wifiConnected = true;
+            oledMsg("Reconnected", getCurrentNetworkLocation());
+          } else {
+            wifiConnected = false;
+            oledMsg("Reconnect", "Failed");
+          }
+        }
+#else
+        // For non-WiFi receivers, cycle SF instead
         currentSfIndex = (currentSfIndex + 1) % (sizeof(sfValues) / sizeof(sfValues[0]));
         currentSF = sfValues[currentSfIndex];
         updateRadioSettings();
         savePersistedSettings();
         Serial.printf("SF changed to %d\n", currentSF);
+#endif
       }
     } else {
       // Long press - cycle BW
@@ -741,6 +797,19 @@ void loop() {
   #ifdef ENABLE_WIFI_OTA
   if (!isSender && wifiConnected) {
     ArduinoOTA.handle();
+
+    // Periodically check WiFi connection and reconnect if needed
+    static uint32_t lastWiFiCheck = 0;
+    if (now - lastWiFiCheck >= 30000) { // Check every 30 seconds
+      if (!checkWiFiConnection()) {
+        wifiConnected = false;
+        oledMsg("WiFi", "Reconnecting...");
+      } else if (!wifiConnected) {
+        wifiConnected = true;
+        oledMsg("WiFi", "Reconnected");
+      }
+      lastWiFiCheck = now;
+    }
   }
   #endif
 
@@ -757,20 +826,19 @@ static void initWiFi() {
   Serial.println("Initializing WiFi...");
   oledMsg("WiFi", "Connecting...");
 
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  // Initialize WiFi preferences
+  initWiFiPreferences();
 
-  int attempts = 0;
-  while (WiFi.status() != WL_CONNECTED && attempts < 20) {
-    delay(500);
-    Serial.print(".");
-    attempts++;
-  }
+  // Print configured networks
+  printConfiguredNetworks();
 
-  if (WiFi.status() == WL_CONNECTED) {
+  // Attempt to connect using the WiFi manager
+  if (connectToWiFi()) {
     wifiConnected = true;
-    Serial.printf("\nWiFi connected! IP: %s\n", WiFi.localIP().toString().c_str());
-    oledMsg("WiFi", WiFi.localIP().toString().c_str());
+    const char* location = getCurrentNetworkLocation();
+    Serial.printf("\nWiFi connected to %s! IP: %s\n",
+                  location, WiFi.localIP().toString().c_str());
+    oledMsg("WiFi", location);
   } else {
     Serial.println("\nWiFi connection failed!");
     oledMsg("WiFi", "Failed!");
