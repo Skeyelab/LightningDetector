@@ -914,7 +914,7 @@ static void initOTA() {
 static void handleLoraOtaPacket(const String& packet) {
   if (packet.startsWith("OTA_START:")) {
     // Format: OTA_START:size:chunks
-    int parsed = sscanf(packet.c_str(), "OTA_START:%lu:%lu", &loraOtaExpectedSize, &loraOtaTimeout);
+    int parsed = sscanf(packet.c_str(), "OTA_START:%u:%u", &loraOtaExpectedSize, &loraOtaTimeout);
     if (parsed == 2) {
       loraOtaActive = true;
       loraOtaStartTime = millis();
@@ -930,7 +930,7 @@ static void handleLoraOtaPacket(const String& packet) {
     // Format: OTA_DATA:chunk:data
     int chunk;
     char data[256];
-    int parsed = sscanf(packet.c_str(), "OTA_DATA:%d:%s", &chunk, data);
+    int parsed = sscanf(packet.c_str(), "OTA_DATA:%d:%255s", &chunk, data);
     if (parsed == 2) {
       // Decode base64 data and add to buffer
       // For simplicity, we'll use a basic approach
@@ -956,7 +956,7 @@ static void handleLoraOtaPacket(const String& packet) {
 
       // Flash the firmware
       if (Update.begin(loraOtaExpectedSize)) {
-        size_t written = Update.write(loraOtaBuffer, loraOtaBufferSize);
+        (void)Update.write(loraOtaBuffer, loraOtaBufferSize); // Suppress unused variable warning
         if (Update.end()) {
           Serial.println("Firmware flashed successfully!");
           oledMsg("OTA Complete", "Rebooting...");
