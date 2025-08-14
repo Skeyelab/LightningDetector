@@ -10,6 +10,10 @@
 #include <ArduinoOTA.h>
 #include <Update.h>
 #endif
+// Allow sender to flash firmware received over LoRa
+#if defined(ROLE_SENDER) && !defined(ENABLE_WIFI_OTA)
+#include <Update.h>
+#endif
 
 // Vext power control and OLED reset (Heltec V3)
 #define VEXT_PIN 36        // Vext control: LOW = ON
@@ -493,6 +497,7 @@ static bool storeCurrentFirmware();
 #endif
 static void handleLoraOtaPacket(const String& packet);
 static void checkLoraOtaTimeout();
+// Only receivers send firmware out
 #ifdef ENABLE_WIFI_OTA
 static void sendLoraOtaUpdate(const uint8_t* firmware, size_t firmwareSize);
 #endif
@@ -676,33 +681,41 @@ void loop() {
             Serial.printf("[RX] CFG PARSE FAIL | %s | SNR %.1f | PKT:%lu\n", rx.c_str(), snr, packetCount);
             oledMsg("RX", rx.c_str(), l2);
           }
-#ifdef ENABLE_WIFI_OTA
         } else if (rx.startsWith("OTA_")) {
-          // Handle OTA packets
+          // Handle OTA packets (both roles)
           handleLoraOtaPacket(rx);
-                } else if (rx.startsWith("REQUEST_UPDATE")) {
-          // Handle update request from transmitter
-          Serial.println("Transmitter requested firmware update!");
-          oledMsg("Update Req", "Received");
+        } else if (rx.startsWith("FW_UPDATE_AVAILABLE") || rx.startsWith("UPDATE_NOW")) {
+          // Sender: request update when notified
+          if (isSender) {
+            Serial.println("FW update notice received; requesting update...");
+            radio.transmit("REQUEST_UPDATE");
+          }
+        } else if (rx.startsWith("REQUEST_UPDATE")) {
+          // Receiver only: handle update request from transmitter
+          if (!isSender) {
+            Serial.println("Transmitter requested firmware update!");
+            oledMsg("Update Req", "Received");
 
-          // Acknowledge the request
-          radio.transmit("UPDATE_ACK");
-          delay(100);
+            // Acknowledge the request
+            radio.transmit("UPDATE_ACK");
+            delay(100);
 
-          // NEW: Send the actual firmware if we have it stored
-          if (hasStoredFirmware && storedFirmwareSize > 0) {
-            Serial.printf("Sending stored firmware (%zu bytes) to transmitter\n", storedFirmwareSize);
-            oledMsg("Sending FW", "To TX");
-            sendLoraOtaUpdate(storedFirmware, storedFirmwareSize);
-          } else {
-            Serial.println("No firmware stored to send!");
-            oledMsg("No FW", "Stored");
+            // Send the actual firmware if we have it stored
+            #ifdef ENABLE_WIFI_OTA
+            if (hasStoredFirmware && storedFirmwareSize > 0) {
+              Serial.printf("Sending stored firmware (%zu bytes) to transmitter\n", storedFirmwareSize);
+              oledMsg("Sending FW", "To TX");
+              sendLoraOtaUpdate(storedFirmware, storedFirmwareSize);
+            } else {
+              Serial.println("No firmware stored to send!");
+              oledMsg("No FW", "Stored");
+              radio.transmit("NO_FIRMWARE");
+            }
+            #else
             radio.transmit("NO_FIRMWARE");
+            #endif
           }
         } else {
-#else
-        } else {
-#endif
           char l2[20]; snprintf(l2, sizeof(l2), "RSSI %.1f", rssi);
           if (rx.startsWith("PING ")) {
             // Extract seq part from message "PING seq=NNN"
@@ -724,17 +737,15 @@ void loop() {
     }
   }
 
-  // Handle OTA updates
-#ifdef ENABLE_WIFI_OTA
+  // Handle OTA updates (WiFi OTA only on receiver)
+  #ifdef ENABLE_WIFI_OTA
   if (!isSender && wifiConnected) {
     ArduinoOTA.handle();
   }
-#endif
+  #endif
 
-#ifdef ENABLE_WIFI_OTA
-  // Check LoRa OTA timeout
+  // Check LoRa OTA timeout (both roles)
   checkLoraOtaTimeout();
-#endif
 
   // Small delay to prevent overwhelming the system, but keep button responsive
   delay(10);
@@ -827,7 +838,6 @@ static void initOTA() {
 #endif
 
 // LoRa OTA Functions (both sender and receiver)
-#ifdef ENABLE_WIFI_OTA
 static void handleLoraOtaPacket(const String& packet) {
   if (packet.startsWith("OTA_START:")) {
     // Format: OTA_START:size:chunks
@@ -892,9 +902,7 @@ static void handleLoraOtaPacket(const String& packet) {
     loraOtaActive = false;
   }
 }
-#endif
 
-#ifdef ENABLE_WIFI_OTA
 static void checkLoraOtaTimeout() {
   if (loraOtaActive && (millis() - loraOtaStartTime > loraOtaTimeout)) {
     Serial.println("LoRa OTA timeout!");
@@ -902,7 +910,6 @@ static void checkLoraOtaTimeout() {
     loraOtaActive = false;
   }
 }
-#endif
 
 // Function to send OTA update to transmitters (receiver only)
 #ifdef ENABLE_WIFI_OTA
@@ -963,8 +970,12 @@ static void triggerLoraFirmwareUpdates() {
   Serial.println("Broadcasting firmware update notification...");
   oledMsg("LoRa Update", "Broadcasting...");
 
+  // Proactively resync receivers to our current settings over control channel
+  // to maximize the chance they can hear the update notifications
+  broadcastConfigOnControlChannel(8, 250);
+
   // Send multiple notifications to ensure transmitters receive them
-  for (int i = 0; i < 5; i++) {
+  for (int i = 0; i < 10; i++) {
     // Send firmware update available notification
     radio.transmit("FW_UPDATE_AVAILABLE");
     delay(200);
@@ -994,9 +1005,9 @@ static void triggerLoraFirmwareUpdates() {
   Serial.println("Checking for update requests...");
   oledMsg("LoRa Update", "Checking...");
 
-  // Listen for update requests for a few seconds
+  // Listen for update requests for longer to catch remote nodes
   uint32_t startTime = millis();
-  while (millis() - startTime < 5000) { // Listen for 5 seconds
+  while (millis() - startTime < 15000) { // Listen for 15 seconds
     String rx;
     int r = radio.receive(rx);
     if (r == RADIOLIB_ERR_NONE) {
