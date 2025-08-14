@@ -6,6 +6,8 @@
 #include <Preferences.h>
 #include "app_logic.h"
 #include "config.h"
+#include "radio_state.h"
+#include "display_status.h"
 
 // Vext power control and OLED reset (Heltec V3)
 #define VEXT_PIN 36        // Vext control: LOW = ON
@@ -108,38 +110,10 @@ static void computeIndicesFromCurrent();
 static void broadcastConfigOnControlChannel(uint8_t times = 8, uint32_t intervalMs = 300);
 static void tryReceiveConfigOnControlChannel(uint32_t durationMs = 4000);
 
+static DisplayStatus displayStatus(u8g2);
 static void oledMsg(const char* l1, const char* l2 = nullptr, const char* l3 = nullptr) {
-  u8g2.clearBuffer();
-  u8g2.setFont(u8g2_font_6x10_tr);
-
-  // Portrait layout: 64 pixels wide, 128 pixels tall
-
-  // Top section - main status
-  if (l1) u8g2.drawStr(2, 12, l1);
-
-  // Second line - additional info (if provided) - moved down one line
-  if (l2) u8g2.drawStr(2, 32, l2);
-
-  // Middle section - signal quality for receiver mode
-  if (!isSender && lastRSSI > -999.0) {
-    char rssiStr[12], snrStr[12];
-    snprintf(rssiStr, sizeof(rssiStr), "RSSI: %.0f", lastRSSI);
-    snprintf(snrStr, sizeof(snrStr), "SNR: %.1f", lastSNR);
-
-    u8g2.drawStr(2, 51, rssiStr);
-    u8g2.drawStr(2, 65, snrStr);
-  }
-
-  // Bottom section - settings
-  char settings[32];
-  snprintf(settings, sizeof(settings), "SF%d BW%.0f", currentSF, currentBW);
-  u8g2.drawStr(2, 91, settings);
-
-  char modeStr[16];
-  snprintf(modeStr, sizeof(modeStr), "%s %.1fMHz", isSender ? "TX" : "RX", currentFreq);
-  u8g2.drawStr(2, 105, modeStr);
-
-  u8g2.sendBuffer();
+  RadioState state{currentFreq, currentBW, currentSF, currentCR, currentTxPower};
+  displayStatus.render(l1, l2, l3, state, isSender, lastRSSI, lastSNR);
 }
 
 static void oledRole() {
