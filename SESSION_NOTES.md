@@ -13,7 +13,7 @@
 - Context: Successfully added comprehensive clang-tidy static analysis with 99% issue reduction. Professional-grade code quality achieved.
 - Changes:
   - Added clang-tidy configuration (`.clang-tidy`) optimized for embedded C++ development
-  - Created analysis scripts: `run_tidy.sh`, `run_static_analysis.sh` 
+  - Created analysis scripts: `run_tidy.sh`, `run_static_analysis.sh`
   - Added comprehensive documentation: `STATIC_ANALYSIS.md`
   - Integrated clang-tidy into PlatformIO: `sender-tidy`, `receiver-tidy` environments
   - Enhanced GitHub Actions CI with clang-tidy integration and smart caching
