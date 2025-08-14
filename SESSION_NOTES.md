@@ -5,8 +5,51 @@
 - Envs: `sender`, `receiver`
 - Key libs: RadioLib, U8g2, ArduinoOTA, Update, WiFi
 - OTA: WiFi OTA on receiver (`espota` with password), LoRa OTA bridging
+- WiFi: Multi-network support with automatic fallback and manual selection
 
 ### Session log
+
+#### 2025-01-27 15:30 UTC
+- Context: Implemented multi-network WiFi system to support home and work networks with automatic fallback.
+- Changes:
+  - `src/wifi_config.h`:
+    - Replaced single WiFi config with multi-network structure
+    - Added WiFiNetwork struct with SSID, password, location, and priority
+    - Added NetworkSelectionMode enum for AUTO, MANUAL_HOME, MANUAL_WORK modes
+    - Added connection timeout and retry configuration
+  - `src/wifi_manager.h` & `src/wifi_manager.cpp`:
+    - Created new WiFi manager implementation with automatic fallback
+    - Added persistent storage of network preferences
+    - Implemented priority-based network selection
+    - Added manual network mode switching
+  - `src/main.cpp`:
+    - Updated to use new WiFi manager instead of direct WiFi calls
+    - Added button functionality to cycle through network modes (receiver only)
+    - Updated status bar to show current network location
+    - Added periodic WiFi connection checking and reconnection
+    - Wrapped WiFi-specific button functionality in ENABLE_WIFI_OTA preprocessor directives
+  - `wifi_networks_example.h`: Created example configuration template
+  - `WIFI_MULTI_NETWORK_README.md`: Comprehensive documentation
+- Commands run:
+  - Created multiple new files for WiFi management system
+  - Fixed compilation errors by reorganizing function definitions
+  - Successfully built both receiver and sender environments
+- Files touched:
+  - `src/wifi_config.h`, `src/wifi_manager.h`, `src/wifi_manager.cpp`, `src/main.cpp`
+  - `wifi_networks_example.h`, `WIFI_MULTI_NETWORK_README.md`
+- Features implemented:
+  - Multiple WiFi networks with priority-based fallback
+  - Manual network mode selection via button press
+  - Persistent storage of network preferences
+  - Automatic reconnection and network monitoring
+  - OLED display shows current network location
+  - Compatible with both WiFi-enabled (receiver) and WiFi-disabled (sender) builds
+- Build status: ✅ SUCCESS - Both receiver and sender environments compile without errors
+- Next steps:
+  - Test multi-network functionality with actual home/work networks
+  - Verify automatic fallback behavior
+  - Test button-based network mode switching
+  - Consider moving network credentials to external file for security
 
 #### 2025-08-14 01:40 UTC
 - Context: Working on cascade OTA; receiver broadcasts LoRa notices post WiFi OTA; transmitters not reacting yet.
