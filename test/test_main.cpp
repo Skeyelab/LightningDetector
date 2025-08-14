@@ -11,6 +11,7 @@ void test_control_message_parse_failure();
 
 void test_radio_state_format();
 void test_radio_controller_header_compiles();
+void test_display_status_renders_lines_and_footer();
 
 int main(int argc, char **argv) {
 	(void)argc; (void)argv;
@@ -23,5 +24,6 @@ int main(int argc, char **argv) {
 	RUN_TEST(test_control_message_parse_failure);
 	RUN_TEST(test_radio_state_format);
 	RUN_TEST(test_radio_controller_header_compiles);
+	RUN_TEST(test_display_status_renders_lines_and_footer);
 	return UNITY_END();
 }

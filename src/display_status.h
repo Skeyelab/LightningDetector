@@ -1,6 +1,10 @@
 #pragma once
 
+#ifndef UNIT_TEST
 #include <U8g2lib.h>
+#else
+#include "u8g2_stub.h"
+#endif
 #include <string>
 #include "radio_state.h"
 
