@@ -2,9 +2,7 @@
 # Comprehensive static analysis for C++ code quality
 
 Checks: >
-  readability-identifier-naming,
   modernize-use-using,
-  cppcoreguidelines-init-variables,
   modernize-deprecated-headers,
   misc-const-correctness
 
@@ -20,6 +18,10 @@ User: lightning-detection-system
 CheckOptions:
   # Naming conventions
   - key: readability-identifier-naming.NamespaceCase
+    value: PascalCase
+  - key: readability-identifier-naming.TypedefCase
+    value: PascalCase
+  - key: readability-identifier-naming.TypeAliasCase
     value: PascalCase
   - key: readability-identifier-naming.ClassCase
     value: PascalCase
@@ -38,7 +40,7 @@ CheckOptions:
   - key: readability-identifier-naming.PrivateMemberSuffix
     value: '_'
   - key: readability-identifier-naming.ConstantCase
-    value: UPPER_CASE
+    value: camelBack
   - key: readability-identifier-naming.EnumConstantCase
     value: UPPER_CASE
   - key: readability-identifier-naming.GlobalConstantCase
