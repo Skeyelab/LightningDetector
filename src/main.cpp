@@ -94,6 +94,16 @@ static int currentSF = LORA_SF;
 static int currentCR = LORA_CR;
 static int currentTxPower = LORA_TX_DBM;
 
+// LoRa parameter arrays for cycling through values
+static const int sfValues[] = {7, 8, 9, 10, 11, 12};
+static const float bwValues[] = {62.5f, 125.0f, 250.0f, 500.0f};
+static const int txPowerValues[] = {2, 3, 5, 8, 10, 12, 15, 17, 20, 22};
+
+// Current indices for parameter cycling
+static size_t currentSfIndex = 2;  // Default to SF9
+static size_t currentBwIndex = 1;  // Default to 125kHz
+static size_t currentTxIndex = 7;  // Default to 17dBm
+
 // Signal quality tracking
 static float lastRSSI = -999.0;
 static float lastSNR = -999.0;
@@ -102,12 +112,7 @@ static uint32_t packetCount = 0;
 static uint32_t errorCount = 0;
 
 // Available values for cycling
-static const float BW_VALUES[] = {125.0, 250.0, 500.0};
-static const int SF_VALUES[] = {7, 8, 9, 10, 11, 12};
-static const int TX_POWER_VALUES[] = {10, 14, 17, 20, 22};
-static int currentBwIndex = 0;
-static int currentSfIndex = 2; // Start with SF9
-static int currentTxIndex = 2; // Start with 17 dBm
+// Old arrays removed - using new arrays defined above
 
 // Config broadcast state (sender)
 static bool pendingConfigBroadcast = false;
@@ -234,15 +239,15 @@ static void startConfigBroadcast(float newFreq, float newBW, int newSF, int newC
 }
 
 static void computeIndicesFromCurrent() {
-  for (size_t i = 0; i < (sizeof(SF_VALUES) / sizeof(SF_VALUES[0])); i++) {
-    if (SF_VALUES[i] == currentSF) { currentSfIndex = i; break; }
-  }
-  for (size_t i = 0; i < (sizeof(BW_VALUES) / sizeof(BW_VALUES[0])); i++) {
-    if (BW_VALUES[i] == currentBW) { currentBwIndex = i; break; }
-  }
-  for (size_t i = 0; i < (sizeof(TX_POWER_VALUES) / sizeof(TX_POWER_VALUES[0])); i++) {
-    if (TX_POWER_VALUES[i] == currentTxPower) { currentTxIndex = i; break; }
-  }
+      for (size_t i = 0; i < (sizeof(sfValues) / sizeof(sfValues[0])); i++) {
+      if (sfValues[i] == currentSF) { currentSfIndex = i; break; }
+    }
+    for (size_t i = 0; i < (sizeof(bwValues) / sizeof(bwValues[0])); i++) {
+      if (bwValues[i] == currentBW) { currentBwIndex = i; break; }
+    }
+    for (size_t i = 0; i < (sizeof(txPowerValues) / sizeof(txPowerValues[0])); i++) {
+      if (txPowerValues[i] == currentTxPower) { currentTxIndex = i; break; }
+    }
 }
 
 static void savePersistedSettings() {
@@ -456,8 +461,8 @@ static void updateButton() {
     } else if (pressDuration < 3000) {
       // Medium press - cycle SF (sender) or network mode (receiver)
       if (isSender) {
-        const int nextIndex = (currentSfIndex + 1) % (sizeof(SF_VALUES) / sizeof(SF_VALUES[0]));
-        const int nextSF = SF_VALUES[nextIndex];
+            const int nextIndex = (currentSfIndex + 1) % (sizeof(sfValues) / sizeof(sfValues[0]));
+    const int nextSF = sfValues[nextIndex];
         startConfigBroadcast(currentFreq, currentBW, nextSF, currentCR, currentTxPower);
         Serial.printf("SF change requested -> %d (broadcasting to receiver)\n", nextSF);
       } else {
@@ -525,13 +530,13 @@ static void updateButton() {
     } else {
       // Long press - cycle BW
       if (isSender) {
-        const int nextIndex = (currentBwIndex + 1) % (sizeof(BW_VALUES) / sizeof(BW_VALUES[0]));
-        const float nextBW = BW_VALUES[nextIndex];
+        const int nextIndex = (currentBwIndex + 1) % (sizeof(bwValues) / sizeof(bwValues[0]));
+        const float nextBW = bwValues[nextIndex];
         startConfigBroadcast(currentFreq, nextBW, currentSF, currentCR, currentTxPower);
         Serial.printf("BW change requested -> %.0f kHz (broadcasting to receiver)\n", nextBW);
       } else {
-        currentBwIndex = (currentBwIndex + 1) % (sizeof(BW_VALUES) / sizeof(BW_VALUES[0]));
-        currentBW = BW_VALUES[currentBwIndex];
+        currentBwIndex = (currentBwIndex + 1) % (sizeof(bwValues) / sizeof(bwValues[0]));
+        currentBW = bwValues[currentBwIndex];
         updateRadioSettings();
         savePersistedSettings();
         Serial.printf("BW changed to %.0f kHz\n", currentBW);
