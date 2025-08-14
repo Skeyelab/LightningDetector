@@ -1,5 +1,5 @@
 CXX ?= g++
-CXXFLAGS += -std=c++17 -I../src -I. -Wall -Wextra -O2
+CXXFLAGS += -std=c++17 -I../src -I. -I../lib/RadioLib/src -Wall -Wextra -O2
 LDFLAGS +=
 
 SRC := ../src/app_logic.cpp ../src/config.cpp ../src/radio_state.cpp
