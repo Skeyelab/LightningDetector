@@ -31,6 +31,4 @@ void DisplayStatus::render(const char *l1,
 
   const std::string mode = state.toModeLine(isSender);
   _u8g2.drawStr(2, 105, mode.c_str());
-
-  _u8g2.sendBuffer();
 }

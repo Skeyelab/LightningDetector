@@ -1,4 +1,4 @@
-# Talos LoRa + OLED Troubleshooting Guide - Heltec V3
+# LtngDet LoRa + OLED Troubleshooting Guide - Heltec V3
 
 ## Current Status: ✅ FULLY FUNCTIONAL
 
