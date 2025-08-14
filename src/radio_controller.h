@@ -1,6 +1,11 @@
 #pragma once
 
+#include <cstdint>
+#ifndef UNIT_TEST
 #include <RadioLib.h>
+#else
+#include "radiolib_stub.h"
+#endif
 #include "radio_state.h"
 
 class RadioController {
