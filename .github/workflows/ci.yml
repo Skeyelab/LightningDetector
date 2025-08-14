@@ -15,14 +15,25 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v5
 
-    - name: Cache PlatformIO
+    - name: Cache PlatformIO Core & Libraries
       uses: actions/cache@v4
       with:
         path: |
           ~/.platformio
-        key: ${{ runner.os }}-platformio-test-${{ hashFiles('**/platformio.ini') }}
+          .pio/libdeps
+        key: ${{ runner.os }}-pio-test-${{ hashFiles('**/platformio.ini', '**/lib_deps') }}
         restore-keys: |
-          ${{ runner.os }}-platformio-test-
+          ${{ runner.os }}-pio-test-
+          ${{ runner.os }}-pio-
+
+    - name: Cache Python packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}-platformio
+        restore-keys: |
+          ${{ runner.os }}-pip-platformio
+          ${{ runner.os }}-pip-
 
     - name: Setup Python
       uses: actions/setup-python@v4
@@ -61,14 +72,36 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v5
 
-    - name: Cache PlatformIO
+    - name: Cache PlatformIO Core & Libraries
       uses: actions/cache@v4
       with:
         path: |
           ~/.platformio
-        key: ${{ runner.os }}-platformio-build-${{ hashFiles('**/platformio.ini') }}
+          .pio/libdeps
+        key: ${{ runner.os }}-pio-build-${{ matrix.environment }}-${{ hashFiles('**/platformio.ini', '**/lib_deps') }}
         restore-keys: |
-          ${{ runner.os }}-platformio-build-
+          ${{ runner.os }}-pio-build-${{ matrix.environment }}-
+          ${{ runner.os }}-pio-build-
+          ${{ runner.os }}-pio-
+
+    - name: Cache Python packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}-platformio
+        restore-keys: |
+          ${{ runner.os }}-pip-platformio
+          ${{ runner.os }}-pip-
+
+    - name: Cache Build Artifacts
+      uses: actions/cache@v4
+      with:
+        path: |
+          .pio/build
+        key: ${{ runner.os }}-build-${{ matrix.environment }}-${{ hashFiles('src/**', 'include/**', '**/platformio.ini') }}
+        restore-keys: |
+          ${{ runner.os }}-build-${{ matrix.environment }}-
+          ${{ runner.os }}-build-
 
     - name: Setup Python
       uses: actions/setup-python@v4
@@ -82,8 +115,13 @@ jobs:
 
     - name: Install Dependencies
       run: |
-        pio lib install "jgromes/RadioLib@^6.5.0"
-        pio lib install "olikraus/U8g2@^2.36.0"
+        # Check if libraries already exist to avoid redundant installs
+        if [ ! -d ".pio/libdeps/${{ matrix.environment }}/RadioLib" ]; then
+          pio lib install "jgromes/RadioLib@^6.5.0"
+        fi
+        if [ ! -d ".pio/libdeps/${{ matrix.environment }}/U8g2" ]; then
+          pio lib install "olikraus/U8g2@^2.36.0"
+        fi
 
     - name: Build ${{ matrix.environment }}
       run: |
@@ -107,6 +145,26 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v5
+
+    - name: Cache PlatformIO Core & Libraries
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.platformio
+          .pio/libdeps
+        key: ${{ runner.os }}-pio-lint-${{ hashFiles('**/platformio.ini', '**/lib_deps') }}
+        restore-keys: |
+          ${{ runner.os }}-pio-lint-
+          ${{ runner.os }}-pio-
+
+    - name: Cache Python packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}-platformio
+        restore-keys: |
+          ${{ runner.os }}-pip-platformio
+          ${{ runner.os }}-pip-
 
     - name: Setup Python
       uses: actions/setup-python@v4
