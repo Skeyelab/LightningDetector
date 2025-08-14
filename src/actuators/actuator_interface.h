@@ -4,7 +4,7 @@
 #include <functional>
 
 // Extensible actuator framework for LEDs, buzzers, displays, etc.
-namespace Actuators {
+namespace ActuatorSystem {
 
     // Actuator states
     enum class State {

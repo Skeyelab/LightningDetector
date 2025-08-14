@@ -4,7 +4,7 @@
 #include <functional>
 
 // Extensible sensor framework for all sensor types
-namespace Sensors {
+namespace SensorSystem {
 
     // Sensor states
     enum class State {

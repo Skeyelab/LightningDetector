@@ -4,7 +4,7 @@
 #include <functional>
 
 // State machine framework for better control flow and mode management
-namespace StateMachine {
+namespace SystemStateMachine {
 
     // System states
     enum class SystemState {

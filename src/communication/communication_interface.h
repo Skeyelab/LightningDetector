@@ -4,7 +4,7 @@
 #include <functional>
 
 // Unified communication framework for LoRa, WiFi, Serial, etc.
-namespace Communication {
+namespace CommunicationSystem {
 
     // Communication channels
     enum class Channel {

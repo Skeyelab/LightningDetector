@@ -4,7 +4,7 @@
 
 // Hardware Abstraction Layer (HAL)
 // Provides a clean interface to hardware components for better testability
-namespace HAL {
+namespace HardwareAbstraction {
 
     // Initialize result codes
     enum class Result {

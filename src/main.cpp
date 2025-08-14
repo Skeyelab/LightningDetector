@@ -147,7 +147,7 @@ static void tryReceiveConfigOnControlChannel(uint32_t durationMs = 4000);
 static void drawStatusBar() {
   u8g2.setFont(u8g2_font_5x7_tr); // Smaller font for status bar
 
-  const int yPos = 120; // Bottom of screen
+  const int Y_POS = 120; // Bottom of screen
   int xPos = 2;
 
 #ifdef ENABLE_WIFI_OTA
@@ -155,22 +155,22 @@ static void drawStatusBar() {
     // WiFi status
     if (wifiConnected) {
       const char* location = getCurrentNetworkLocation();
-      u8g2.drawStr(xPos, yPos, location);
+      u8g2.drawStr(xPos, Y_POS, location);
       xPos += (strlen(location) * 6); // Approximate character width
     } else {
-      u8g2.drawStr(xPos, yPos, "NoWiFi");
+      u8g2.drawStr(xPos, Y_POS, "NoWiFi");
       xPos += 20;
     }
 
     // OTA status
     if (otaActive) {
-      u8g2.drawStr(xPos, yPos, "OTA");
+      u8g2.drawStr(xPos, Y_POS, "OTA");
       xPos += 20;
     }
 
     // LoRa OTA status
     if (loraOtaActive) {
-      u8g2.drawStr(xPos, yPos, "LoRaOTA");
+      u8g2.drawStr(xPos, Y_POS, "LoRaOTA");
     }
   }
 #endif
@@ -456,17 +456,17 @@ static void updateButton() {
     } else if (pressDuration < 3000) {
       // Medium press - cycle SF (sender) or network mode (receiver)
       if (isSender) {
-        const int nextIndex = (currentSfIndex + 1) % (sizeof(SF_VALUES) / sizeof(SF_VALUES[0]));
-        const int nextSF = SF_VALUES[nextIndex];
-        startConfigBroadcast(currentFreq, currentBW, nextSF, currentCR, currentTxPower);
-        Serial.printf("SF change requested -> %d (broadcasting to receiver)\n", nextSF);
+        const int NEXT_INDEX = (currentSfIndex + 1) % (sizeof(SF_VALUES) / sizeof(SF_VALUES[0]));
+        const int NEXT_SF = SF_VALUES[NEXT_INDEX];
+        startConfigBroadcast(currentFreq, currentBW, NEXT_SF, currentCR, currentTxPower);
+        Serial.printf("SF change requested -> %d (broadcasting to receiver)\n", NEXT_SF);
       } else {
 #ifdef ENABLE_WIFI_OTA
         // Cycle through network modes for receiver
-        NetworkSelectionMode currentMode = currentNetworkMode;
+        const NetworkSelectionMode CURRENT_MODE = currentNetworkMode;
         NetworkSelectionMode nextMode = NetworkSelectionMode::AUTO;
 
-        switch (currentMode) {
+        switch (CURRENT_MODE) {
           case NetworkSelectionMode::AUTO:
             nextMode = NetworkSelectionMode::MANUAL_HOME;
             break;
@@ -525,10 +525,10 @@ static void updateButton() {
     } else {
       // Long press - cycle BW
       if (isSender) {
-        const int nextIndex = (currentBwIndex + 1) % (sizeof(BW_VALUES) / sizeof(BW_VALUES[0]));
-        const float nextBW = BW_VALUES[nextIndex];
-        startConfigBroadcast(currentFreq, nextBW, currentSF, currentCR, currentTxPower);
-        Serial.printf("BW change requested -> %.0f kHz (broadcasting to receiver)\n", nextBW);
+        const int NEXT_INDEX = (currentBwIndex + 1) % (sizeof(BW_VALUES) / sizeof(BW_VALUES[0]));
+        const float NEXT_BW = BW_VALUES[NEXT_INDEX];
+        startConfigBroadcast(currentFreq, NEXT_BW, currentSF, currentCR, currentTxPower);
+        Serial.printf("BW change requested -> %.0f kHz (broadcasting to receiver)\n", NEXT_BW);
       } else {
         currentBwIndex = (currentBwIndex + 1) % (sizeof(BW_VALUES) / sizeof(BW_VALUES[0]));
         currentBW = BW_VALUES[currentBwIndex];
@@ -994,12 +994,12 @@ static void sendLoraOtaUpdate(const uint8_t* firmware, size_t firmwareSize) {
   delay(100);
 
   // Break firmware into chunks and send
-  const size_t chunkSize = 200; // Max LoRa packet size
+  const size_t CHUNK_SIZE = 200; // Max LoRa packet size
   size_t sentBytes = 0;
   int chunkNum = 0;
 
   while (sentBytes < firmwareSize) {
-    size_t currentChunkSize = min(chunkSize, firmwareSize - sentBytes);
+    size_t currentChunkSize = min(CHUNK_SIZE, firmwareSize - sentBytes);
 
     // Create chunk packet
     char chunkMsg[256];

@@ -14,7 +14,7 @@ struct WiFiNetwork {
 
 // Define your WiFi networks here
 // Add or modify networks as needed
-static const WiFiNetwork wifiNetworks[] = {
+static const WiFiNetwork WIFI_NETWORKS[] = {
   {"Skeyelab", "diamond2", "Home", 1},      // Primary network (home)
   {"ND-guest", "", "Work", 2},  // Secondary network (work)
   // Add more networks as needed:
@@ -22,7 +22,7 @@ static const WiFiNetwork wifiNetworks[] = {
 };
 
 // Number of configured networks
-#define NUM_WIFI_NETWORKS (sizeof(wifiNetworks) / sizeof(wifiNetworks[0]))
+#define NUM_WIFI_NETWORKS (sizeof(WIFI_NETWORKS) / sizeof(WIFI_NETWORKS[0]))
 
 // OTA Configuration
 #define OTA_HOSTNAME "LtngDet-Receiver"
