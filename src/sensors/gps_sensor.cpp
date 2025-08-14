@@ -74,7 +74,7 @@ namespace GPS {
         // Configure GPS enable pin
         if (m_config.enable_pin != 255) {
             auto result = HardwareAbstraction::GPIO::pinMode(m_config.enable_pin, 
-                                                           HardwareAbstraction::GPIO::Mode::OUTPUT);
+                                                           HardwareAbstraction::GPIO::Mode::MODE_OUTPUT);
             if (result != HardwareAbstraction::Result::SUCCESS) {
                 return result;
             }
@@ -89,7 +89,7 @@ namespace GPS {
         // Configure PPS pin if specified
         if (m_config.pps_pin != 255) {
             result = HardwareAbstraction::GPIO::pinMode(m_config.pps_pin, 
-                                                      HardwareAbstraction::GPIO::Mode::INPUT);
+                                                      HardwareAbstraction::GPIO::Mode::MODE_INPUT);
             if (result != HardwareAbstraction::Result::SUCCESS) {
                 return result;
             }
@@ -133,7 +133,7 @@ namespace GPS {
         if (m_config.enable_pin != 255) {
             // For Wireless Tracker V1.1: GPIO 3 HIGH = GPS ON
             auto result = HardwareAbstraction::GPIO::digitalWrite(m_config.enable_pin, 
-                                                                HardwareAbstraction::GPIO::Level::HIGH);
+                                                                HardwareAbstraction::GPIO::Level::LEVEL_HIGH);
             if (result != HardwareAbstraction::Result::SUCCESS) {
                 return result;
             }
@@ -155,7 +155,7 @@ namespace GPS {
         if (m_config.enable_pin != 255) {
             // For Wireless Tracker V1.1: GPIO 3 LOW = GPS OFF
             auto result = HardwareAbstraction::GPIO::digitalWrite(m_config.enable_pin, 
-                                                                HardwareAbstraction::GPIO::Level::LOW);
+                                                                HardwareAbstraction::GPIO::Level::LEVEL_LOW);
             if (result != HardwareAbstraction::Result::SUCCESS) {
                 return result;
             }

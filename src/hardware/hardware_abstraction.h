@@ -21,15 +21,15 @@ namespace HardwareAbstraction {
     // GPIO abstraction
     namespace GPIO {
         enum class Mode {
-            INPUT,
-            OUTPUT,
-            INPUT_PULLUP,
-            INPUT_PULLDOWN
+            MODE_INPUT,
+            MODE_OUTPUT,
+            MODE_INPUT_PULLUP,
+            MODE_INPUT_PULLDOWN
         };
 
         enum class Level {
-            LOW = 0,
-            HIGH = 1
+            LEVEL_LOW = 0,
+            LEVEL_HIGH = 1
         };
 
         Result pinMode(uint8_t pin, Mode mode);

@@ -114,16 +114,16 @@ namespace HardwareAbstraction {
 
             #ifdef ARDUINO
             switch (mode) {
-                case Mode::INPUT:
+                case Mode::MODE_INPUT:
                     ::pinMode(pin, INPUT);
                     break;
-                case Mode::OUTPUT:
+                case Mode::MODE_OUTPUT:
                     ::pinMode(pin, OUTPUT);
                     break;
-                case Mode::INPUT_PULLUP:
+                case Mode::MODE_INPUT_PULLUP:
                     ::pinMode(pin, INPUT_PULLUP);
                     break;
-                case Mode::INPUT_PULLDOWN:
+                case Mode::MODE_INPUT_PULLDOWN:
                     ::pinMode(pin, INPUT_PULLDOWN);
                     break;
                 default:
@@ -152,13 +152,13 @@ namespace HardwareAbstraction {
 
         Level digitalRead(uint8_t pin) {
             if (!g_initialized || pin > 48) {
-                return Level::LOW;
+                return Level::LEVEL_LOW;
             }
 
             #ifdef ARDUINO
             return static_cast<Level>(::digitalRead(pin));
             #else
-            return Level::LOW; // Mock
+            return Level::LEVEL_LOW; // Mock
             #endif
         }
 
@@ -497,7 +497,7 @@ namespace HardwareAbstraction {
     namespace ADC {
         #ifdef ARDUINO
         static esp_adc_cal_characteristics_t* s_adc_chars = nullptr;
-        static const adc_atten_t ADC_ATTEN = ADC_ATTEN_DB_11;
+        static const adc_atten_t ADC_ATTEN = ADC_ATTEN_DB_12; // Use non-deprecated constant
         static const adc_unit_t ADC_UNIT = ADC_UNIT_1;
         #else
         static void* s_adc_chars = nullptr; // Mock for testing
@@ -630,16 +630,12 @@ namespace HardwareAbstraction {
             }
 
             #ifdef ARDUINO
-            adc_bits_width_t width;
-            switch (bits) {
-                case 9: width = ADC_WIDTH_BIT_9; break;
-                case 10: width = ADC_WIDTH_BIT_10; break;
-                case 11: width = ADC_WIDTH_BIT_11; break;
-                case 12: width = ADC_WIDTH_BIT_12; break;
-                default: return Result::ERROR_INVALID_PARAMETER;
+            // For ESP32-S3, only 12-bit is supported
+            if (bits != 12) {
+                return Result::ERROR_INVALID_PARAMETER;
             }
 
-            esp_err_t ret = adc1_config_width(width);
+            esp_err_t ret = adc1_config_width(ADC_WIDTH_BIT_12);
             return (ret == ESP_OK) ? Result::SUCCESS : Result::ERROR_HARDWARE_FAULT;
             #else
             return Result::SUCCESS;
@@ -934,10 +930,10 @@ namespace HardwareAbstraction {
 
             #ifdef ARDUINO
             if (g_nvs_handle != 0) {
-                nvs_close(g_nvs_handle);
+                ::nvs_close(g_nvs_handle);
             }
 
-            esp_err_t ret = nvs_open(namespace_name, NVS_READWRITE, &g_nvs_handle);
+            esp_err_t ret = ::nvs_open(namespace_name, NVS_READWRITE, &g_nvs_handle);
             return (ret == ESP_OK) ? Result::SUCCESS : Result::ERROR_INIT_FAILED;
             #else
             g_nvs_handle = 1; // Mock handle
@@ -951,7 +947,7 @@ namespace HardwareAbstraction {
             }
 
             #ifdef ARDUINO
-            esp_err_t ret = nvs_get_blob(g_nvs_handle, key, value, &length);
+            esp_err_t ret = ::nvs_get_blob(g_nvs_handle, key, value, &length);
             switch (ret) {
                 case ESP_OK: return Result::SUCCESS;
                 case ESP_ERR_NVS_NOT_FOUND: return Result::ERROR_COMMUNICATION_FAILED;
@@ -969,7 +965,7 @@ namespace HardwareAbstraction {
             }
 
             #ifdef ARDUINO
-            esp_err_t ret = nvs_set_blob(g_nvs_handle, key, value, length);
+            esp_err_t ret = ::nvs_set_blob(g_nvs_handle, key, value, length);
             return (ret == ESP_OK) ? Result::SUCCESS : Result::ERROR_HARDWARE_FAULT;
             #else
             return Result::SUCCESS;
@@ -982,7 +978,7 @@ namespace HardwareAbstraction {
             }
 
             #ifdef ARDUINO
-            esp_err_t ret = nvs_commit(g_nvs_handle);
+            esp_err_t ret = ::nvs_commit(g_nvs_handle);
             return (ret == ESP_OK) ? Result::SUCCESS : Result::ERROR_HARDWARE_FAULT;
             #else
             return Result::SUCCESS;
@@ -995,7 +991,7 @@ namespace HardwareAbstraction {
             }
 
             #ifdef ARDUINO
-            nvs_close(g_nvs_handle);
+            ::nvs_close(g_nvs_handle);
             #endif
             g_nvs_handle = 0;
             return Result::SUCCESS;

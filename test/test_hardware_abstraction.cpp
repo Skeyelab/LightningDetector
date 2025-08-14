@@ -38,49 +38,49 @@ void test_result_to_string() {
 
 // GPIO Tests
 void test_gpio_pin_mode() {
-    TEST_ASSERT_EQUAL(Result::SUCCESS, GPIO::pinMode(2, GPIO::Mode::OUTPUT));
-    TEST_ASSERT_EQUAL(Result::SUCCESS, GPIO::pinMode(4, GPIO::Mode::INPUT));
-    TEST_ASSERT_EQUAL(Result::SUCCESS, GPIO::pinMode(5, GPIO::Mode::INPUT_PULLUP));
-    TEST_ASSERT_EQUAL(Result::SUCCESS, GPIO::pinMode(6, GPIO::Mode::INPUT_PULLDOWN));
+    TEST_ASSERT_EQUAL(Result::SUCCESS, GPIO::pinMode(2, GPIO::Mode::MODE_OUTPUT));
+    TEST_ASSERT_EQUAL(Result::SUCCESS, GPIO::pinMode(4, GPIO::Mode::MODE_INPUT));
+    TEST_ASSERT_EQUAL(Result::SUCCESS, GPIO::pinMode(5, GPIO::Mode::MODE_INPUT_PULLUP));
+    TEST_ASSERT_EQUAL(Result::SUCCESS, GPIO::pinMode(6, GPIO::Mode::MODE_INPUT_PULLDOWN));
     
     // Test invalid pin
-    TEST_ASSERT_EQUAL(Result::ERROR_INVALID_PARAMETER, GPIO::pinMode(99, GPIO::Mode::OUTPUT));
+    TEST_ASSERT_EQUAL(Result::ERROR_INVALID_PARAMETER, GPIO::pinMode(99, GPIO::Mode::MODE_OUTPUT));
 }
 
 void test_gpio_pin_mode_not_initialized() {
     deinitialize();
-    TEST_ASSERT_EQUAL(Result::ERROR_NOT_INITIALIZED, GPIO::pinMode(2, GPIO::Mode::OUTPUT));
+    TEST_ASSERT_EQUAL(Result::ERROR_NOT_INITIALIZED, GPIO::pinMode(2, GPIO::Mode::MODE_OUTPUT));
 }
 
 void test_gpio_digital_write() {
-    GPIO::pinMode(2, GPIO::Mode::OUTPUT);
+    GPIO::pinMode(2, GPIO::Mode::MODE_OUTPUT);
     
-    TEST_ASSERT_EQUAL(Result::SUCCESS, GPIO::digitalWrite(2, GPIO::Level::HIGH));
-    TEST_ASSERT_EQUAL(Result::SUCCESS, GPIO::digitalWrite(2, GPIO::Level::LOW));
+    TEST_ASSERT_EQUAL(Result::SUCCESS, GPIO::digitalWrite(2, GPIO::Level::LEVEL_HIGH));
+    TEST_ASSERT_EQUAL(Result::SUCCESS, GPIO::digitalWrite(2, GPIO::Level::LEVEL_LOW));
     
     // Test invalid pin
-    TEST_ASSERT_EQUAL(Result::ERROR_INVALID_PARAMETER, GPIO::digitalWrite(99, GPIO::Level::HIGH));
+    TEST_ASSERT_EQUAL(Result::ERROR_INVALID_PARAMETER, GPIO::digitalWrite(99, GPIO::Level::LEVEL_HIGH));
 }
 
 void test_gpio_digital_write_not_initialized() {
     deinitialize();
-    TEST_ASSERT_EQUAL(Result::ERROR_NOT_INITIALIZED, GPIO::digitalWrite(2, GPIO::Level::HIGH));
+    TEST_ASSERT_EQUAL(Result::ERROR_NOT_INITIALIZED, GPIO::digitalWrite(2, GPIO::Level::LEVEL_HIGH));
 }
 
 void test_gpio_digital_read() {
-    GPIO::pinMode(4, GPIO::Mode::INPUT);
+    GPIO::pinMode(4, GPIO::Mode::MODE_INPUT);
     
     // Digital read should work (returns mock value in test environment)
     GPIO::Level level = GPIO::digitalRead(4);
-    TEST_ASSERT_TRUE(level == GPIO::Level::LOW || level == GPIO::Level::HIGH);
+    TEST_ASSERT_TRUE(level == GPIO::Level::LEVEL_LOW || level == GPIO::Level::LEVEL_HIGH);
     
-    // Test invalid pin (should return LOW)
-    TEST_ASSERT_EQUAL(GPIO::Level::LOW, GPIO::digitalRead(99));
+    // Test invalid pin (should return LEVEL_LOW)
+    TEST_ASSERT_EQUAL(GPIO::Level::LEVEL_LOW, GPIO::digitalRead(99));
 }
 
 void test_gpio_digital_read_not_initialized() {
     deinitialize();
-    TEST_ASSERT_EQUAL(GPIO::Level::LOW, GPIO::digitalRead(4));
+    TEST_ASSERT_EQUAL(GPIO::Level::LEVEL_LOW, GPIO::digitalRead(4));
 }
 
 void test_gpio_interrupt() {
@@ -469,10 +469,8 @@ void test_system_restart() {
     // System::restart(); // Commented out to avoid actual restart
 }
 
-// Main test runner
-int main() {
-    UNITY_BEGIN();
-
+// PlatformIO Unity integration
+void process() {
     // Hardware initialization tests
     RUN_TEST(test_hardware_initialization);
     RUN_TEST(test_result_to_string);
@@ -543,6 +541,12 @@ int main() {
     RUN_TEST(test_system_info);
     RUN_TEST(test_system_watchdog);
     RUN_TEST(test_system_restart);
+}
 
+#ifdef UNIT_TEST
+int main(int argc, char **argv) {
+    UNITY_BEGIN();
+    process();
     return UNITY_END();
 }
+#endif
