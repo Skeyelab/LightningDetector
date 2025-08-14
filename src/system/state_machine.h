@@ -73,11 +73,11 @@ namespace StateMachine {
         SystemState toState;
         GuardCondition guard;       // Optional guard condition
         StateEntryAction action;    // Optional transition action
-        
-        Transition() : fromState(SystemState::BOOT), triggerEvent(Event::POWER_ON), 
+
+        Transition() : fromState(SystemState::BOOT), triggerEvent(Event::POWER_ON),
                       toState(SystemState::INIT) {}
-        
-        Transition(SystemState from, Event event, SystemState to, 
+
+        Transition(SystemState from, Event event, SystemState to,
                   GuardCondition guardFn = nullptr, StateEntryAction actionFn = nullptr)
             : fromState(from), triggerEvent(event), toState(to), guard(guardFn), action(actionFn) {}
     };

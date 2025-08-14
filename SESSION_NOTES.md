@@ -45,7 +45,7 @@
   - [#14 Milestone Tracker](https://github.com/Skeyelab/talos-pio-heltec-v3-oled/issues/14) (Tracking)
 - Pull Request: [#15 Modular Architecture Framework](https://github.com/Skeyelab/talos-pio-heltec-v3-oled/pull/15) (1,891 additions, 11 files changed)
 - Next steps:
-  - Review and merge [PR #15](https://github.com/Skeyelab/talos-pio-heltec-v3-oled/pull/15) 
+  - Review and merge [PR #15](https://github.com/Skeyelab/talos-pio-heltec-v3-oled/pull/15)
   - Begin implementation with [Issue #7 (HAL)](https://github.com/Skeyelab/talos-pio-heltec-v3-oled/issues/7) as foundation
   - Follow recommended order: HAL → Error/Logging → Lightning Sensor → State Machine → LED Strip → OTA → Audio
   - Track progress in [Issue #14 (Milestone)](https://github.com/Skeyelab/talos-pio-heltec-v3-oled/issues/14)

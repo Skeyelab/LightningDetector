@@ -33,15 +33,15 @@ namespace Actuators {
         uint8_t green;
         uint8_t blue;
         uint8_t white;      // For RGBW LEDs
-        
-        constexpr Color(uint8_t r = 0, uint8_t g = 0, uint8_t b = 0, uint8_t w = 0) 
+
+        constexpr Color(uint8_t r = 0, uint8_t g = 0, uint8_t b = 0, uint8_t w = 0)
             : red(r), green(g), blue(b), white(w) {}
-        
+
         static Color fromHSV(uint16_t hue, uint8_t saturation, uint8_t value);
         static Color fromHex(uint32_t hex);
         uint32_t toHex() const;
     };
-    
+
     // Predefined colors
     namespace Colors {
         constexpr Color BLACK(0, 0, 0);

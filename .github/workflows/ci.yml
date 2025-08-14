@@ -176,7 +176,17 @@ jobs:
         python -m pip install --upgrade pip
         pip install platformio
 
-    - name: Run PlatformIO Check
+    - name: Install clang-tidy
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y clang-tidy
+
+    - name: Run PlatformIO Check (cppcheck)
       run: |
         pio check -e sender-check
         pio check -e receiver-check
+
+    - name: Run PlatformIO Check (clang-tidy)
+      run: |
+        pio check -e sender-tidy
+        pio check -e receiver-tidy
