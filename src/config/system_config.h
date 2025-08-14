@@ -5,7 +5,7 @@
 // System-wide configuration management
 // Centralized configuration for all modules
 
-namespace Config {
+namespace SystemConfig {
     // Hardware pin definitions
     namespace Pins {
         constexpr uint8_t VEXT = 36;        // Vext control: LOW = ON

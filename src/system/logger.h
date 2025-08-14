@@ -6,7 +6,7 @@
 #endif
 
 // Structured logging system for debugging and monitoring
-namespace Logger {
+namespace Logging {
 
     // Log levels
     enum class Level {

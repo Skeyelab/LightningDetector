@@ -3,7 +3,7 @@
 #include <stdint.h>
 
 // Comprehensive error handling and recovery system
-namespace ErrorHandler {
+namespace ErrorHandling {
 
     // Error severity levels
     enum class Severity {

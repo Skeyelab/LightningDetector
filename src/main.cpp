@@ -102,9 +102,9 @@ static uint32_t packetCount = 0;
 static uint32_t errorCount = 0;
 
 // Available values for cycling
-static const float bwValues[] = {125.0, 250.0, 500.0};
-static const int sfValues[] = {7, 8, 9, 10, 11, 12};
-static const int txPowerValues[] = {10, 14, 17, 20, 22};
+static const float BW_VALUES[] = {125.0, 250.0, 500.0};
+static const int SF_VALUES[] = {7, 8, 9, 10, 11, 12};
+static const int TX_POWER_VALUES[] = {10, 14, 17, 20, 22};
 static int currentBwIndex = 0;
 static int currentSfIndex = 2; // Start with SF9
 static int currentTxIndex = 2; // Start with 17 dBm
@@ -147,7 +147,7 @@ static void tryReceiveConfigOnControlChannel(uint32_t durationMs = 4000);
 static void drawStatusBar() {
   u8g2.setFont(u8g2_font_5x7_tr); // Smaller font for status bar
 
-  int yPos = 120; // Bottom of screen
+  const int yPos = 120; // Bottom of screen
   int xPos = 2;
 
 #ifdef ENABLE_WIFI_OTA
@@ -234,14 +234,14 @@ static void startConfigBroadcast(float newFreq, float newBW, int newSF, int newC
 }
 
 static void computeIndicesFromCurrent() {
-  for (size_t i = 0; i < (sizeof(sfValues) / sizeof(sfValues[0])); i++) {
-    if (sfValues[i] == currentSF) { currentSfIndex = i; break; }
+  for (size_t i = 0; i < (sizeof(SF_VALUES) / sizeof(SF_VALUES[0])); i++) {
+    if (SF_VALUES[i] == currentSF) { currentSfIndex = i; break; }
   }
-  for (size_t i = 0; i < (sizeof(bwValues) / sizeof(bwValues[0])); i++) {
-    if (bwValues[i] == currentBW) { currentBwIndex = i; break; }
+  for (size_t i = 0; i < (sizeof(BW_VALUES) / sizeof(BW_VALUES[0])); i++) {
+    if (BW_VALUES[i] == currentBW) { currentBwIndex = i; break; }
   }
-  for (size_t i = 0; i < (sizeof(txPowerValues) / sizeof(txPowerValues[0])); i++) {
-    if (txPowerValues[i] == currentTxPower) { currentTxIndex = i; break; }
+  for (size_t i = 0; i < (sizeof(TX_POWER_VALUES) / sizeof(TX_POWER_VALUES[0])); i++) {
+    if (TX_POWER_VALUES[i] == currentTxPower) { currentTxIndex = i; break; }
   }
 }
 
@@ -456,15 +456,15 @@ static void updateButton() {
     } else if (pressDuration < 3000) {
       // Medium press - cycle SF (sender) or network mode (receiver)
       if (isSender) {
-        int nextIndex = (currentSfIndex + 1) % (sizeof(sfValues) / sizeof(sfValues[0]));
-        int nextSF = sfValues[nextIndex];
+        const int nextIndex = (currentSfIndex + 1) % (sizeof(SF_VALUES) / sizeof(SF_VALUES[0]));
+        const int nextSF = SF_VALUES[nextIndex];
         startConfigBroadcast(currentFreq, currentBW, nextSF, currentCR, currentTxPower);
         Serial.printf("SF change requested -> %d (broadcasting to receiver)\n", nextSF);
       } else {
 #ifdef ENABLE_WIFI_OTA
         // Cycle through network modes for receiver
         NetworkSelectionMode currentMode = currentNetworkMode;
-        NetworkSelectionMode nextMode;
+        NetworkSelectionMode nextMode = NetworkSelectionMode::AUTO;
 
         switch (currentMode) {
           case NetworkSelectionMode::AUTO:
@@ -483,7 +483,7 @@ static void updateButton() {
         setNetworkMode(nextMode);
 
         // Show network mode change on display
-        const char* modeStr;
+        const char* modeStr = "Unknown";
         switch (nextMode) {
           case NetworkSelectionMode::AUTO:
             modeStr = "Auto";
@@ -525,13 +525,13 @@ static void updateButton() {
     } else {
       // Long press - cycle BW
       if (isSender) {
-        int nextIndex = (currentBwIndex + 1) % (sizeof(bwValues) / sizeof(bwValues[0]));
-        float nextBW = bwValues[nextIndex];
+        const int nextIndex = (currentBwIndex + 1) % (sizeof(BW_VALUES) / sizeof(BW_VALUES[0]));
+        const float nextBW = BW_VALUES[nextIndex];
         startConfigBroadcast(currentFreq, nextBW, currentSF, currentCR, currentTxPower);
         Serial.printf("BW change requested -> %.0f kHz (broadcasting to receiver)\n", nextBW);
       } else {
-        currentBwIndex = (currentBwIndex + 1) % (sizeof(bwValues) / sizeof(bwValues[0]));
-        currentBW = bwValues[currentBwIndex];
+        currentBwIndex = (currentBwIndex + 1) % (sizeof(BW_VALUES) / sizeof(BW_VALUES[0]));
+        currentBW = BW_VALUES[currentBwIndex];
         updateRadioSettings();
         savePersistedSettings();
         Serial.printf("BW changed to %.0f kHz\n", currentBW);
