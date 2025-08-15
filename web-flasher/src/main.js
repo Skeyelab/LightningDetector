@@ -266,7 +266,19 @@ function startFlashing() {
       console.log('connect function type:', typeof connect);
       console.log('connect function:', connect);
 
-      const connectPromise = connect(port);
+      // Create a logger object for the connect function
+      const logger = {
+        log: (message) => {
+          console.log(`[ESP32] ${message}`);
+          updateStatus(message, 'info');
+        },
+        error: (message) => {
+          console.error(`[ESP32] ${message}`);
+          updateStatus(message, 'error');
+        }
+      };
+
+      const connectPromise = connect(logger, port);
       console.log('connectPromise created:', connectPromise);
       console.log('connectPromise type:', typeof connectPromise);
       console.log('connectPromise constructor:', connectPromise?.constructor?.name);

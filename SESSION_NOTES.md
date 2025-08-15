@@ -22,6 +22,22 @@
 
 ### Session log
 
+#### 2025-01-14 16:30 UTC
+- Context: Fixed web flasher deployment issue with esp-web-flasher v5.1.5 API change
+- Changes:
+  - Fixed `connect()` function call to match new esp-web-flasher v5.1.5 API
+  - Added proper logger object as first parameter to `connect(logger, port)` call
+  - Created custom logger with log() and error() methods for status updates
+  - Verified successful build and deployment
+- Commands run:
+  - `cd web-flasher && npm run build` (verified fix works)
+- Files touched:
+  - `web-flasher/src/main.js` (fixed connect function call)
+- Next steps:
+  - Deploy to GitHub Pages to test the fix
+  - Verify serial port connection works properly
+  - Test ESP32 flashing functionality
+
 #### 2024-08-15 01:05 UTC
 - Context: Successfully migrated from dual-branch (main + gh-pages) to single-branch approach
 - Changes:
