@@ -99,7 +99,7 @@ function handleDeviceSelection() {
 
   if (elements.transmitterRadio && elements.receiverRadio) {
     console.log('Initializing device selection event listeners...');
-    
+
     elements.transmitterRadio.addEventListener('change', () => {
       console.log('Transmitter selected');
       selectedDeviceType = 'transmitter';
@@ -372,71 +372,47 @@ function startFlashing() {
   updateProgress(10, 'Requesting serial port access...');
   updateStatus(`Requesting serial port access for ${deviceName} firmware...`, 'info');
 
-  // Request port access immediately while we still have user gesture context
-  navigator.serial.requestPort()
-    .then(port => {
-      updateProgress(20, 'Opening serial port...');
-      updateStatus(`Serial port selected for ${deviceName} firmware...`, 'info');
+  // Let the connect() function handle port selection and opening
+  // This avoids double port selection prompts
+  updateProgress(20, 'Connecting to ESP32...');
+  updateStatus(`Connecting to ESP32. Starting ${deviceName} flash process...`, 'info');
 
-      console.log('Port selected:', port);
-      console.log('Port type:', typeof port);
-      console.log('Port constructor:', port?.constructor?.name);
+  // Create a logger object for the connect function
+  const logger = {
+    log: (message) => {
+      console.log(`[ESP32] ${message}`);
+      updateStatus(message, 'info');
+    },
+    error: (message) => {
+      console.error(`[ESP32] ${message}`);
+      updateStatus(message, 'error');
+    }
+  };
 
-      // Don't open the port here - let the connect() function handle it
-      // The connect() function will open the port with the correct settings
-      return port;
-    })
-    .then(port => {
-      console.log('Port after opening:', port);
-      console.log('Port type after opening:', typeof port);
+  console.log('Calling connect() function without pre-selecting port...');
+  console.log('connect function type:', typeof connect);
 
-      updateProgress(30, 'Connecting to ESP32...');
-      updateStatus(`Connecting to ESP32. Starting ${deviceName} flash process...`, 'info');
+  // Call connect() without a port - it will handle port selection internally
+  const connectPromise = connect(logger);
+  console.log('connectPromise created:', connectPromise);
+  console.log('connectPromise type:', typeof connectPromise);
+  console.log('connectPromise constructor:', connectPromise?.constructor?.name);
 
-      // Use the connect function from esp-web-flasher
-      console.log('About to call connect() with port:', port);
-      if (!port) {
-        throw new Error('Port object is undefined - cannot proceed with connection');
-      }
+  connectPromise.then(connection => {
+    console.log('connect() Promise resolved with:', connection);
+    console.log('Connection type:', typeof connection);
+    console.log('Connection constructor:', connection?.constructor?.name);
 
-      console.log('Calling connect() function...');
-      // connect() returns a Promise, so we need to await it
-      console.log('connect function type:', typeof connect);
-      console.log('connect function:', connect);
+    if (connection && typeof connection === 'object') {
+      console.log('Connection keys:', Object.keys(connection));
+      console.log('Connection methods:', Object.getOwnPropertyNames(connection));
+    }
 
-      // Create a logger object for the connect function
-      const logger = {
-        log: (message) => {
-          console.log(`[ESP32] ${message}`);
-          updateStatus(message, 'info');
-        },
-        error: (message) => {
-          console.error(`[ESP32] ${message}`);
-          updateStatus(message, 'error');
-        }
-      };
-
-      const connectPromise = connect(logger, port);
-      console.log('connectPromise created:', connectPromise);
-      console.log('connectPromise type:', typeof connectPromise);
-      console.log('connectPromise constructor:', connectPromise?.constructor?.name);
-
-      return connectPromise.then(connection => {
-        console.log('connect() Promise resolved with:', connection);
-        console.log('Connection type:', typeof connection);
-        console.log('Connection constructor:', connection?.constructor?.name);
-
-        if (connection && typeof connection === 'object') {
-          console.log('Connection keys:', Object.keys(connection));
-          console.log('Connection methods:', Object.getOwnPropertyNames(connection));
-        }
-
-        return connection;
-      }).catch(connectError => {
-        console.error('connect() Promise failed:', connectError);
-        throw new Error(`ESP32 connection failed: ${connectError.message}`);
-      });
-    })
+    return connection;
+  }).catch(connectError => {
+    console.error('connect() Promise failed:', connectError);
+    throw new Error(`ESP32 connection failed: ${connectError.message}`);
+  })
     .then(async connection => {
       console.log('ESP32 connection established:', connection);
       console.log('Connection type:', typeof connection);
@@ -563,13 +539,13 @@ window.addEventListener('load', async () => {
   initializeElements();
   await initializeFlasher();
   await fetchLatestRelease();
-  
+
   console.log('Initializing device selection...');
   handleDeviceSelection(); // Initialize device selection listeners
-  
+
   console.log('Initializing firmware uploads...');
   handleFirmwareUploads(); // Initialize firmware upload listeners
-  
+
   console.log('Updating firmware details...');
   updateFirmwareDetails(); // Display initial firmware details
 
@@ -582,6 +558,6 @@ window.addEventListener('load', async () => {
   } else if (elements.flashButton && flashButtonInitialized) {
     console.log('Flash button already initialized, skipping...');
   }
-  
+
   console.log('Page initialization complete');
 });
