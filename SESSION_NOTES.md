@@ -6,9 +6,47 @@
 - **Hardware**: Heltec WiFi Kit 32 V3 with OLED display
 - **Architecture**: Modular framework with hardware abstraction layers
 - **Testing**: Google Test framework with 38 test cases
-- **CI/CD**: GitHub Actions with comprehensive caching
+- **CI/CD**: GitHub Actions with comprehensive caching and release workflow
 
 ### Session log
+
+#### 2025-01-27 21:15 UTC
+- Context: Added comprehensive release workflow and script system for automated firmware releases with ESP32 web flasher compatibility
+- Changes:
+  - Created `.github/workflows/release.yml`: Automated release workflow triggered by version tags
+  - Created `scripts/create_release.sh`: Interactive script for creating release tags and triggering workflows
+  - Created `scripts/web_flasher_template.html`: Professional ESP32 web flasher template with modern UI
+  - Created `RELEASE_README.md`: Comprehensive documentation for the release process
+  - Created `scripts/test_release_script.sh`: Test script to verify release functionality
+  - Updated release workflow to generate ESP32 web flasher compatible artifacts
+- Commands run:
+  - `chmod +x scripts/create_release.sh`
+  - `chmod +x scripts/test_release_script.sh`
+  - `./scripts/create_release.sh --help` (verified script functionality)
+- Files touched:
+  - `.github/workflows/release.yml` (new release workflow)
+  - `scripts/create_release.sh` (release tag creation script)
+  - `scripts/web_flasher_template.html` (web flasher template)
+  - `RELEASE_README.md` (release documentation)
+  - `scripts/test_release_script.sh` (test script)
+- Release Workflow Features:
+  - Triggers on version tags (v* format)
+  - Builds both sender and receiver firmware
+  - Generates ESP32 web flasher compatible HTML files
+  - Creates manifest files for web flasher tools
+  - Automatically creates GitHub releases with all artifacts
+  - Supports semantic versioning (1.0.0, 2.1.3-beta.1, etc.)
+- Web Flasher Features:
+  - Modern, responsive UI design
+  - Progress tracking during flashing
+  - Error handling and user feedback
+  - ESP32 Web Flasher library integration
+  - Mobile and desktop compatible
+- Next steps:
+  - Test release workflow by creating a test tag
+  - Set up GitHub Pages for hosting web flasher files
+  - Document web flasher integration for users
+  - Consider adding firmware signature verification
 
 #### 2025-08-15 02:53 UTC
 - Context: Created GitHub issue for removing RX/TX switching from button and reworking button functionality
