@@ -2,8 +2,8 @@ name: Build and Deploy Web Flasher
 
 on:
   push:
-    branches: [gh-pages]
-    paths: ['index.html', 'src/**', 'package.json', 'vite.config.js', '.eslintrc.js']
+    branches: [main]
+    paths: ['web-flasher/**']
   workflow_dispatch:
 
 jobs:
@@ -23,14 +23,18 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: |
+          cd web-flasher
+          npm ci
 
       - name: Build web flasher
-        run: npm run build
+        run: |
+          cd web-flasher
+          npm run build
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist
+          publish_dir: ./web-flasher/dist
           force_orphan: true
