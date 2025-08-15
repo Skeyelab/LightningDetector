@@ -179,78 +179,81 @@ async function fetchLatestRelease() {
 }
 
 // Start flashing process
-async function startFlashing() {
+function startFlashing() {
   if (isFlashing) {
     updateStatus('Flashing already in progress', 'warning');
     return;
   }
 
-  try {
-    isFlashing = true;
-    elements.flashButton.disabled = true;
+  const deviceType = selectedDeviceType;
+  const deviceName = deviceType === 'transmitter' ? 'Transmitter' : 'Receiver';
 
-    const deviceType = selectedDeviceType;
-    const deviceName = deviceType === 'transmitter' ? 'Transmitter' : 'Receiver';
+  // Start the process immediately while we have user gesture context
+  updateStatus(`Preparing to flash ${deviceName} firmware...`, 'info');
+  showProgress();
+  updateProgress(0, `Preparing ${deviceName} firmware...`);
 
-    updateStatus(`Preparing to flash ${deviceName} firmware...`, 'info');
-    showProgress();
-    updateProgress(0, `Preparing ${deviceName} firmware...`);
+  updateProgress(10, 'Requesting serial port access...');
+  updateStatus(`Requesting serial port access for ${deviceName} firmware...`, 'info');
 
-    updateProgress(10, 'Requesting serial port access...');
-    updateStatus(`Requesting serial port access for ${deviceName} firmware...`, 'info');
+  // Request port access immediately while we still have user gesture context
+  navigator.serial.requestPort()
+    .then(port => {
+      updateProgress(20, 'Opening serial port...');
+      updateStatus(`Opening serial port for ${deviceName} firmware...`, 'info');
+      
+      return port.open({ baudRate: 115200 });
+    })
+    .then(port => {
+      updateProgress(30, 'Connected to ESP32');
+      updateStatus(`Connected to ESP32. Starting ${deviceName} flash process...`, 'info');
+      
+      // Use the connect function from esp-web-flasher
+      return connect(port);
+    })
+    .then(connection => {
+      console.log('ESP32 connection established:', connection);
+      
+      updateProgress(40, 'ESP32 identified');
+      updateStatus(`ESP32 identified. Flashing ${deviceName} firmware...`, 'info');
 
-    // Request port access immediately while we still have user gesture context
-    let port;
-    try {
-      port = await navigator.serial.requestPort();
-    } catch (portError) {
-      if (portError.name === 'NotFoundError') {
-        throw new Error('No serial port selected. Please select a port and try again.');
-      } else if (portError.name === 'SecurityError') {
-        throw new Error('Serial port access denied. Please allow access and try again.');
-      } else {
-        throw new Error(`Serial port error: ${portError.message}`);
+      // Flash firmware (this would need to be implemented based on your needs)
+      // For now, we'll simulate the process
+      updateProgress(60, 'Flashing firmware...');
+      
+      return new Promise(resolve => setTimeout(resolve, 2000));
+    })
+    .then(() => {
+      updateProgress(80, 'Verifying flash...');
+      return new Promise(resolve => setTimeout(resolve, 1000));
+    })
+    .then(() => {
+      updateProgress(100, 'Flash complete!');
+      updateStatus(`${deviceName} firmware flashed successfully!`, 'success');
+    })
+    .catch(error => {
+      console.error('Flashing failed:', error);
+      
+      let errorMessage = 'Unknown error occurred';
+      if (error.name === 'NotFoundError') {
+        errorMessage = 'No serial port selected. Please select a port and try again.';
+      } else if (error.name === 'SecurityError') {
+        errorMessage = 'Serial port access denied. Please allow access and try again.';
+      } else if (error.message) {
+        errorMessage = error.message;
       }
-    }
+      
+      updateStatus(`Flashing failed: ${errorMessage}`, 'error');
+    })
+    .finally(() => {
+      isFlashing = false;
+      elements.flashButton.disabled = false;
+      hideProgress();
+    });
 
-    updateProgress(20, 'Opening serial port...');
-    updateStatus(`Opening serial port for ${deviceName} firmware...`, 'info');
-
-    // Open the port
-    await port.open({ baudRate: 115200 });
-
-    updateProgress(30, 'Connected to ESP32');
-    updateStatus(`Connected to ESP32. Starting ${deviceName} flash process...`, 'info');
-
-    // Use the connect function from esp-web-flasher
-    const connection = await connect(port);
-    console.log('ESP32 connection established:', connection);
-
-    updateProgress(40, 'ESP32 identified');
-    updateStatus(`ESP32 identified. Flashing ${deviceName} firmware...`, 'info');
-
-    // Flash firmware (this would need to be implemented based on your needs)
-    // For now, we'll simulate the process
-    updateProgress(60, 'Flashing firmware...');
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
-    updateProgress(80, 'Verifying flash...');
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    updateProgress(100, 'Flash complete!');
-    updateStatus(`${deviceName} firmware flashed successfully!`, 'success');
-
-    // Close the port
-    await port.close();
-
-  } catch (error) {
-    console.error('Flashing failed:', error);
-    updateStatus(`Flashing failed: ${error.message}`, 'error');
-  } finally {
-    isFlashing = false;
-    elements.flashButton.disabled = false;
-    hideProgress();
-  }
+  // Set isFlashing immediately to prevent multiple clicks
+  isFlashing = true;
+  elements.flashButton.disabled = true;
 }
 
 // Initialize when page loads
