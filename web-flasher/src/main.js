@@ -6,6 +6,8 @@ let isFlashing = false;
 let selectedFirmware = null;
 let latestRelease = null;
 let selectedDeviceType = 'transmitter'; // Default to transmitter
+let deviceSelectionInitialized = false; // Prevent duplicate event listeners
+let flashButtonInitialized = false; // Prevent duplicate flash button listeners
 
 // DOM elements
 const elements = {
@@ -89,16 +91,32 @@ function updateFirmwareDetails() {
 
 // Handle device type selection
 function handleDeviceSelection() {
+  // Prevent duplicate event listener initialization
+  if (deviceSelectionInitialized) {
+    console.log('Device selection already initialized, skipping...');
+    return;
+  }
+
   if (elements.transmitterRadio && elements.receiverRadio) {
+    console.log('Initializing device selection event listeners...');
+    
     elements.transmitterRadio.addEventListener('change', () => {
+      console.log('Transmitter selected');
       selectedDeviceType = 'transmitter';
       updateFirmwareDetails();
     });
 
     elements.receiverRadio.addEventListener('change', () => {
+      console.log('Receiver selected');
       selectedDeviceType = 'receiver';
       updateFirmwareDetails();
     });
+
+    // Mark as initialized
+    deviceSelectionInitialized = true;
+    console.log('Device selection event listeners initialized');
+  } else {
+    console.warn('Device selection radio buttons not found');
   }
 }
 
@@ -167,9 +185,9 @@ async function validateDeviceCompatibility(connection, deviceType) {
     // Get device information from the connection
     const chipName = connection.chipName || 'Unknown';
     const flashSize = connection.flashSize || 'Unknown';
-    
+
     console.log('Device info:', { chipName, flashSize, deviceType });
-    
+
     // Check if we have a valid chip name
     if (!chipName || chipName === 'Unknown' || chipName === null) {
       return {
@@ -179,7 +197,7 @@ async function validateDeviceCompatibility(connection, deviceType) {
         flashSize: flashSize
       };
     }
-    
+
     // Validate chip type compatibility
     const supportedChips = ['ESP32', 'ESP32-S2', 'ESP32-S3', 'ESP32-C3'];
     if (!supportedChips.some(chip => chipName.includes(chip))) {
@@ -190,7 +208,7 @@ async function validateDeviceCompatibility(connection, deviceType) {
         flashSize: flashSize
       };
     }
-    
+
     // Check flash size compatibility
     const minFlashSize = 4; // 4MB minimum
     if (flashSize && flashSize !== 'Unknown') {
@@ -204,7 +222,7 @@ async function validateDeviceCompatibility(connection, deviceType) {
         };
       }
     }
-    
+
     // All checks passed
     return {
       compatible: true,
@@ -213,7 +231,7 @@ async function validateDeviceCompatibility(connection, deviceType) {
       flashSize: flashSize,
       deviceType: deviceType
     };
-    
+
   } catch (error) {
     console.error('Device compatibility validation error:', error);
     return {
@@ -451,13 +469,13 @@ function startFlashing() {
 
       // Validate device compatibility before proceeding
       updateProgress(45, 'Validating device compatibility...');
-      
+
       // Check if the connected device is compatible with the selected firmware
       const deviceCompatibility = await validateDeviceCompatibility(connection, deviceType);
       if (!deviceCompatibility.compatible) {
         throw new Error(`Device compatibility check failed: ${deviceCompatibility.reason}`);
       }
-      
+
       updateStatus(`Device compatibility verified: ${deviceCompatibility.chipName}`, 'success');
 
       // Get firmware from GitHub release or user upload
@@ -545,12 +563,25 @@ window.addEventListener('load', async () => {
   initializeElements();
   await initializeFlasher();
   await fetchLatestRelease();
+  
+  console.log('Initializing device selection...');
   handleDeviceSelection(); // Initialize device selection listeners
+  
+  console.log('Initializing firmware uploads...');
   handleFirmwareUploads(); // Initialize firmware upload listeners
+  
+  console.log('Updating firmware details...');
   updateFirmwareDetails(); // Display initial firmware details
 
   // Add event listeners
-  if (elements.flashButton) {
+  if (elements.flashButton && !flashButtonInitialized) {
+    console.log('Initializing flash button event listener...');
     elements.flashButton.addEventListener('click', startFlashing);
+    flashButtonInitialized = true;
+    console.log('Flash button event listener initialized');
+  } else if (elements.flashButton && flashButtonInitialized) {
+    console.log('Flash button already initialized, skipping...');
   }
+  
+  console.log('Page initialization complete');
 });
