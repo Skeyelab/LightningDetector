@@ -90,7 +90,7 @@ jobs:
         # Create ESP32 web flasher compatible manifest
         cat > release_artifacts/${{ matrix.environment }}_manifest.json << EOF
         {
-          "name": "Talos PIO Heltec V3 OLED - ${{ matrix.environment }}",
+          "name": "SBT PIO Heltec V3 OLED - ${{ matrix.environment }}",
           "version": "${{ github.ref_name }}",
           "description": "Firmware for Heltec WiFi LoRa 32 V3 board - ${{ matrix.environment }} role",
           "url": "https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}",
@@ -158,7 +158,7 @@ jobs:
         tag_name: ${{ github.ref_name }}
         name: Release ${{ github.ref_name }}
         body: |
-          ## Talos PIO Heltec V3 OLED Firmware Release
+          ## SBT PIO Heltec V3 OLED Firmware Release
 
           This release contains firmware binaries for both sender and receiver roles.
 

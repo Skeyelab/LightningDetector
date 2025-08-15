@@ -1,6 +1,6 @@
 # Release Process
 
-This document explains how to create releases for the Talos PIO Heltec V3 OLED project.
+This document explains how to create releases for the SBT PIO Heltec V3 OLED project.
 
 ## Overview
 
@@ -169,4 +169,4 @@ To improve the release process:
 
 ## License
 
-This release process is part of the Talos PIO Heltec V3 OLED project and follows the same license terms.
+This release process is part of the SBT PIO Heltec V3 OLED project and follows the same license terms.

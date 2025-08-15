@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Talos PIO Heltec V3 OLED Release Script
+# SBT PIO Heltec V3 OLED Release Script
 # This script creates a new release tag and pushes it to trigger the release workflow
 
 set -e
