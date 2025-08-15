@@ -58,7 +58,7 @@ function updateFirmwareDetails() {
   };
 
   const info = deviceInfo[deviceType];
-  
+
   elements.firmwareDetails.innerHTML = `
     <div class="firmware-info">
       <div class="info-item">
@@ -90,7 +90,7 @@ function handleDeviceSelection() {
       selectedDeviceType = 'transmitter';
       updateFirmwareDetails();
     });
-    
+
     elements.receiverRadio.addEventListener('change', () => {
       selectedDeviceType = 'receiver';
       updateFirmwareDetails();
@@ -191,7 +191,7 @@ async function startFlashing() {
 
     const deviceType = selectedDeviceType;
     const deviceName = deviceType === 'transmitter' ? 'Transmitter' : 'Receiver';
-    
+
     updateStatus(`Preparing to flash ${deviceName} firmware...`, 'info');
     showProgress();
     updateProgress(0, `Preparing ${deviceName} firmware...`);
@@ -199,15 +199,16 @@ async function startFlashing() {
     updateProgress(10, 'Connecting to ESP32...');
     updateStatus(`Connecting to ESP32 for ${deviceName} firmware...`, 'info');
 
-    // Connect to ESP32
+    // Connect to ESP32 using the connect function
     const port = await navigator.serial.requestPort();
     await port.open({ baudRate: 115200 });
 
     updateProgress(20, 'Connected to ESP32');
     updateStatus(`Connected to ESP32. Starting ${deviceName} flash process...`, 'info');
 
-    // Initialize ESPLoader with the port
-    await flasher.connect(port);
+    // Use the connect function from esp-web-flasher
+    const connection = await connect(port);
+    console.log('ESP32 connection established:', connection);
 
     updateProgress(40, 'ESP32 identified');
     updateStatus(`ESP32 identified. Flashing ${deviceName} firmware...`, 'info');
