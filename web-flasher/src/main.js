@@ -246,7 +246,15 @@ function startFlashing() {
 
       console.log('Calling connect() function...');
       // connect() returns a Promise, so we need to await it
-      return connect(port).then(connection => {
+      console.log('connect function type:', typeof connect);
+      console.log('connect function:', connect);
+      
+      const connectPromise = connect(port);
+      console.log('connectPromise created:', connectPromise);
+      console.log('connectPromise type:', typeof connectPromise);
+      console.log('connectPromise constructor:', connectPromise?.constructor?.name);
+      
+      return connectPromise.then(connection => {
         console.log('connect() Promise resolved with:', connection);
         console.log('Connection type:', typeof connection);
         console.log('Connection constructor:', connection?.constructor?.name);
@@ -257,6 +265,9 @@ function startFlashing() {
         }
 
         return connection;
+      }).catch(connectError => {
+        console.error('connect() Promise failed:', connectError);
+        throw new Error(`ESP32 connection failed: ${connectError.message}`);
       });
     })
     .then(connection => {
