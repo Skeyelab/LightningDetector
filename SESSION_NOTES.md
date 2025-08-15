@@ -6,9 +6,86 @@
 - **Hardware**: Heltec WiFi Kit 32 V3 with OLED display
 - **Architecture**: Modular framework with hardware abstraction layers
 - **Testing**: Google Test framework with 38 test cases
-- **CI/CD**: GitHub Actions with comprehensive caching
+- **CI/CD**: GitHub Actions with comprehensive caching and release workflow
 
 ### Session log
+
+#### 2025-01-27 21:15 UTC
+- Context: Added comprehensive release workflow and script system for automated firmware releases with ESP32 web flasher compatibility
+- Changes:
+  - Created `.github/workflows/release.yml`: Automated release workflow triggered by version tags
+  - Created `scripts/create_release.sh`: Interactive script for creating release tags and triggering workflows
+  - Created `scripts/web_flasher_template.html`: Professional ESP32 web flasher template with modern UI
+  - Created `RELEASE_README.md`: Comprehensive documentation for the release process
+  - Created `scripts/test_release_script.sh`: Test script to verify release functionality
+  - Updated release workflow to generate ESP32 web flasher compatible artifacts
+- Commands run:
+  - `chmod +x scripts/create_release.sh`
+  - `chmod +x scripts/test_release_script.sh`
+  - `./scripts/create_release.sh --help` (verified script functionality)
+- Files touched:
+  - `.github/workflows/release.yml` (new release workflow)
+  - `scripts/create_release.sh` (release tag creation script)
+  - `scripts/web_flasher_template.html` (web flasher template)
+  - `RELEASE_README.md` (release documentation)
+  - `scripts/test_release_script.sh` (test script)
+- Release Workflow Features:
+  - Triggers on version tags (v* format)
+  - Builds both sender and receiver firmware
+  - Generates ESP32 web flasher compatible HTML files
+  - Creates manifest files for web flasher tools
+  - Automatically creates GitHub releases with all artifacts
+  - Supports semantic versioning (1.0.0, 2.1.3-beta.1, etc.)
+- Web Flasher Features:
+  - Modern, responsive UI design
+  - Progress tracking during flashing
+  - Error handling and user feedback
+  - ESP32 Web Flasher library integration
+  - Mobile and desktop compatible
+- Next steps:
+  - Test release workflow by creating a test tag
+  - Set up GitHub Pages for hosting web flasher files
+  - Document web flasher integration for users
+  - Consider adding firmware signature verification
+
+#### 2025-08-15 02:53 UTC
+- Context: Created GitHub issue for removing RX/TX switching from button and reworking button functionality
+- Changes:
+  - Created GitHub issue #19: "Remove RX/TX switching from button - rework button functionality"
+  - Analyzed current button implementation in main.cpp to understand RX/TX switching logic
+  - Identified that short press currently toggles between Sender/Receiver modes
+  - Proposed three options for button rework: device-specific functions, unified interface, or context-aware behavior
+- Commands run:
+  - `git remote -v` (to confirm repository details)
+  - `git branch -a` (to check current branch status)
+- Files analyzed:
+  - `src/main.cpp` (button handling logic, RX/TX switching implementation)
+  - `src/app_logic.cpp` (button action classification)
+  - `src/config/system_config.h` (button configuration)
+- GitHub Issue: [#19 Remove RX/TX switching from button - rework button functionality](https://github.com/Skeyelab/LtngDet-pio-heltec-v3-oled/issues/19)
+- Next steps:
+  - Choose preferred button rework option from the three proposed approaches
+  - Implement button functionality changes to remove mode switching
+  - Update OLED display to remove mode switching indicators
+  - Preserve existing LoRa parameter cycling functionality
+
+#### 2025-08-15 02:39 UTC
+- Context: Created GitHub issue for WiFi IP address display enhancement
+- Changes:
+  - Created GitHub issue #18: "Display IP address when connected to WiFi"
+  - Analyzed current WiFi display implementation in main.cpp and wifi_manager.cpp
+  - Identified that IP address is already available via WiFi.localIP() when connected
+  - Documented technical requirements and implementation approach
+- Commands run:
+  - `git remote -v` (to confirm repository details)
+- Files analyzed:
+  - `src/main.cpp` (display functions, WiFi status management)
+  - `src/wifi_manager.cpp` (WiFi connection logic)
+- GitHub Issue: [#18 Display IP address when connected to WiFi](https://github.com/Skeyelab/LtngDet-pio-heltec-v3-oled/issues/18)
+- Next steps:
+  - Implement IP address display above network location in OLED display
+  - Update drawStatusBar() and oledMsg() functions to show IP address
+  - Ensure proper font sizing and layout for IP address display
 
 #### 2025-08-14 20:26 UTC
 - Context: Completed project rebranding from Talos to LtngDet throughout codebase

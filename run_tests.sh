@@ -50,6 +50,7 @@ failed_tests=0
 
 # Run all test suites
 test_suites=(
+    "Hardware Abstraction:test/test_hardware_abstraction.cpp"
     "App Logic:test/test_app_logic.cpp"
     "WiFi Manager:test/test_wifi_manager.cpp"
     "WiFi Logic:test/test_wifi_logic.cpp"

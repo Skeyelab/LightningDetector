@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <cstddef>
 
 // Hardware Abstraction Layer (HAL)
 // Provides a clean interface to hardware components for better testability
@@ -20,15 +21,15 @@ namespace HardwareAbstraction {
     // GPIO abstraction
     namespace GPIO {
         enum class Mode {
-            INPUT,
-            OUTPUT,
-            INPUT_PULLUP,
-            INPUT_PULLDOWN
+            MODE_INPUT,
+            MODE_OUTPUT,
+            MODE_INPUT_PULLUP,
+            MODE_INPUT_PULLDOWN
         };
 
         enum class Level {
-            LOW = 0,
-            HIGH = 1
+            LEVEL_LOW = 0,
+            LEVEL_HIGH = 1
         };
 
         Result pinMode(uint8_t pin, Mode mode);
@@ -97,6 +98,7 @@ namespace HardwareAbstraction {
         Result startTimer(Handle* timer);
         Result stopTimer(Handle* timer);
         Result deleteTimer(Handle* timer);
+        void reset(); // Reset timer subsystem (for testing)
     }
 
     // Power management

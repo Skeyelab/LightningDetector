@@ -4,6 +4,15 @@
 .vscode/launch.json
 .vscode/ipch
 
+# Clang-tidy cache directories
+.clang-tidy-cache/
+.pio/.clang-tidy-cache/
+
+# Static analysis temporary files
+analysis_report.txt
+clang-tidy-output.txt
+check_report.xml
+
 # macOS
 .DS_Store
 **/.DS_Store
