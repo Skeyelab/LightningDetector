@@ -14,28 +14,28 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout
       uses: actions/checkout@v4
-      
+
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '18'
         cache: 'npm'
         cache-dependency-path: web-flasher/package-lock.json
-        
+
     - name: Install dependencies
       run: |
         cd web-flasher
         npm ci
-        
+
     - name: Build web flasher
       run: |
         cd web-flasher
         npm run build
-        
+
     - name: Deploy to GitHub Pages
       if: github.ref == 'refs/heads/main'
       uses: peaceiris/actions-gh-pages@v3
@@ -44,7 +44,7 @@ jobs:
         publish_dir: ./web-flasher/dist
         publish_branch: gh-pages
         force_orphan: true
-        
+
     - name: Copy firmware files to gh-pages
       if: github.ref == 'refs/heads/main'
       run: |
@@ -53,7 +53,7 @@ jobs:
         cp web-flasher/receiver_firmware_v1.0.0.bin web-flasher/dist/
         cp web-flasher/sender_manifest.json web-flasher/dist/
         cp web-flasher/receiver_manifest.json web-flasher/dist/
-        
+
         # Commit and push the firmware files
         cd web-flasher/dist
         git config --local user.email "action@github.com"
@@ -61,7 +61,7 @@ jobs:
         git add .
         git commit -m "Add firmware files for web flasher" || exit 0
         git push origin gh-pages
-        
+
     - name: Build status
       run: |
         echo "✅ Web flasher built successfully"

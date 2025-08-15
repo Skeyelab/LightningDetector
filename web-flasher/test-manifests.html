@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Manifest Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-result { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+    </style>
+</head>
+<body>
+    <h1>Manifest and Firmware File Test</h1>
+    <p>This page tests if the manifest and firmware files are accessible.</p>
+    
+    <div id="results"></div>
+    
+    <script>
+        const results = document.getElementById('results');
+        
+        function addResult(message, type) {
+            const div = document.createElement('div');
+            div.className = `test-result ${type}`;
+            div.textContent = message;
+            results.appendChild(div);
+        }
+        
+        async function testFile(url, description) {
+            try {
+                const response = await fetch(url);
+                if (response.ok) {
+                    addResult(`✅ ${description}: Accessible (${response.status})`, 'success');
+                    return true;
+                } else {
+                    addResult(`❌ ${description}: Error ${response.status}`, 'error');
+                    return false;
+                }
+            } catch (error) {
+                addResult(`❌ ${description}: Failed - ${error.message}`, 'error');
+                return false;
+            }
+        }
+        
+        async function runTests() {
+            addResult('🧪 Starting file accessibility tests...', 'info');
+            
+            // Test manifests
+            await testFile('/sender_manifest.json', 'Sender Manifest');
+            await testFile('/receiver_manifest.json', 'Receiver Manifest');
+            
+            // Test firmware files
+            await testFile('/sender_firmware_v1.0.0.bin', 'Sender Firmware');
+            await testFile('/receiver_firmware_v1.0.0.bin', 'Receiver Firmware');
+            
+            addResult('🏁 Tests completed!', 'info');
+        }
+        
+        // Run tests when page loads
+        runTests();
+    </script>
+</body>
+</html>

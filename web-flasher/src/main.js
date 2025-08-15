@@ -20,8 +20,8 @@ function getManifestUrl() {
   const deviceType = selectedDeviceType;
   const manifestName = deviceType === 'transmitter' ? 'sender_manifest.json' : 'receiver_manifest.json';
   
-  // Use relative paths to local files to avoid CORS issues
-  return `./${manifestName}`;
+  // Use absolute paths that work on GitHub Pages
+  return `/${manifestName}`;
 }
 
 // Create ESP Web Tools install button
@@ -39,11 +39,28 @@ function createESPWebToolsButton() {
   // Create the ESP Web Tools install button
   installButton = document.createElement('esp-web-install-button');
 
-  // Set the manifest URL (local file to avoid CORS)
+  // Set the manifest URL (absolute path for GitHub Pages)
   const manifestUrl = getManifestUrl();
   installButton.manifest = manifestUrl;
 
   console.log('Using manifest:', manifestUrl);
+  updateStatus(`Loading manifest: ${manifestUrl}`, 'info');
+
+  // Test manifest accessibility
+  fetch(manifestUrl)
+    .then(response => {
+      if (response.ok) {
+        console.log('Manifest accessible:', response.status);
+        updateStatus('Manifest loaded successfully', 'success');
+      } else {
+        console.error('Manifest not accessible:', response.status);
+        updateStatus(`Manifest error: ${response.status}`, 'error');
+      }
+    })
+    .catch(error => {
+      console.error('Failed to fetch manifest:', error);
+      updateStatus(`Manifest fetch failed: ${error.message}`, 'error');
+    });
 
   // Customize the button appearance
   installButton.style.cssText = `
@@ -182,7 +199,7 @@ window.addEventListener('load', async () => {
   console.log('Using ESP Web Tools for reliable firmware flashing');
 
   initializeElements();
-  
+
   // Create ESP Web Tools button
   createESPWebToolsButton();
 
