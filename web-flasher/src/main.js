@@ -156,7 +156,13 @@ async function fetchLatestRelease() {
   try {
     const response = await fetch('https://api.github.com/repos/Skeyelab/LightningDetector/releases/latest');
     if (!response.ok) {
-      throw new Error(`GitHub API error: ${response.status}`);
+      if (response.status === 403) {
+        throw new Error('GitHub API rate limit exceeded. Please try again later or check the repository manually.');
+      } else if (response.status === 404) {
+        throw new Error('No releases found. This repository may not have any releases yet.');
+      } else {
+        throw new Error(`GitHub API error: ${response.status}`);
+      }
     }
 
     const release = await response.json();
@@ -173,6 +179,17 @@ async function fetchLatestRelease() {
     return release;
   } catch (error) {
     console.error('Failed to fetch latest release:', error);
+
+    // Provide helpful fallback message
+    if (elements.versionInfo) {
+      elements.versionInfo.innerHTML = `
+        <strong>Release Information Unavailable</strong><br>
+        <em>${error.message}</em><br><br>
+        <strong>Alternative:</strong> Download firmware manually from the
+        <a href="https://github.com/Skeyelab/LightningDetector/releases" target="_blank">GitHub releases page</a>
+      `;
+    }
+
     updateStatus(`Failed to fetch release: ${error.message}`, 'warning');
     return null;
   }
@@ -248,12 +265,12 @@ function startFlashing() {
       // connect() returns a Promise, so we need to await it
       console.log('connect function type:', typeof connect);
       console.log('connect function:', connect);
-      
+
       const connectPromise = connect(port);
       console.log('connectPromise created:', connectPromise);
       console.log('connectPromise type:', typeof connectPromise);
       console.log('connectPromise constructor:', connectPromise?.constructor?.name);
-      
+
       return connectPromise.then(connection => {
         console.log('connect() Promise resolved with:', connection);
         console.log('Connection type:', typeof connection);
