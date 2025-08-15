@@ -32,7 +32,7 @@ v1.0.0/
 # Build transmitter firmware
 pio run -e sender -t upload
 
-# Build receiver firmware  
+# Build receiver firmware
 pio run -e receiver -t upload
 
 # Copy .bin files from .pio/build/ directories

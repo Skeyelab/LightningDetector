@@ -44,5 +44,6 @@
     "flash_size": "8MB",
     "partition_scheme": "default",
     "upload_speed": "921600"
-  }
+  },
+  "note": "This is a development manifest. Actual firmware files will be available in GitHub releases."
 }
