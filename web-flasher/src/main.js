@@ -201,18 +201,32 @@ function startFlashing() {
     .then(port => {
       updateProgress(20, 'Opening serial port...');
       updateStatus(`Opening serial port for ${deviceName} firmware...`, 'info');
-      
+
       return port.open({ baudRate: 115200 });
     })
     .then(port => {
       updateProgress(30, 'Connected to ESP32');
       updateStatus(`Connected to ESP32. Starting ${deviceName} flash process...`, 'info');
-      
+
       // Use the connect function from esp-web-flasher
+      console.log('About to call connect() with port:', port);
       return connect(port);
     })
     .then(connection => {
       console.log('ESP32 connection established:', connection);
+      console.log('Connection type:', typeof connection);
+      console.log('Connection constructor:', connection?.constructor?.name);
+      console.log('Connection keys:', connection ? Object.keys(connection) : 'undefined');
+      
+      // Validate the connection object
+      if (!connection) {
+        throw new Error('ESP32 connection failed - no connection object returned');
+      }
+      
+      // Check if connection has required methods
+      if (typeof connection.log !== 'function') {
+        console.warn('Connection object missing log method, but continuing...');
+      }
       
       updateProgress(40, 'ESP32 identified');
       updateStatus(`ESP32 identified. Flashing ${deviceName} firmware...`, 'info');
@@ -220,7 +234,7 @@ function startFlashing() {
       // Flash firmware (this would need to be implemented based on your needs)
       // For now, we'll simulate the process
       updateProgress(60, 'Flashing firmware...');
-      
+
       return new Promise(resolve => setTimeout(resolve, 2000));
     })
     .then(() => {
@@ -233,7 +247,7 @@ function startFlashing() {
     })
     .catch(error => {
       console.error('Flashing failed:', error);
-      
+
       let errorMessage = 'Unknown error occurred';
       if (error.name === 'NotFoundError') {
         errorMessage = 'No serial port selected. Please select a port and try again.';
@@ -242,7 +256,7 @@ function startFlashing() {
       } else if (error.message) {
         errorMessage = error.message;
       }
-      
+
       updateStatus(`Flashing failed: ${errorMessage}`, 'error');
     })
     .finally(() => {
