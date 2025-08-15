@@ -123,6 +123,39 @@ function handleFirmwareUploads() {
   }
 }
 
+// Fetch firmware from GitHub release
+async function fetchFirmware(deviceType) {
+  if (!latestRelease || !latestRelease.firmwareManifest) {
+    throw new Error('No firmware manifest available. Please upload firmware manually or check releases.');
+  }
+
+  const deviceKey = deviceType === 'transmitter' ? 'transmitter' : 'receiver';
+  const firmwareInfo = latestRelease.firmwareManifest.firmware_files[deviceKey];
+
+  if (!firmwareInfo) {
+    throw new Error(`No firmware found for ${deviceType} in release ${latestRelease.tag_name}`);
+  }
+
+  const downloadUrl = `https://github.com/Skeyelab/LightningDetector/releases/download/${latestRelease.tag_name}/${firmwareInfo.filename}`;
+
+  updateStatus(`Downloading ${firmwareInfo.filename}...`, 'info');
+
+  const response = await fetch(downloadUrl);
+  if (!response.ok) {
+    throw new Error(`Failed to download firmware: ${response.status} ${response.statusText}`);
+  }
+
+  const firmwareData = await response.arrayBuffer();
+  updateStatus(`Firmware downloaded: ${firmwareInfo.filename} (${(firmwareData.byteLength / 1024).toFixed(1)} KB)`, 'success');
+
+  return {
+    data: firmwareData,
+    filename: firmwareInfo.filename,
+    size: firmwareData.byteLength,
+    checksum: firmwareInfo.checksum
+  };
+}
+
 // Initialize the web flasher
 async function initializeFlasher() {
   try {
@@ -193,11 +226,24 @@ async function fetchLatestRelease() {
     const release = await response.json();
     latestRelease = release;
 
+    // Fetch firmware manifest if available
+    try {
+      const manifestResponse = await fetch(`https://github.com/Skeyelab/LightningDetector/releases/download/${release.tag_name}/firmware_manifest.json`);
+      if (manifestResponse.ok) {
+        const manifest = await manifestResponse.json();
+        latestRelease.firmwareManifest = manifest;
+        console.log('Firmware manifest loaded:', manifest);
+      }
+    } catch (manifestError) {
+      console.warn('Could not load firmware manifest:', manifestError.message);
+    }
+
     if (elements.versionInfo) {
       elements.versionInfo.innerHTML = `
         <strong>Latest Release:</strong> ${release.tag_name}<br>
         <strong>Published:</strong> ${new Date(release.published_at).toLocaleDateString()}<br>
         <strong>Description:</strong> ${release.body || 'No description available'}
+        ${latestRelease.firmwareManifest ? '<br><strong>Firmware:</strong> Available for download' : ''}
       `;
     }
 
@@ -323,32 +369,55 @@ function startFlashing() {
       updateProgress(40, 'ESP32 identified');
       updateStatus(`ESP32 identified. Starting ${deviceName} firmware flash...`, 'info');
 
-      // Get the firmware file based on device type
-      const firmwareFile = deviceType === 'transmitter' ? 'sender_firmware.bin' : 'receiver_firmware.bin';
+      // Get firmware from GitHub release or user upload
+      let firmwareData = null;
+      let firmwareFilename = 'Unknown';
 
-      // For now, we'll simulate the firmware data since we don't have actual .bin files
-      // In a real implementation, you would fetch the firmware from a URL or upload it
-      updateProgress(50, 'Preparing firmware...');
+      try {
+        // Try to fetch from GitHub release first
+        updateProgress(50, 'Fetching firmware from GitHub...');
+        const firmware = await fetchFirmware(deviceType);
+        firmwareData = firmware.data;
+        firmwareFilename = firmware.filename;
+        updateStatus(`Using firmware: ${firmwareFilename}`, 'success');
+      } catch (fetchError) {
+        console.warn('Could not fetch firmware from GitHub:', fetchError.message);
+        updateStatus('GitHub firmware not available, please upload firmware manually', 'warning');
 
-      // Simulate firmware preparation
-      await new Promise(resolve => setTimeout(resolve, 1000));
+        // Check if user has uploaded firmware files
+        const uploadedFile = deviceType === 'transmitter' ?
+          elements.senderFile?.files[0] : elements.receiverFile?.files[0];
+
+        if (uploadedFile) {
+          updateProgress(50, 'Reading uploaded firmware...');
+          firmwareData = await uploadedFile.arrayBuffer();
+          firmwareFilename = uploadedFile.name;
+          updateStatus(`Using uploaded firmware: ${firmwareFilename}`, 'success');
+        } else {
+          throw new Error('No firmware available. Please upload firmware manually or check GitHub releases.');
+        }
+      }
 
       updateProgress(60, 'Flashing firmware...');
+      updateStatus(`Flashing ${firmwareFilename} to ESP32...`, 'info');
 
-      // Simulate flashing process
+      // TODO: Implement real ESPLoader flashing here
+      // For now, simulate the process
       await new Promise(resolve => setTimeout(resolve, 3000));
 
       updateProgress(80, 'Verifying flash...');
+      updateStatus('Verifying firmware installation...', 'info');
 
-      // Simulate verification
+      // TODO: Implement real verification here
       await new Promise(resolve => setTimeout(resolve, 1000));
 
-      return { success: true };
+      return { success: true, firmware: firmwareFilename };
     })
     .then((result) => {
       if (result && result.success) {
         updateProgress(100, 'Flash complete!');
-        updateStatus(`${deviceName} firmware flashed successfully!`, 'success');
+        const firmwareInfo = result.firmware ? ` using ${result.firmware}` : '';
+        updateStatus(`${deviceName} firmware flashed successfully${firmwareInfo}!`, 'success');
       } else {
         throw new Error('Firmware flashing failed');
       }
