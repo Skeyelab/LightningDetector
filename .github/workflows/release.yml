@@ -132,10 +132,32 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v5
 
-    - name: Download All Release Artifacts
+    - name: Download Sender Artifacts
       uses: actions/download-artifact@v4
       with:
-        path: release_artifacts/
+        name: sender-release-artifacts
+        path: sender_artifacts/
+
+    - name: Download Receiver Artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: receiver-release-artifacts
+        path: receiver_artifacts/
+
+    - name: Prepare Release Files
+      run: |
+        # Create combined release directory
+        mkdir -p release_artifacts
+        
+        # Copy sender artifacts
+        cp sender_artifacts/* release_artifacts/
+        
+        # Copy receiver artifacts
+        cp receiver_artifacts/* release_artifacts/
+        
+        # List all files for debugging
+        echo "Files in release_artifacts:"
+        ls -la release_artifacts/
 
     - name: Create Release
       uses: softprops/action-gh-release@v2
