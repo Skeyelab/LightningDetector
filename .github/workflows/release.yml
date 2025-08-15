@@ -4,6 +4,16 @@ on:
   push:
     tags:
       - 'v*'
+    paths:
+      - 'src/**'
+      - 'include/**'
+      - '**/platformio.ini'
+      - '**/lib_deps'
+      - 'requirements.txt'
+      - '!SESSION_NOTES.md'
+      - '!README.md'
+      - '!docs/**'
+      - '!*.md'
 
 # Add permissions block to fix the 403 error
 permissions:

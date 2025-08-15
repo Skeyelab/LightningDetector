@@ -3,8 +3,32 @@ name: CI/CD Pipeline
 on:
   push:
     branches: [ main ]
+    paths:
+      - 'src/**'
+      - 'include/**'
+      - 'test/**'
+      - '**/platformio.ini'
+      - '**/lib_deps'
+      - 'requirements.txt'
+      - 'run_tests.sh'
+      - '!SESSION_NOTES.md'
+      - '!README.md'
+      - '!docs/**'
+      - '!*.md'
   pull_request:
     branches: [ main ]
+    paths:
+      - 'src/**'
+      - 'include/**'
+      - 'test/**'
+      - '**/platformio.ini'
+      - '**/lib_deps'
+      - 'requirements.txt'
+      - 'run_tests.sh'
+      - '!SESSION_NOTES.md'
+      - '!README.md'
+      - '!docs/**'
+      - '!*.md'
 
 jobs:
   test:

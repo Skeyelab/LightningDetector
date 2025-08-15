@@ -3,8 +3,28 @@ name: Build PlatformIO Project
 on:
   push:
     branches: [ main ]
+    paths:
+      - 'src/**'
+      - 'include/**'
+      - '**/platformio.ini'
+      - '**/lib_deps'
+      - 'requirements.txt'
+      - '!SESSION_NOTES.md'
+      - '!README.md'
+      - '!docs/**'
+      - '!*.md'
   pull_request:
     branches: [ main ]
+    paths:
+      - 'src/**'
+      - 'include/**'
+      - '**/platformio.ini'
+      - '**/lib_deps'
+      - 'requirements.txt'
+      - '!SESSION_NOTES.md'
+      - '!README.md'
+      - '!docs/**'
+      - '!*.md'
 
 jobs:
   build:
