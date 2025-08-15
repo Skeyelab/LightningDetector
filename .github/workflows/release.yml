@@ -44,16 +44,8 @@ jobs:
           ${{ runner.os }}-pip-platformio
           ${{ runner.os }}-pip-
 
-    - name: Cache Build Artifacts
-      uses: actions/cache@v4
-      with:
-        path: |
-          .pio/build
-          .pio/.tmpdir
-        key: ${{ runner.os }}-release-build-${{ matrix.environment }}-${{ hashFiles('src/**', 'include/**', '**/platformio.ini') }}
-        restore-keys: |
-          ${{ runner.os }}-release-build-${{ matrix.environment }}-
-          ${{ runner.os }}-release-build-
+    # Note: Build artifacts cache removed - releases are unique builds that can't be cached
+    # The cache key would change every time due to new commits, making it ineffective
 
     - name: Setup Python
       uses: actions/setup-python@v4
@@ -75,6 +67,8 @@ jobs:
           pio lib install "olikraus/U8g2@^2.36.0"
         fi
 
+    # Build firmware for this specific release
+    # No caching here since each release is a unique build with different source code
     - name: Build ${{ matrix.environment }} Firmware
       run: |
         pio run -e ${{ matrix.environment }}
