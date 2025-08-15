@@ -45,6 +45,26 @@
   - Test GitHub Actions workflow trigger
   - Verify web flasher deployment
 
+#### 2024-08-15 01:15 UTC
+- Context: Switched to Vite deployment workflow following vite-deploy-demo pattern
+- Changes:
+  - Replaced Jekyll workflow with Vite deployment workflow
+  - Added proper base path configuration (`/LightningDetector/`) for GitHub Pages
+  - Removed old build-web-flasher.yml workflow
+  - Used peaceiris/actions-gh-pages@v4 for deployment
+  - Followed proven Vite + GitHub Pages deployment pattern
+- Commands run:
+  - `rm .github/workflows/build-web-flasher.yml`
+  - `git add -A && git commit -m "feat(workflow): implement Vite deployment..." && git push origin main`
+- Files touched:
+  - `.github/workflows/jekyll-gh-pages.yml` (converted to Vite deployment)
+  - `web-flasher/vite.config.js` (added base path)
+  - `.github/workflows/build-web-flasher.yml` (deleted)
+- Next steps:
+  - Configure GitHub Pages to use gh-pages branch
+  - Test the new deployment workflow
+  - Verify web flasher is accessible at GitHub Pages URL
+
 #### 2024-08-15 01:10 UTC
 - Context: Fixed GitHub Actions workflow cache configuration issue
 - Changes:

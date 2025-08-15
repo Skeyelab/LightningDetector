@@ -75,4 +75,3 @@ This web flasher is automatically built and deployed to GitHub Pages when change
 - ESP32 device (Heltec WiFi LoRa 32 V3)
 - USB cable for serial connection
 - Modern browser with Web Serial API support
-# Force workflow update
