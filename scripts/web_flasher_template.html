@@ -309,15 +309,51 @@
     </div>
 
     <!-- ESP32 Web Flasher Library -->
-    <script src="https://unpkg.com/esp-web-flasher@1.0.0/dist/esp-web-flasher.js"></script>
+    <script src="https://unpkg.com/esp-web-flasher@latest/dist/esp-web-flasher.js"></script>
+    
+    <!-- Fallback to alternative CDN if primary fails -->
+    <script>
+        if (typeof ESPWebFlasher === 'undefined') {
+            console.log('Primary CDN failed, trying alternative...');
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/esp-web-flasher@latest/dist/esp-web-flasher.js';
+            script.onload = function() {
+                console.log('Alternative CDN loaded successfully');
+                if (typeof ESPWebFlasher !== 'undefined') {
+                    console.log('ESPWebFlasher is now available');
+                }
+            };
+            script.onerror = function() {
+                console.error('All CDN sources failed to load ESP32 Web Flasher library');
+                showStatus('error', 'Failed to load ESP32 Web Flasher library. Please check your internet connection and try again.');
+            };
+            document.head.appendChild(script);
+        }
+    </script>
 
     <script>
         let flasher = null;
         let isFlashing = false;
 
+        // Check if ESP32 Web Flasher is available
+        function isFlasherAvailable() {
+            return typeof ESPWebFlasher !== 'undefined';
+        }
+
         // Initialize the flasher
         async function initializeFlasher() {
             try {
+                // Wait for library to be available
+                let attempts = 0;
+                while (!isFlasherAvailable() && attempts < 50) {
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    attempts++;
+                }
+                
+                if (!isFlasherAvailable()) {
+                    throw new Error('ESP32 Web Flasher library failed to load after 5 seconds');
+                }
+
                 flasher = new ESPWebFlasher();
                 await flasher.connect();
                 return true;
@@ -399,17 +435,35 @@
             status.style.display = 'block';
         }
 
-        // Check if ESP32 Web Flasher is supported
-        if (typeof ESPWebFlasher === 'undefined') {
-            showStatus('warning', 'ESP32 Web Flasher library not loaded. Please check your internet connection.');
-        }
-
         // Add some helpful debugging
         window.addEventListener('load', () => {
             console.log('ESP32 Web Flasher page loaded');
             console.log('Firmware:', '{{FIRMWARE_FILE}}');
             console.log('Version:', '{{VERSION}}');
             console.log('Role:', '{{ROLE}}');
+            
+            // Check library status after a short delay to allow fallback CDN to load
+            setTimeout(() => {
+                if (isFlasherAvailable()) {
+                    showStatus('info', 'ESP32 Web Flasher library loaded successfully. Ready to flash firmware.');
+                } else {
+                    showStatus('warning', 'ESP32 Web Flasher library not loaded. Trying alternative sources...');
+                    // Try to trigger fallback loading
+                    if (typeof ESPWebFlasher === 'undefined') {
+                        const script = document.createElement('script');
+                        script.src = 'https://cdn.jsdelivr.net/npm/esp-web-flasher@latest/dist/esp-web-flasher.js';
+                        script.onload = function() {
+                            if (typeof ESPWebFlasher !== 'undefined') {
+                                showStatus('success', 'ESP32 Web Flasher library loaded successfully. Ready to flash firmware.');
+                            }
+                        };
+                        script.onerror = function() {
+                            showStatus('error', 'Failed to load ESP32 Web Flasher library. Please check your internet connection and refresh the page.');
+                        };
+                        document.head.appendChild(script);
+                    }
+                }
+            }, 1000);
         });
     </script>
 </body>
