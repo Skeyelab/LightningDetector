@@ -7,19 +7,19 @@
     {
       "chipFamily": "ESP32-S3",
       "parts": [
-        { "path": "receiver_firmware_v1.0.0.bin", "offset": 0x10000 }
+        { "path": "/receiver_firmware_v1.0.0.bin", "offset": 0x10000 }
       ]
     },
     {
       "chipFamily": "ESP32",
       "parts": [
-        { "path": "receiver_firmware_v1.0.0.bin", "offset": 0x10000 }
+        { "path": "/receiver_firmware_v1.0.0.bin", "offset": 0x10000 }
       ]
     },
     {
       "chipFamily": "ESP8266",
       "parts": [
-        { "path": "receiver_firmware_v1.0.0.bin", "offset": 0x00000 }
+        { "path": "/receiver_firmware_v1.0.0.bin", "offset": 0x00000 }
       ]
     }
   ]

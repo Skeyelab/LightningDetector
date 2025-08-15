@@ -8,6 +8,7 @@ let isFlashing = false;
 let currentPort = null;
 let installButton = null;
 let hasPortError = false; // Track if we've had port errors
+let latestRelease = null; // Store latest release info
 
 // DOM elements
 const elements = {};
@@ -24,6 +25,52 @@ function initializeElements() {
   elements.improvStatusText = document.getElementById('improvStatusText');
 }
 
+// Fetch latest release from GitHub
+async function fetchLatestRelease() {
+  try {
+    updateStatus('Fetching latest release information from GitHub...', 'info');
+
+    const response = await fetch('https://api.github.com/repos/Skeyelab/LightningDetector/releases/latest');
+    if (!response.ok) {
+      throw new Error(`GitHub API error: ${response.status}`);
+    }
+
+    latestRelease = await response.json();
+    console.log('Latest release:', latestRelease);
+
+    updateStatus(`Latest release loaded: ${latestRelease.name}`, 'success');
+    return latestRelease;
+
+  } catch (error) {
+    console.error('Failed to fetch latest release:', error);
+    updateStatus(`Failed to fetch release: ${error.message}`, 'error');
+    return null;
+  }
+}
+
+// Get manifest URL for selected device type
+function getManifestUrl() {
+  if (!latestRelease || !latestRelease.assets) {
+    console.warn('No release assets found');
+    return null;
+  }
+
+  const deviceType = selectedDeviceType;
+  const manifestName = deviceType === 'transmitter' ? 'sender_manifest.json' : 'receiver_manifest.json';
+
+  console.log('Looking for manifest:', manifestName);
+  console.log('Available assets:', latestRelease.assets.map(a => a.name));
+
+  const manifestAsset = latestRelease.assets.find(asset => asset.name === manifestName);
+  if (manifestAsset) {
+    console.log('Found manifest asset:', manifestAsset);
+    return manifestAsset.browser_download_url;
+  }
+
+  console.warn('Manifest not found in release assets');
+  return null;
+}
+
 // Initialize the web flasher
 async function initializeFlasher() {
   try {
@@ -35,8 +82,11 @@ async function initializeFlasher() {
     // Set up minimal error monitoring for critical issues
     setupMinimalErrorMonitoring();
 
+    // Fetch latest release from GitHub
+    await fetchLatestRelease();
+
     // Create ESP Web Tools install button
-    createESPWebToolsButton();
+    await createESPWebToolsButton();
 
     updateStatus('Web flasher initialized successfully with ESP Web Tools', 'success');
 
@@ -113,7 +163,7 @@ function showCriticalErrorGuidance(message) {
 }
 
 // Create ESP Web Tools install button with minimal, focused error handling
-function createESPWebToolsButton() {
+async function createESPWebToolsButton() {
   // Clear the container
   if (elements.espWebToolsContainer) {
     elements.espWebToolsContainer.innerHTML = '';
@@ -127,9 +177,26 @@ function createESPWebToolsButton() {
   // Create the ESP Web Tools install button
   installButton = document.createElement('esp-web-install-button');
 
-  // Set up the manifest for our firmware based on device type
-  const manifestPath = selectedDeviceType === 'transmitter' ? './firmware_manifest.json' : './receiver_manifest.json';
-  installButton.manifest = manifestPath;
+  // Get manifest URL from GitHub release
+  const manifestUrl = getManifestUrl();
+  if (!manifestUrl) {
+    // Show error if no manifest found
+    container.innerHTML = `
+      <div style="color: #721c24; background-color: #f8d7da; border: 1px solid #f5c6cb; padding: 15px; border-radius: 5px; margin: 10px;">
+        <strong>Manifest Not Found</strong><br>
+        No manifest found for ${selectedDeviceType} firmware in the latest release.<br>
+        Please check the GitHub releases page.
+      </div>
+    `;
+
+    if (elements.espWebToolsContainer) {
+      elements.espWebToolsContainer.appendChild(container);
+    }
+    return;
+  }
+
+  console.log('Using manifest URL:', manifestUrl);
+  installButton.manifest = manifestUrl;
 
   // Customize the button appearance
   installButton.style.cssText = `
@@ -350,12 +417,12 @@ function handleDeviceSelection() {
   const radioButtons = document.querySelectorAll('input[name="deviceType"]');
 
   radioButtons.forEach(radio => {
-    radio.addEventListener('change', (event) => {
+    radio.addEventListener('change', async (event) => {
       selectedDeviceType = event.target.value;
       console.log(`${selectedDeviceType} selected`);
 
       // Update the ESP Web Tools button with new manifest
-      createESPWebToolsButton();
+      await createESPWebToolsButton();
 
       // Update status
       const deviceName = selectedDeviceType === 'transmitter' ? 'Transmitter' : 'Receiver';
@@ -394,8 +461,22 @@ function updateFirmwareDetails() {
 
   const info = deviceInfo[deviceType];
 
+  // Add release information if available
+  let releaseInfo = '';
+  if (latestRelease) {
+    releaseInfo = `
+      <div class="info-item" style="grid-column: 1 / -1; background: #e8f4fd; border-left-color: #17a2b8;">
+        <strong>Latest Release:</strong> ${latestRelease.name} (${latestRelease.published_at ? new Date(latestRelease.published_at).toLocaleDateString() : 'Unknown date'})
+      </div>
+      <div class="info-item" style="grid-column: 1 / -1; background: #e8f4fd; border-left-color: #17a2b8;">
+        <strong>Release Notes:</strong> ${latestRelease.body ? latestRelease.body.substring(0, 100) + '...' : 'No release notes available'}
+      </div>
+    `;
+  }
+
   elements.firmwareDetails.innerHTML = `
     <div class="firmware-info">
+      ${releaseInfo}
       <div class="info-item">
         <strong>Device:</strong> ${info.name}
       </div>
