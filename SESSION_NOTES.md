@@ -15,6 +15,30 @@
 
 ### Session log
 
+#### 2025-01-15 21:30 UTC
+- Context: User requested to fetch manifests from the repository's latest release instead of using local files
+- Changes:
+  - Integrated GitHub API to fetch latest release information
+  - Updated manifest loading to use GitHub release assets instead of local files
+  - Added error handling for manifest download failures
+  - Updated device selection to refresh manifests from releases
+  - Added release information display in firmware details section
+  - Fixed manifest names to match actual GitHub release assets (sender_manifest.json, receiver_manifest.json)
+  - Added comprehensive logging for debugging manifest loading process
+- Commands run:
+  - `curl -s https://api.github.com/repos/Skeyelab/LightningDetector/releases/latest` (verified release exists)
+  - `git add -A && git commit -m "feat(web-flasher): integrate GitHub releases for manifest fetching"`
+- Files touched:
+  - `web-flasher/src/main.js` (added GitHub API integration and release fetching)
+  - `web-flasher/firmware_manifest.json` (updated with absolute paths)
+  - `web-flasher/receiver_manifest.json` (updated with absolute paths)
+  - `SESSION_NOTES.md` (updated with new session log)
+- Next steps:
+  - Test web-flasher with GitHub release manifests
+  - Verify manifests can be downloaded from GitHub releases
+  - Test ESP Web Tools integration with remote manifests
+  - Consider adding fallback to local manifests if GitHub fails
+
 #### 2025-01-15 21:00 UTC
 - Context: Web flasher was not working due to missing firmware files and incorrect manifest format
 - Changes:

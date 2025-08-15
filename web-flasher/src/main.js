@@ -9,6 +9,7 @@ let currentPort = null;
 let installButton = null;
 let hasPortError = false; // Track if we've had port errors
 let latestRelease = null; // Store latest release info
+let currentManifestBlobUrl = null; // Store current blob URL for cleanup
 
 // DOM elements
 const elements = {};
@@ -54,21 +55,76 @@ function getManifestUrl() {
     console.warn('No release assets found');
     return null;
   }
-
+  
   const deviceType = selectedDeviceType;
   const manifestName = deviceType === 'transmitter' ? 'sender_manifest.json' : 'receiver_manifest.json';
-
+  
   console.log('Looking for manifest:', manifestName);
   console.log('Available assets:', latestRelease.assets.map(a => a.name));
-
+  
   const manifestAsset = latestRelease.assets.find(asset => asset.name === manifestName);
-  if (manifestAsset) {
-    console.log('Found manifest asset:', manifestAsset);
-    return manifestAsset.browser_download_url;
+  if (!manifestAsset) {
+    console.warn('Manifest not found in release assets');
+    return null;
   }
+  
+  console.log('Found manifest asset:', manifestAsset);
+  
+  // Use the browser_download_url from the GitHub API response
+  const downloadUrl = manifestAsset.browser_download_url;
+  console.log('Using download URL:', downloadUrl);
+  
+  return downloadUrl;
+}
 
-  console.warn('Manifest not found in release assets');
-  return null;
+// Generate manifest content locally based on GitHub release info
+function generateLocalManifest() {
+  if (!latestRelease || !latestRelease.assets) {
+    return null;
+  }
+  
+  const deviceType = selectedDeviceType;
+  const manifestName = deviceType === 'transmitter' ? 'sender_manifest.json' : 'receiver_manifest.json';
+  
+  // Find the firmware file for this device type
+  const firmwareName = deviceType === 'transmitter' ? 'sender_firmware.bin' : 'receiver_firmware.bin';
+  const firmwareAsset = latestRelease.assets.find(asset => asset.name === firmwareName);
+  
+  if (!firmwareAsset) {
+    console.warn('Firmware asset not found:', firmwareName);
+    return null;
+  }
+  
+  // Create ESP Web Tools compatible manifest
+  const manifest = {
+    name: `SBT PIO Lightning Detector ${deviceType === 'transmitter' ? 'Transmitter' : 'Receiver'}`,
+    version: latestRelease.tag_name || "1.0.0",
+    description: `Lightning detection ${deviceType} firmware for Heltec WiFi LoRa 32 V3`,
+    new_install_prompt_erase: true,
+    builds: [
+      {
+        chipFamily: "ESP32-S3",
+        parts: [
+          { path: firmwareAsset.browser_download_url, offset: 0x10000 }
+        ]
+      },
+      {
+        chipFamily: "ESP32",
+        parts: [
+          { path: firmwareAsset.browser_download_url, offset: 0x10000 }
+        ]
+      },
+      {
+        chipFamily: "ESP8266",
+        parts: [
+          { path: firmwareAsset.browser_download_url, offset: 0x00000 }
+        ]
+      }
+    ]
+  };
+  
+  console.log('Generated local manifest:', manifest);
+  return manifest;
 }
 
 // Initialize the web flasher
@@ -86,7 +142,7 @@ async function initializeFlasher() {
     await fetchLatestRelease();
 
     // Create ESP Web Tools install button
-    await createESPWebToolsButton();
+    createESPWebToolsButton();
 
     updateStatus('Web flasher initialized successfully with ESP Web Tools', 'success');
 
@@ -163,7 +219,7 @@ function showCriticalErrorGuidance(message) {
 }
 
 // Create ESP Web Tools install button with minimal, focused error handling
-async function createESPWebToolsButton() {
+function createESPWebToolsButton() {
   // Clear the container
   if (elements.espWebToolsContainer) {
     elements.espWebToolsContainer.innerHTML = '';
@@ -177,26 +233,30 @@ async function createESPWebToolsButton() {
   // Create the ESP Web Tools install button
   installButton = document.createElement('esp-web-install-button');
 
-  // Get manifest URL from GitHub release
-  const manifestUrl = getManifestUrl();
-  if (!manifestUrl) {
-    // Show error if no manifest found
+  // Generate manifest content locally based on GitHub release info
+  const manifestContent = generateLocalManifest();
+  if (!manifestContent) {
+    // Show error if no manifest can be generated
     container.innerHTML = `
       <div style="color: #721c24; background-color: #f8d7da; border: 1px solid #f5c6cb; padding: 15px; border-radius: 5px; margin: 10px;">
-        <strong>Manifest Not Found</strong><br>
-        No manifest found for ${selectedDeviceType} firmware in the latest release.<br>
+        <strong>Manifest Generation Failed</strong><br>
+        Unable to generate manifest for ${selectedDeviceType} firmware from the latest release.<br>
         Please check the GitHub releases page.
       </div>
     `;
-
+    
     if (elements.espWebToolsContainer) {
       elements.espWebToolsContainer.appendChild(container);
     }
     return;
   }
 
-  console.log('Using manifest URL:', manifestUrl);
-  installButton.manifest = manifestUrl;
+  console.log('Using generated manifest:', manifestContent);
+  
+  // Create a blob URL from the manifest content
+  const manifestBlob = new Blob([JSON.stringify(manifestContent)], { type: 'application/json' });
+  currentManifestBlobUrl = URL.createObjectURL(manifestBlob);
+  installButton.manifest = currentManifestBlobUrl;
 
   // Customize the button appearance
   installButton.style.cssText = `
@@ -298,6 +358,12 @@ function handleInstallSuccess(event) {
 
   // Reset port error flag on success
   hasPortError = false;
+
+  // Clean up blob URL
+  if (currentManifestBlobUrl) {
+    URL.revokeObjectURL(currentManifestBlobUrl);
+    currentManifestBlobUrl = null;
+  }
 }
 
 // Handle installation progress
@@ -318,6 +384,12 @@ function handleInstallError(event) {
 
   // Show simple error guidance
   showSimpleErrorGuidance(error);
+
+  // Clean up blob URL
+  if (currentManifestBlobUrl) {
+    URL.revokeObjectURL(currentManifestBlobUrl);
+    currentManifestBlobUrl = null;
+  }
 }
 
 // Show simple, focused error guidance
@@ -422,7 +494,7 @@ function handleDeviceSelection() {
       console.log(`${selectedDeviceType} selected`);
 
       // Update the ESP Web Tools button with new manifest
-      await createESPWebToolsButton();
+      createESPWebToolsButton();
 
       // Update status
       const deviceName = selectedDeviceType === 'transmitter' ? 'Transmitter' : 'Receiver';
@@ -533,6 +605,9 @@ window.addEventListener('beforeunload', () => {
     } catch (error) {
       console.log('Error closing port on unload:', error);
     }
+  }
+  if (currentManifestBlobUrl) {
+    URL.revokeObjectURL(currentManifestBlobUrl);
   }
 });
 
