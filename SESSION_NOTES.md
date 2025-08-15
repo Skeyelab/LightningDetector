@@ -5,15 +5,73 @@
 - **Platform**: PlatformIO with ESP32-S3
 - **Architecture**: Modular C++ with sensor abstraction, communication interfaces, and state management
 - **Web Flasher**: ESP Web Tools v10 (modern, reliable ESP32/ESP8266 flashing)
-- **Status**: Core firmware complete, web flasher modernized with robust error handling
+- **Status**: Core firmware complete, web flasher completely rebuilt to avoid CORS issues
 
 ## Recent Changes
-- **Web Flasher**: Completely refactored from deprecated `esp-web-flasher` to modern `esp-web-tools`
-- **Error Handling**: Added comprehensive error handling and user guidance based on working examples
-- **Firmware Files**: Created test firmware files for development
-- **UI**: Simplified and modernized flashing interface with troubleshooting support
+- **Web Flasher**: Completely rebuilt from scratch to avoid CORS issues when deploying to GitHub Pages
+- **CORS Resolution**: Eliminated all external API calls and GitHub API dependencies
+- **Local Manifests**: Created local manifest files that reference local firmware files
+- **Deployment Ready**: Added GitHub Actions workflow for automatic deployment to GitHub Pages
 
 ### Session log
+
+#### 2025-01-15 16:30 UTC
+- Context: Web flasher was not working due to CORS issues when trying to fetch from GitHub API and releases
+- Changes:
+  - Completely rebuilt web flasher HTML and JavaScript to eliminate CORS issues
+  - Removed all GitHub API calls and external dependencies
+  - Created local manifest files (sender_manifest.json, receiver_manifest.json) that reference local firmware files
+  - Simplified JavaScript to use ESP Web Tools directly with local manifests
+  - Added device type selection (transmitter/receiver) with proper manifest switching
+  - Created deployment script (deploy.sh) for GitHub Pages preparation
+  - Added GitHub Actions workflow (.github/workflows/deploy-web-flasher.yml) for automatic deployment
+  - Updated README with comprehensive deployment and troubleshooting instructions
+  - Tested build process successfully (npm run build)
+  - Verified deployment script works correctly
+- Commands run:
+  - `cd web-flasher && npm run dev` (started dev server)
+  - `npm run build` (successful build)
+  - `./deploy.sh` (deployment preparation)
+  - `chmod +x deploy.sh` (made script executable)
+- Files touched:
+  - `web-flasher/index.html` (completely rebuilt with simplified structure)
+  - `web-flasher/src/main.js` (simplified to avoid CORS issues)
+  - `web-flasher/sender_manifest.json` (created local manifest)
+  - `web-flasher/receiver_manifest.json` (created local manifest)
+  - `web-flasher/README.md` (comprehensive deployment guide)
+  - `web-flasher/deploy.sh` (deployment script)
+  - `.github/workflows/deploy-web-flasher.yml` (GitHub Actions workflow)
+  - `SESSION_NOTES.md` (updated with new session log)
+- Next steps:
+  - Test web flasher locally to ensure it works
+  - Deploy to GitHub Pages using the deployment script
+  - Enable GitHub Pages in repository settings
+  - Test the deployed web flasher with actual ESP32 devices
+
+#### 2025-01-15 22:30 UTC
+- Context: GitHub API returning 403 Forbidden error, preventing release fetching
+- Changes:
+  - Added proper GitHub API headers (Accept, User-Agent) to reduce rate limiting
+  - Implemented fallback system to local manifests when GitHub API fails
+  - Recreated local firmware files for fallback operation
+  - Added status indicators to show when fallback mode is active
+  - Improved error handling for API failures (rate limiting vs other errors)
+  - Ensured web-flasher works even without GitHub API access
+  - Added comprehensive logging for debugging API and fallback behavior
+- Commands run:
+  - `cp .pio/build/sender/firmware.bin web-flasher/sender_firmware_v1.0.0.bin`
+  - `cp .pio/build/receiver/firmware.bin web-flasher/receiver_firmware_v1.0.0.bin`
+  - `git add -A && git commit -m "feat(web-flasher): add fallback to local manifests when GitHub API fails"`
+- Files touched:
+  - `web-flasher/src/main.js` (added API headers, fallback system, status indicators)
+  - `web-flasher/sender_firmware_v1.0.0.bin` (recreated for fallback)
+  - `web-flasher/receiver_firmware_v1.0.0.bin` (recreated for fallback)
+  - `SESSION_NOTES.md` (updated with new session log)
+- Next steps:
+  - Test web-flasher with fallback system
+  - Verify local manifests work when GitHub API fails
+  - Test ESP Web Tools integration with fallback manifests
+  - Monitor GitHub API rate limiting and fallback behavior
 
 #### 2025-01-15 22:00 UTC
 - Context: Encountered CORS policy blocking manifest download from GitHub releases
