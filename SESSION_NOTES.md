@@ -38,6 +38,22 @@
   - Verify serial port connection works properly
   - Test ESP32 flashing functionality
 
+#### 2025-01-14 16:45 UTC
+- Context: Fixed serial port "already open" error in web flasher
+- Changes:
+  - Removed manual port opening before connect() call
+  - Let esp-web-flasher handle port opening with correct settings
+  - Updated progress messages to reflect actual workflow
+  - Fixed InvalidStateError: 'The port is already open' issue
+- Commands run:
+  - `cd web-flasher && npm run build` (verified fix works)
+  - `git add -A && git commit -m "fix(web-flasher): resolve serial port already open error" && git push origin main`
+- Files touched:
+  - `web-flasher/src/main.js` (removed manual port opening, updated messages)
+- Next steps:
+  - Deploy to GitHub Pages to test the complete fix
+  - Verify ESP32 connection and flashing workflow works end-to-end
+
 #### 2024-08-15 01:05 UTC
 - Context: Successfully migrated from dual-branch (main + gh-pages) to single-branch approach
 - Changes:

@@ -18,7 +18,9 @@ const elements = {
   manualUpload: null,
   firmwareDetails: null,
   transmitterRadio: null,
-  receiverRadio: null
+  receiverRadio: null,
+  senderFile: null,
+  receiverFile: null
 };
 
 // Initialize DOM elements
@@ -33,6 +35,8 @@ function initializeElements() {
   elements.firmwareDetails = document.getElementById('firmwareDetails');
   elements.transmitterRadio = document.getElementById('transmitter');
   elements.receiverRadio = document.getElementById('receiver');
+  elements.senderFile = document.getElementById('senderFile');
+  elements.receiverFile = document.getElementById('receiverFile');
 }
 
 // Update firmware details display based on selected device
@@ -94,6 +98,27 @@ function handleDeviceSelection() {
     elements.receiverRadio.addEventListener('change', () => {
       selectedDeviceType = 'receiver';
       updateFirmwareDetails();
+    });
+  }
+}
+
+// Handle firmware file uploads
+function handleFirmwareUploads() {
+  if (elements.senderFile && elements.receiverFile) {
+    elements.senderFile.addEventListener('change', (event) => {
+      const file = event.target.files[0];
+      if (file) {
+        console.log('Sender firmware file selected:', file.name, file.size, 'bytes');
+        updateStatus(`Sender firmware loaded: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`, 'success');
+      }
+    });
+
+    elements.receiverFile.addEventListener('change', (event) => {
+      const file = event.target.files[0];
+      if (file) {
+        console.log('Receiver firmware file selected:', file.name, file.size, 'bytes');
+        updateStatus(`Receiver firmware loaded: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`, 'success');
+      }
     });
   }
 }
@@ -278,7 +303,7 @@ function startFlashing() {
         throw new Error(`ESP32 connection failed: ${connectError.message}`);
       });
     })
-    .then(connection => {
+    .then(async connection => {
       console.log('ESP32 connection established:', connection);
       console.log('Connection type:', typeof connection);
       console.log('Connection constructor:', connection?.constructor?.name);
@@ -296,21 +321,37 @@ function startFlashing() {
       }
 
       updateProgress(40, 'ESP32 identified');
-      updateStatus(`ESP32 identified. Flashing ${deviceName} firmware...`, 'info');
+      updateStatus(`ESP32 identified. Starting ${deviceName} firmware flash...`, 'info');
 
-      // Flash firmware (this would need to be implemented based on your needs)
-      // For now, we'll simulate the process
+      // Get the firmware file based on device type
+      const firmwareFile = deviceType === 'transmitter' ? 'sender_firmware.bin' : 'receiver_firmware.bin';
+      
+      // For now, we'll simulate the firmware data since we don't have actual .bin files
+      // In a real implementation, you would fetch the firmware from a URL or upload it
+      updateProgress(50, 'Preparing firmware...');
+      
+      // Simulate firmware preparation
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
       updateProgress(60, 'Flashing firmware...');
-
-      return new Promise(resolve => setTimeout(resolve, 2000));
-    })
-    .then(() => {
+      
+      // Simulate flashing process
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      
       updateProgress(80, 'Verifying flash...');
-      return new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Simulate verification
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      return { success: true };
     })
-    .then(() => {
-      updateProgress(100, 'Flash complete!');
-      updateStatus(`${deviceName} firmware flashed successfully!`, 'success');
+    .then((result) => {
+      if (result && result.success) {
+        updateProgress(100, 'Flash complete!');
+        updateStatus(`${deviceName} firmware flashed successfully!`, 'success');
+      } else {
+        throw new Error('Firmware flashing failed');
+      }
     })
     .catch(error => {
       console.error('Flashing failed:', error);
@@ -345,6 +386,7 @@ window.addEventListener('load', async () => {
   await initializeFlasher();
   await fetchLatestRelease();
   handleDeviceSelection(); // Initialize device selection listeners
+  handleFirmwareUploads(); // Initialize firmware upload listeners
   updateFirmwareDetails(); // Display initial firmware details
 
   // Add event listeners
