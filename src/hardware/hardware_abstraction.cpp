@@ -98,6 +98,10 @@ namespace HardwareAbstraction {
         g_i2c_initialized = false;
         g_spi_initialized = false;
         g_adc_initialized = false;
+        
+        // Reset Timer subsystem
+        Timer::reset();
+        
         g_initialized = false;
     }
 
@@ -570,7 +574,10 @@ namespace HardwareAbstraction {
                 default: return Result::ERROR_INVALID_PARAMETER;
             }
             #else
-            // Mock channel for testing
+            // Mock channel for testing - validate pin range
+            if (pin > 20) {
+                return Result::ERROR_INVALID_PARAMETER;
+            }
             int channel = pin % 10;
             #endif
 
@@ -753,6 +760,14 @@ namespace HardwareAbstraction {
 
             timer->delete_requested = true;
             return Result::SUCCESS;
+        }
+
+        // Reset timer subsystem (for testing)
+        void reset() {
+            s_timer_initialized = false;
+            for (size_t i = 0; i < MAX_TIMERS; ++i) {
+                s_timers[i] = {};
+            }
         }
 
         // Timer processing function (should be called regularly from main loop)

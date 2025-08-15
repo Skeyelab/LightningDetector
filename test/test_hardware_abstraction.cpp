@@ -347,6 +347,7 @@ void test_timer_software_timers() {
 }
 
 void test_timer_software_timers_not_initialized() {
+    deinitialize(); // Ensure timer system is not initialized
     TEST_ASSERT_NULL(Timer::createTimer(10, false, test_timer_callback));
     TEST_ASSERT_EQUAL(Result::ERROR_INVALID_PARAMETER, Timer::startTimer(nullptr));
 }

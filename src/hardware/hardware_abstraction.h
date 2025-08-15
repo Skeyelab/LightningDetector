@@ -98,6 +98,7 @@ namespace HardwareAbstraction {
         Result startTimer(Handle* timer);
         Result stopTimer(Handle* timer);
         Result deleteTimer(Handle* timer);
+        void reset(); // Reset timer subsystem (for testing)
     }
 
     // Power management
