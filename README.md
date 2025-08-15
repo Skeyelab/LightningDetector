@@ -273,6 +273,7 @@ uint8_t percent = Power::getBatteryPercent();
 - [OTA Update Guide](./OTA_README.md)
 - [Troubleshooting Guide](./TROUBLESHOOTING.md)
 - [Static Analysis Results](./STATIC_ANALYSIS.md)
+- [CI Caching Optimization](./CI_CACHING_OPTIMIZATION.md)
 - [Project Status](./CURSOR_PROJECT_STATUS.md)
 
 ## 🎯 Roadmap
