@@ -22,6 +22,46 @@
 
 ### Session log
 
+#### 2024-08-15 01:05 UTC
+- Context: Successfully migrated from dual-branch (main + gh-pages) to single-branch approach
+- Changes:
+  - Moved web flasher from `gh-pages` branch to `web-flasher/` folder on `main` branch
+  - Deleted `gh-pages` branch (both local and remote)
+  - Added comprehensive project description to web flasher page
+  - Updated GitHub Actions workflow for new structure
+  - Tested build process successfully
+- Commands run:
+  - `git push origin --delete gh-pages`
+  - `git branch -D gh-pages`
+  - `mkdir -p web-flasher`
+  - `cd web-flasher && npm install && npm run build`
+  - `git add -A && git commit -m "feat(web-flasher): migrate to single branch..." && git push origin main`
+- Files touched:
+  - `web-flasher/` (entire folder created)
+  - `.github/workflows/build-web-flasher.yml` (updated for new structure)
+  - `SESSION_NOTES.md` (updated)
+- Next steps:
+  - Configure GitHub Pages to deploy from `main` branch, `web-flasher/` folder
+  - Test GitHub Actions workflow trigger
+  - Verify web flasher deployment
+
+#### 2024-08-15 01:10 UTC
+- Context: Fixed GitHub Actions workflow cache configuration issue
+- Changes:
+  - Added `cache-dependency-path: 'web-flasher/package-lock.json'` to npm cache setup
+  - This resolves the "Dependencies lock file is not found" error
+- Commands run:
+  - `git add .github/workflows/build-web-flasher.yml`
+  - `git commit -m "fix(workflow): add cache-dependency-path for web-flasher subfolder"`
+  - `git push origin main`
+- Files touched:
+  - `.github/workflows/build-web-flasher.yml` (fixed cache path)
+- Next steps:
+  - Monitor workflow execution to confirm fix works
+  - Configure GitHub Pages deployment settings
+
+#### 2024-08-15 00:45 UTC
+
 #### 2025-01-14 16:00 UTC
 - Context: Configured GitHub Pages to use the new npm-based web flasher build system
 - Changes:
