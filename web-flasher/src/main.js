@@ -202,10 +202,17 @@ function startFlashing() {
       updateProgress(20, 'Opening serial port...');
       updateStatus(`Opening serial port for ${deviceName} firmware...`, 'info');
 
+      console.log('Port before opening:', port);
+      console.log('Port type:', typeof port);
+      console.log('Port constructor:', port?.constructor?.name);
+
       // Try to open the port with better error handling
-      return port.open({ baudRate: 115200 }).catch(openError => {
+      return port.open({ baudRate: 115200 }).then(() => {
+        console.log('Port opened successfully, returning port:', port);
+        return port;
+      }).catch(openError => {
         console.error('Port open error:', openError);
-        
+
         let errorMessage = 'Unknown port opening error';
         if (openError.name === 'NetworkError') {
           errorMessage = 'Serial port failed to open. This usually means:\n' +
@@ -220,16 +227,22 @@ function startFlashing() {
         } else if (openError.message) {
           errorMessage = openError.message;
         }
-        
+
         throw new Error(errorMessage);
       });
     })
     .then(port => {
+      console.log('Port after opening:', port);
+      console.log('Port type after opening:', typeof port);
+
       updateProgress(30, 'Connected to ESP32');
       updateStatus(`Connected to ESP32. Starting ${deviceName} flash process...`, 'info');
 
       // Use the connect function from esp-web-flasher
       console.log('About to call connect() with port:', port);
+      if (!port) {
+        throw new Error('Port object is undefined - cannot proceed with connection');
+      }
       return connect(port);
     })
     .then(connection => {
