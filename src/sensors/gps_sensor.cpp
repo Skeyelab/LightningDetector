@@ -178,7 +178,7 @@ namespace GPS {
 
         // Send NMEA command to change baud rate
         char command[64];
-        snprintf(command, sizeof(command), "$PCAS01,%lu*", baud_rate);
+        snprintf(command, sizeof(command), "$PCAS01,%u*", baud_rate);
         
         // Calculate and append checksum
         uint8_t checksum = 0;
@@ -208,7 +208,7 @@ namespace GPS {
 
         // Send NMEA command to change update rate
         char command[64];
-        snprintf(command, sizeof(command), "$PCAS02,%lu*", 1000 / rate_hz); // Period in ms
+        snprintf(command, sizeof(command), "$PCAS02,%u*", 1000 / rate_hz); // Period in ms
         
         // Calculate and append checksum
         uint8_t checksum = 0;
