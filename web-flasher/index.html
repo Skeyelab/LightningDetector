@@ -641,6 +641,24 @@
                         <li><strong>Browser Issues:</strong> Try Chrome/Edge with latest updates</li>
                         <li><strong>Firmware Errors:</strong> Verify firmware file is correct for your device</li>
                     </ul>
+
+                    <h4>🔧 Port Opening Issues</h4>
+                    <p><strong>If you get "Failed to open serial port" error:</strong></p>
+                    <ul>
+                        <li><strong>Download Mode:</strong> ESP32 must be in download mode (hold BOOT button while connecting)</li>
+                        <li><strong>USB Cable:</strong> Use a data cable, not just a charging cable</li>
+                        <li><strong>Other Apps:</strong> Close any other applications using the serial port</li>
+                        <li><strong>Reconnect:</strong> Unplug and reconnect the device</li>
+                        <li><strong>Port Selection:</strong> Make sure you selected the correct port in the browser dialog</li>
+                    </ul>
+
+                    <h4>📱 Download Mode Instructions</h4>
+                    <ol>
+                        <li><strong>Hold BOOT:</strong> Press and hold the BOOT button on your ESP32</li>
+                        <li><strong>Press RESET:</strong> While holding BOOT, press and release the RESET button</li>
+                        <li><strong>Release BOOT:</strong> Release the BOOT button</li>
+                        <li><strong>Connect USB:</strong> The device should now be in download mode and ready for flashing</li>
+                    </ol>
                 </div>
             </div>
         </div>

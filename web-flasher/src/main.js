@@ -202,7 +202,27 @@ function startFlashing() {
       updateProgress(20, 'Opening serial port...');
       updateStatus(`Opening serial port for ${deviceName} firmware...`, 'info');
 
-      return port.open({ baudRate: 115200 });
+      // Try to open the port with better error handling
+      return port.open({ baudRate: 115200 }).catch(openError => {
+        console.error('Port open error:', openError);
+        
+        let errorMessage = 'Unknown port opening error';
+        if (openError.name === 'NetworkError') {
+          errorMessage = 'Serial port failed to open. This usually means:\n' +
+            '• The device is not properly connected\n' +
+            '• Another application is using the port\n' +
+            '• The device needs to be in download mode\n' +
+            '• Try unplugging and reconnecting the device';
+        } else if (openError.name === 'InvalidStateError') {
+          errorMessage = 'Port is already open or in an invalid state';
+        } else if (openError.name === 'NotSupportedError') {
+          errorMessage = 'This serial port is not supported by your browser';
+        } else if (openError.message) {
+          errorMessage = openError.message;
+        }
+        
+        throw new Error(errorMessage);
+      });
     })
     .then(port => {
       updateProgress(30, 'Connected to ESP32');
