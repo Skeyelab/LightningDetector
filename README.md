@@ -83,6 +83,34 @@ pio run -e receiver
 pio run -e receiver -t upload
 ```
 
+## 🌐 Web Flasher
+
+### Browser-Based Firmware Flashing
+The project includes a web-based ESP32 firmware flasher that allows you to flash devices directly from your browser without installing additional software.
+
+#### Features
+- **🌐 Web Interface**: Flash ESP32 devices from any modern browser
+- **📱 Device Support**: Transmitter and receiver firmware flashing
+- **📁 File Upload**: Support for custom firmware files
+- **🔌 Serial Port**: Direct USB connection to ESP32 devices
+- **📊 Progress Tracking**: Real-time flashing progress and status updates
+
+#### Quick Start
+1. **Visit**: [Web Flasher](https://skeyelab.github.io/LightningDetector/)
+2. **Connect**: Plug your ESP32 device via USB
+3. **Select**: Choose device type (transmitter or receiver)
+4. **Flash**: Click "Connect & Flash" and follow the prompts
+
+#### Requirements
+- **Browser**: Chrome or Edge (Web Serial API support)
+- **Hardware**: ESP32 device in download mode
+- **USB Cable**: Data cable (not just charging cable)
+
+#### Manual Firmware Upload
+- Upload custom `.bin` files for transmitter or receiver
+- Support for both pre-built and custom firmware
+- Automatic file validation and size checking
+
 ### Configuration
 
 #### WiFi Networks
