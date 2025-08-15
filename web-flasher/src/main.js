@@ -196,14 +196,30 @@ async function startFlashing() {
     showProgress();
     updateProgress(0, `Preparing ${deviceName} firmware...`);
 
-    updateProgress(10, 'Connecting to ESP32...');
-    updateStatus(`Connecting to ESP32 for ${deviceName} firmware...`, 'info');
+    updateProgress(10, 'Requesting serial port access...');
+    updateStatus(`Requesting serial port access for ${deviceName} firmware...`, 'info');
 
-    // Connect to ESP32 using the connect function
-    const port = await navigator.serial.requestPort();
+    // Request port access immediately while we still have user gesture context
+    let port;
+    try {
+      port = await navigator.serial.requestPort();
+    } catch (portError) {
+      if (portError.name === 'NotFoundError') {
+        throw new Error('No serial port selected. Please select a port and try again.');
+      } else if (portError.name === 'SecurityError') {
+        throw new Error('Serial port access denied. Please allow access and try again.');
+      } else {
+        throw new Error(`Serial port error: ${portError.message}`);
+      }
+    }
+
+    updateProgress(20, 'Opening serial port...');
+    updateStatus(`Opening serial port for ${deviceName} firmware...`, 'info');
+
+    // Open the port
     await port.open({ baudRate: 115200 });
 
-    updateProgress(20, 'Connected to ESP32');
+    updateProgress(30, 'Connected to ESP32');
     updateStatus(`Connected to ESP32. Starting ${deviceName} flash process...`, 'info');
 
     // Use the connect function from esp-web-flasher
