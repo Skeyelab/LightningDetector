@@ -217,17 +217,17 @@ function startFlashing() {
       console.log('Connection type:', typeof connection);
       console.log('Connection constructor:', connection?.constructor?.name);
       console.log('Connection keys:', connection ? Object.keys(connection) : 'undefined');
-      
+
       // Validate the connection object
       if (!connection) {
         throw new Error('ESP32 connection failed - no connection object returned');
       }
-      
+
       // Check if connection has required methods
       if (typeof connection.log !== 'function') {
         console.warn('Connection object missing log method, but continuing...');
       }
-      
+
       updateProgress(40, 'ESP32 identified');
       updateStatus(`ESP32 identified. Flashing ${deviceName} firmware...`, 'info');
 
