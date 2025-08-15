@@ -10,6 +10,45 @@
 
 ### Session log
 
+#### 2025-08-15 02:53 UTC
+- Context: Created GitHub issue for removing RX/TX switching from button and reworking button functionality
+- Changes:
+  - Created GitHub issue #19: "Remove RX/TX switching from button - rework button functionality"
+  - Analyzed current button implementation in main.cpp to understand RX/TX switching logic
+  - Identified that short press currently toggles between Sender/Receiver modes
+  - Proposed three options for button rework: device-specific functions, unified interface, or context-aware behavior
+- Commands run:
+  - `git remote -v` (to confirm repository details)
+  - `git branch -a` (to check current branch status)
+- Files analyzed:
+  - `src/main.cpp` (button handling logic, RX/TX switching implementation)
+  - `src/app_logic.cpp` (button action classification)
+  - `src/config/system_config.h` (button configuration)
+- GitHub Issue: [#19 Remove RX/TX switching from button - rework button functionality](https://github.com/Skeyelab/LtngDet-pio-heltec-v3-oled/issues/19)
+- Next steps:
+  - Choose preferred button rework option from the three proposed approaches
+  - Implement button functionality changes to remove mode switching
+  - Update OLED display to remove mode switching indicators
+  - Preserve existing LoRa parameter cycling functionality
+
+#### 2025-08-15 02:39 UTC
+- Context: Created GitHub issue for WiFi IP address display enhancement
+- Changes:
+  - Created GitHub issue #18: "Display IP address when connected to WiFi"
+  - Analyzed current WiFi display implementation in main.cpp and wifi_manager.cpp
+  - Identified that IP address is already available via WiFi.localIP() when connected
+  - Documented technical requirements and implementation approach
+- Commands run:
+  - `git remote -v` (to confirm repository details)
+- Files analyzed:
+  - `src/main.cpp` (display functions, WiFi status management)
+  - `src/wifi_manager.cpp` (WiFi connection logic)
+- GitHub Issue: [#18 Display IP address when connected to WiFi](https://github.com/Skeyelab/LtngDet-pio-heltec-v3-oled/issues/18)
+- Next steps:
+  - Implement IP address display above network location in OLED display
+  - Update drawStatusBar() and oledMsg() functions to show IP address
+  - Ensure proper font sizing and layout for IP address display
+
 #### 2025-08-14 20:26 UTC
 - Context: Completed project rebranding from Talos to LtngDet throughout codebase
 - Changes:
