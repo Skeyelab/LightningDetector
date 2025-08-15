@@ -7,6 +7,8 @@
 
 A distributed lightning detection system built for Heltec WiFi LoRa 32 V3 boards with ESP32-S3, featuring modular architecture, comprehensive hardware abstraction, and GPS tracking capabilities.
 
+> **📘 ESP32 Template**: This project's modular architecture makes it an excellent template for general ESP32 development. See [README_TEMPLATE.md](README_TEMPLATE.md) for using this codebase as a starting point for your own ESP32 projects.
+
 ## 🚀 Features
 
 ### Core Functionality
@@ -28,6 +30,7 @@ A distributed lightning detection system built for Heltec WiFi LoRa 32 V3 boards
 - **Power Management** - Sleep modes and battery monitoring
 - **Error Handling** - Robust error detection and recovery
 - **Debugging Tools** - Serial logging and diagnostic information
+- **Template Ready** - Use as a foundation for any ESP32 project (see [examples](examples/))
 
 ## 📋 Hardware Requirements
 

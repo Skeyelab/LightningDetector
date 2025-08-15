@@ -22,6 +22,36 @@
 
 ### Session log
 
+#### 2025-01-14 18:00 UTC
+- Context: Created ESP32 general template documentation and branch
+- Changes:
+  - Created new branch `esp32-general-template` for template use case
+  - Created comprehensive template documentation (README_TEMPLATE.md)
+  - Created template configuration guide (TEMPLATE_CONFIG_GUIDE.md)
+  - Created example implementations directory structure with environmental monitor example
+  - Created template platformio.ini configurations for various use cases
+  - Created HAL usage guide with sensor/actuator integration examples
+  - Updated main README to reference template usage
+- Commands run:
+  - `git checkout -b esp32-general-template`
+  - `mkdir -p examples/{environmental_monitor,smart_home,data_logger,iot_gateway}`
+  - `mkdir -p docs`
+- Files touched:
+  - `README_TEMPLATE.md` (new - comprehensive template documentation)
+  - `TEMPLATE_CONFIG_GUIDE.md` (new - configuration guide for different use cases)
+  - `platformio_template.ini` (new - template configurations)
+  - `docs/HAL_GUIDE.md` (new - HAL usage guide)
+  - `examples/README.md` (new - examples overview)
+  - `examples/environmental_monitor/README.md` (new)
+  - `examples/environmental_monitor/platformio.ini` (new)
+  - `examples/environmental_monitor/src/main.cpp` (new)
+  - `README.md` (updated - added template references)
+- Next steps:
+  - Review and test template documentation
+  - Add more example implementations
+  - Consider creating a template initialization script
+  - Push branch and create PR for review
+
 #### 2025-01-14 16:30 UTC
 - Context: Fixed web flasher deployment issue with esp-web-flasher v5.1.5 API change
 - Changes:
