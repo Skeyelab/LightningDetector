@@ -106,15 +106,8 @@ jobs:
         }
         EOF
 
-        # Generate web flasher HTML from template
-        sed -e "s/{{FIRMWARE_NAME}}/Talos PIO Heltec V3 OLED - ${{ matrix.environment }}/g" \
-            -e "s/{{VERSION}}/${{ github.ref_name }}/g" \
-            -e "s/{{ROLE}}/${{ matrix.environment }}/g" \
-            -e "s/{{BUILD_DATE}}/$(date -u +"%Y-%m-%d %H:%M UTC")/g" \
-            -e "s/{{FIRMWARE_FILE}}/${{ matrix.environment }}_firmware.bin/g" \
-            -e "s|{{REPO_URL}}|https://github.com/${{ github.repository }}|g" \
-            -e "s|{{REPO_NAME}}|${{ github.repository }}|g" \
-            scripts/web_flasher_template.html > release_artifacts/${{ matrix.environment }}_web_flasher.html
+        # Note: Web flasher HTML files are now hosted on GitHub Pages
+        # Visit: https://skeyelab.github.io/LightningDetector/
 
     - name: Upload Release Artifacts
       uses: actions/upload-artifact@v4
@@ -184,9 +177,13 @@ jobs:
           3. Set flash offset to 0x10000
 
           ### Web Flasher
-          Use the included HTML files for easy web-based flashing:
-          - `sender_web_flasher.html` - For sender devices
-          - `receiver_web_flasher.html` - For receiver devices
+          **🌐 Use our centralized web flasher**: [https://skeyelab.github.io/LightningDetector/](https://skeyelab.github.io/LightningDetector/)
+          
+          The web flasher automatically detects this release and provides:
+          - Easy firmware selection (sender/receiver)
+          - Direct download from this release
+          - Progress tracking during flashing
+          - No software installation required
 
           ### Build Information
           - Built on: ${{ runner.os }}
@@ -196,9 +193,7 @@ jobs:
         files: |
           release_artifacts/sender_firmware.bin
           release_artifacts/sender_manifest.json
-          release_artifacts/sender_web_flasher.html
           release_artifacts/receiver_firmware.bin
           release_artifacts/receiver_manifest.json
-          release_artifacts/receiver_web_flasher.html
         draft: false
         prerelease: false
