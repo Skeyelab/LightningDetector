@@ -31,8 +31,17 @@ async function fetchLatestRelease() {
   try {
     updateStatus('Fetching latest release information from GitHub...', 'info');
 
-    const response = await fetch('https://api.github.com/repos/Skeyelab/LightningDetector/releases/latest');
+    const response = await fetch('https://api.github.com/repos/Skeyelab/LightningDetector/releases/latest', {
+      headers: {
+        'Accept': 'application/vnd.github.v3+json',
+        'User-Agent': 'SBT-PIO-Web-Flasher/1.0.0'
+      }
+    });
+
     if (!response.ok) {
+      if (response.status === 403) {
+        throw new Error('GitHub API rate limit exceeded. Using local manifests as fallback.');
+      }
       throw new Error(`GitHub API error: ${response.status}`);
     }
 
@@ -44,8 +53,14 @@ async function fetchLatestRelease() {
 
   } catch (error) {
     console.error('Failed to fetch latest release:', error);
-    updateStatus(`Failed to fetch release: ${error.message}`, 'error');
-    return null;
+
+    if (error.message.includes('rate limit')) {
+      updateStatus('GitHub API rate limited - using local manifests', 'warning');
+      return null; // Return null to trigger fallback
+    } else {
+      updateStatus(`Failed to fetch release: ${error.message}`, 'error');
+      return null;
+    }
   }
 }
 
@@ -55,32 +70,33 @@ function getManifestUrl() {
     console.warn('No release assets found');
     return null;
   }
-  
+
   const deviceType = selectedDeviceType;
   const manifestName = deviceType === 'transmitter' ? 'sender_manifest.json' : 'receiver_manifest.json';
-  
+
   console.log('Looking for manifest:', manifestName);
   console.log('Available assets:', latestRelease.assets.map(a => a.name));
-  
+
   const manifestAsset = latestRelease.assets.find(asset => asset.name === manifestName);
   if (!manifestAsset) {
     console.warn('Manifest not found in release assets');
     return null;
   }
-  
+
   console.log('Found manifest asset:', manifestAsset);
-  
+
   // Use the browser_download_url from the GitHub API response
   const downloadUrl = manifestAsset.browser_download_url;
   console.log('Using download URL:', downloadUrl);
-  
+
   return downloadUrl;
 }
 
 // Generate manifest content locally based on GitHub release info
 function generateLocalManifest() {
   if (!latestRelease || !latestRelease.assets) {
-    return null;
+    console.log('No GitHub release info available, using fallback manifest');
+    return generateFallbackManifest();
   }
   
   const deviceType = selectedDeviceType;
@@ -92,7 +108,8 @@ function generateLocalManifest() {
   
   if (!firmwareAsset) {
     console.warn('Firmware asset not found:', firmwareName);
-    return null;
+    console.log('Using fallback manifest with local firmware paths');
+    return generateFallbackManifest();
   }
   
   // Create ESP Web Tools compatible manifest
@@ -124,6 +141,42 @@ function generateLocalManifest() {
   };
   
   console.log('Generated local manifest:', manifest);
+  return manifest;
+}
+
+// Generate local manifest as fallback when GitHub API fails
+function generateFallbackManifest() {
+  const deviceType = selectedDeviceType;
+  
+  // Create ESP Web Tools compatible manifest with local firmware paths
+  const manifest = {
+    name: `SBT PIO Lightning Detector ${deviceType === 'transmitter' ? 'Transmitter' : 'Receiver'}`,
+    version: "1.0.0",
+    description: `Lightning detection ${deviceType} firmware for Heltec WiFi LoRa 32 V3`,
+    new_install_prompt_erase: true,
+    builds: [
+      {
+        chipFamily: "ESP32-S3",
+        parts: [
+          { path: `./${deviceType === 'transmitter' ? 'sender_firmware_v1.0.0.bin' : 'receiver_firmware_v1.0.0.bin'}`, offset: 0x10000 }
+        ]
+      },
+      {
+        chipFamily: "ESP32",
+        parts: [
+          { path: `./${deviceType === 'transmitter' ? 'sender_firmware_v1.0.0.bin' : 'receiver_firmware_v1.0.0.bin'}`, offset: 0x10000 }
+        ]
+      },
+      {
+        chipFamily: "ESP8266",
+        parts: [
+          { path: `./${deviceType === 'transmitter' ? 'sender_firmware_v1.0.0.bin' : 'receiver_firmware_v1.0.0.bin'}`, offset: 0x00000 }
+        ]
+      }
+    ]
+  };
+  
+  console.log('Generated fallback manifest:', manifest);
   return manifest;
 }
 
@@ -240,8 +293,8 @@ function createESPWebToolsButton() {
     container.innerHTML = `
       <div style="color: #721c24; background-color: #f8d7da; border: 1px solid #f5c6cb; padding: 15px; border-radius: 5px; margin: 10px;">
         <strong>Manifest Generation Failed</strong><br>
-        Unable to generate manifest for ${selectedDeviceType} firmware from the latest release.<br>
-        Please check the GitHub releases page.
+        Unable to generate manifest for ${selectedDeviceType} firmware.<br>
+        Please check the console for errors.
       </div>
     `;
     
@@ -252,6 +305,11 @@ function createESPWebToolsButton() {
   }
 
   console.log('Using generated manifest:', manifestContent);
+  
+  // Update status to show if using fallback
+  if (!latestRelease || !latestRelease.assets) {
+    updateStatus('Using local fallback manifests (GitHub API unavailable)', 'warning');
+  }
   
   // Create a blob URL from the manifest content
   const manifestBlob = new Blob([JSON.stringify(manifestContent)], { type: 'application/json' });

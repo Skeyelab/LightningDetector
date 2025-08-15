@@ -15,6 +15,30 @@
 
 ### Session log
 
+#### 2025-01-15 22:00 UTC
+- Context: Encountered CORS policy blocking manifest download from GitHub releases
+- Changes:
+  - Replaced direct manifest fetching with local manifest generation approach
+  - Use GitHub API to get release info (no CORS issues)
+  - Generate ESP Web Tools compatible manifests locally using release asset information
+  - Create blob URLs from generated manifests to avoid CORS restrictions
+  - Add proper blob URL cleanup to prevent memory leaks
+  - Remove local firmware files (now using GitHub release assets directly)
+  - Clean up obsolete manifest files and examples
+- Commands run:
+  - `git add -A && git commit -m "fix(web-flasher): resolve CORS issues by generating manifests locally"`
+- Files touched:
+  - `web-flasher/src/main.js` (added local manifest generation, blob URL handling)
+  - `web-flasher/firmware_manifest_example.json` (deleted - obsolete)
+  - `web-flasher/receiver_firmware_v1.0.0.bin` (deleted - using GitHub assets)
+  - `web-flasher/sender_firmware_v1.0.0.bin` (deleted - using GitHub assets)
+  - `SESSION_NOTES.md` (updated with new session log)
+- Next steps:
+  - Test web-flasher with local manifest generation
+  - Verify ESP Web Tools can access generated manifests
+  - Test firmware flashing with GitHub release assets
+  - Monitor for any remaining CORS or manifest issues
+
 #### 2025-01-15 21:30 UTC
 - Context: User requested to fetch manifests from the repository's latest release instead of using local files
 - Changes:
