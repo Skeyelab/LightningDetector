@@ -135,13 +135,13 @@ jobs:
       run: |
         # Create combined release directory
         mkdir -p release_artifacts
-        
+
         # Copy sender artifacts
         cp sender_artifacts/* release_artifacts/
-        
+
         # Copy receiver artifacts
         cp receiver_artifacts/* release_artifacts/
-        
+
         # List all files for debugging
         echo "Files in release_artifacts:"
         ls -la release_artifacts/
@@ -172,7 +172,7 @@ jobs:
 
           ### Web Flasher
           **🌐 Use our centralized web flasher**: [https://skeyelab.github.io/LightningDetector/](https://skeyelab.github.io/LightningDetector/)
-          
+
           The web flasher automatically detects this release and provides:
           - Easy firmware selection (sender/receiver)
           - Direct download from this release
