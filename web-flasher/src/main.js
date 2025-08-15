@@ -141,24 +141,88 @@ async function fetchFirmware(deviceType) {
   // 1. Host firmware files on a CORS-enabled service
   // 2. Use GitHub API to get download URLs
   // 3. Implement server-side proxy
-  
+
   updateStatus(`Firmware ${firmwareInfo.filename} selected from release ${latestRelease.tag_name}`, 'info');
-  
+
     // Simulate firmware data for now
   // TODO: Implement actual firmware download with CORS-compatible URLs
   const firmwareData = new ArrayBuffer(firmwareInfo.size || 512000);
-  
+
   console.log(`Would download: ${firmwareInfo.filename} from ${latestRelease.tag_name}`);
   console.log('Note: Direct GitHub downloads blocked by CORS. Need CORS-enabled hosting.');
 
   updateStatus(`Firmware prepared: ${firmwareInfo.filename} (${(firmwareData.byteLength / 1024).toFixed(1)} KB)`, 'success');
-  
+
   return {
     data: firmwareData,
     filename: firmwareInfo.filename,
     size: firmwareData.byteLength,
     checksum: firmwareInfo.checksum
   };
+}
+
+// Validate device compatibility with selected firmware
+async function validateDeviceCompatibility(connection, deviceType) {
+  try {
+    // Get device information from the connection
+    const chipName = connection.chipName || 'Unknown';
+    const flashSize = connection.flashSize || 'Unknown';
+    
+    console.log('Device info:', { chipName, flashSize, deviceType });
+    
+    // Check if we have a valid chip name
+    if (!chipName || chipName === 'Unknown' || chipName === null) {
+      return {
+        compatible: false,
+        reason: 'Could not identify ESP32 chip type. Please ensure device is in download mode.',
+        chipName: 'Unknown',
+        flashSize: flashSize
+      };
+    }
+    
+    // Validate chip type compatibility
+    const supportedChips = ['ESP32', 'ESP32-S2', 'ESP32-S3', 'ESP32-C3'];
+    if (!supportedChips.some(chip => chipName.includes(chip))) {
+      return {
+        compatible: false,
+        reason: `Unsupported chip type: ${chipName}. Supported: ${supportedChips.join(', ')}`,
+        chipName: chipName,
+        flashSize: flashSize
+      };
+    }
+    
+    // Check flash size compatibility
+    const minFlashSize = 4; // 4MB minimum
+    if (flashSize && flashSize !== 'Unknown') {
+      const flashSizeMB = parseInt(flashSize) / (1024 * 1024);
+      if (flashSizeMB < minFlashSize) {
+        return {
+          compatible: false,
+          reason: `Insufficient flash size: ${flashSizeMB.toFixed(1)}MB. Minimum required: ${minFlashSize}MB`,
+          chipName: chipName,
+          flashSize: flashSize
+        };
+      }
+    }
+    
+    // All checks passed
+    return {
+      compatible: true,
+      reason: 'Device is compatible',
+      chipName: chipName,
+      flashSize: flashSize,
+      deviceType: deviceType
+    };
+    
+  } catch (error) {
+    console.error('Device compatibility validation error:', error);
+    return {
+      compatible: false,
+      reason: `Validation error: ${error.message}`,
+      chipName: 'Unknown',
+      flashSize: 'Unknown'
+    };
+  }
 }
 
 // Initialize the web flasher
@@ -361,6 +425,16 @@ function startFlashing() {
       console.log('Connection constructor:', connection?.constructor?.name);
       console.log('Connection keys:', connection ? Object.keys(connection) : 'undefined');
 
+      // Log detailed device information for debugging
+      if (connection) {
+        console.log('Device Details:');
+        console.log('- Chip Name:', connection.chipName);
+        console.log('- Flash Size:', connection.flashSize);
+        console.log('- Connected:', connection.connected);
+        console.log('- IS_STUB:', connection.IS_STUB);
+        console.log('- Debug Mode:', connection.debug);
+      }
+
       // Validate the connection object
       if (!connection) {
         throw new Error('ESP32 connection failed - no connection object returned');
@@ -374,6 +448,17 @@ function startFlashing() {
 
       updateProgress(40, 'ESP32 identified');
       updateStatus(`ESP32 identified. Starting ${deviceName} firmware flash...`, 'info');
+
+      // Validate device compatibility before proceeding
+      updateProgress(45, 'Validating device compatibility...');
+      
+      // Check if the connected device is compatible with the selected firmware
+      const deviceCompatibility = await validateDeviceCompatibility(connection, deviceType);
+      if (!deviceCompatibility.compatible) {
+        throw new Error(`Device compatibility check failed: ${deviceCompatibility.reason}`);
+      }
+      
+      updateStatus(`Device compatibility verified: ${deviceCompatibility.chipName}`, 'success');
 
       // Get firmware from GitHub release or user upload
       let firmwareData = null;
