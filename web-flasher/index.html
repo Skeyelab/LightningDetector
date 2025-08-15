@@ -299,13 +299,147 @@
             font-size: 0.9rem;
         }
 
+        .firmware-selection {
+            margin: 25px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+
+        .firmware-selection h3 {
+            margin: 0 0 20px 0;
+            color: #495057;
+            font-size: 1.3rem;
+        }
+
+        .device-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .device-option {
+            position: relative;
+        }
+
+        .device-option input[type="radio"] {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .device-label {
+            display: flex;
+            align-items: flex-start;
+            padding: 20px;
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            height: 100%;
+        }
+
+        .device-option input[type="radio"]:checked + .device-label {
+            border-color: #667eea;
+            background: #f8f9ff;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+        }
+
+        .device-label:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
+        }
+
+        .device-icon {
+            font-size: 2.5rem;
+            margin-right: 15px;
+            margin-top: 5px;
+        }
+
+        .device-info h4 {
+            margin: 0 0 8px 0;
+            color: #495057;
+            font-size: 1.2rem;
+        }
+
+        .device-info p {
+            margin: 0 0 12px 0;
+            color: #6c757d;
+            font-size: 0.95rem;
+            line-height: 1.4;
+        }
+
+        .device-info ul {
+            margin: 0;
+            padding-left: 20px;
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+
+        .device-info li {
+            margin: 4px 0;
+        }
+
+        .selected-firmware-info {
+            margin: 25px 0;
+            padding: 20px;
+            background: #e8f4fd;
+            border-radius: 8px;
+            border: 1px solid #bee5eb;
+        }
+
+        .selected-firmware-info h3 {
+            margin: 0 0 15px 0;
+            color: #0c5460;
+            font-size: 1.3rem;
+        }
+
+        .firmware-details {
+            background: white;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #bee5eb;
+        }
+
+        .firmware-details p {
+            margin: 0;
+            color: #0c5460;
+        }
+
+        .firmware-details .firmware-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .firmware-details .info-item {
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            border-left: 3px solid #667eea;
+        }
+
+        .firmware-details .info-item strong {
+            color: #495057;
+        }
+
         @media (max-width: 768px) {
+            .device-options {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            
             .footer-content {
                 grid-template-columns: 1fr;
                 gap: 20px;
                 padding: 30px 20px 15px 20px;
             }
-
+            
             .footer-bottom {
                 padding: 15px 20px;
             }
@@ -388,6 +522,52 @@
             <div class="section">
                 <h2>🚀 Firmware Flashing</h2>
                 <p>Connect your ESP32 device and flash the latest firmware directly from your browser.</p>
+
+                <div class="firmware-selection">
+                    <h3>📡 Select Device Type</h3>
+                    <div class="device-options">
+                        <div class="device-option">
+                            <input type="radio" id="transmitter" name="deviceType" value="transmitter" checked>
+                            <label for="transmitter" class="device-label">
+                                <div class="device-icon">📡</div>
+                                <div class="device-info">
+                                    <h4>Transmitter (Sender)</h4>
+                                    <p>Collects sensor data and transmits via LoRa to receiver</p>
+                                    <ul>
+                                        <li>Lightning detection sensor</li>
+                                        <li>Environmental monitoring</li>
+                                        <li>LoRa transmission</li>
+                                        <li>Battery powered</li>
+                                    </ul>
+                                </div>
+                            </label>
+                        </div>
+                        
+                        <div class="device-option">
+                            <input type="radio" id="receiver" name="deviceType" value="receiver">
+                            <label for="receiver" class="device-label">
+                                <div class="device-icon">📺</div>
+                                <div class="device-info">
+                                    <h4>Receiver</h4>
+                                    <p>Receives LoRa transmissions and forwards data via WiFi</p>
+                                    <ul>
+                                        <li>LoRa reception</li>
+                                        <li>WiFi connectivity</li>
+                                        <li>Data forwarding</li>
+                                        <li>Web interface</li>
+                                    </ul>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="selected-firmware-info">
+                    <h3>📦 Selected Firmware</h3>
+                    <div id="firmwareDetails" class="firmware-details">
+                        <p>Choose a device type above to see firmware details</p>
+                    </div>
+                </div>
 
                 <button id="flashButton" class="flash-button" disabled>
                     🔌 Connect & Flash
