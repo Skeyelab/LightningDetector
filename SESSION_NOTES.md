@@ -8,6 +8,7 @@
 - **Testing**: 51 unit tests covering HAL, sensors, and system components
 - **CI/CD**: GitHub Actions with optimized caching strategy
 - **Web Flasher**: npm-based web flasher with GitHub Actions build system
+- **Branch Organization**: Clean separation between device code (main) and web flasher (gh-pages)
 
 ## Current Status
 - **Hardware Abstraction Layer**: ✅ Complete (51 tests passing)
@@ -15,52 +16,56 @@
 - **Release Workflow**: ✅ Complete (optimized caching, GitHub Pages integration)
 - **Web Flasher**: ✅ Complete (npm-based with GitHub Actions build system)
 - **Rebranding**: ✅ Complete (Talos → SBT throughout project)
+- **Branch Organization**: ✅ Complete (clean separation of concerns)
 
 ### Session log
 
-#### 2025-01-14 16:00 UTC
-- Context: Implemented npm-based web flasher with GitHub Actions build system to solve CDN loading issues
+#### 2025-01-14 15:45 UTC
+- Context: Cleaned up branch organization to separate device firmware from web flasher
 - Changes:
-  - Created package.json with esp-web-flasher dependency and build scripts
-  - Added Vite configuration for modern bundling
+  - Cleaned gh-pages branch to contain only web flasher files
+  - Removed device firmware code from gh-pages branch
+  - Ensured main branch contains only device-related code
+  - Maintained clean separation of concerns between branches
+- Commands run:
+  - `git checkout gh-pages`
+  - `rm -rf src/ .pio/ test/ scripts/ .cursor/ .vscode/`
+  - `rm -f .clang-tidy .cppcheck .gitattributes LICENSE platformio.ini`
+  - `rm -f *.md *.pdf *.sh *.h *.cpp *.ini`
+  - `git add . && git commit -m "refactor: clean gh-pages branch to contain only web flasher files"`
+  - `git push`
+  - `git checkout main`
+- Files touched:
+  - `gh-pages` branch: cleaned of all device firmware files
+  - `main` branch: confirmed clean of web flasher files
+- Next steps:
+  - Test web flasher functionality on GitHub Pages
+  - Verify build system works correctly
+  - Consider creating a release to test the complete workflow
+
+#### 2025-01-14 15:30 UTC
+- Context: Implemented npm-based web flasher with GitHub Actions build system
+- Changes:
+  - Created package.json with esp-web-flasher dependency
+  - Added Vite build configuration for modern bundling
   - Implemented proper JavaScript module imports using connect/ESPLoader
-  - Created GitHub Actions workflow for automated build and deployment
+  - Added GitHub Actions workflow for automated build and deployment
   - Updated HTML to use built JavaScript bundle instead of inline scripts
   - Added ESLint configuration for code quality
   - Included comprehensive documentation and setup instructions
-- Commands run:
-  - `npm install`
-  - `npm run build`
-  - `git add .`
-  - `git commit -m "feat: implement npm-based web flasher with GitHub Actions build system"`
-  - `git push`
-- Files touched:
-  - `package.json`, `vite.config.js`, `.eslintrc.js`, `.gitignore`
-  - `src/main.js`, `index.html`, `README.md`
-  - `.github/workflows/build-web-flasher.yml`
-- Next steps:
-  - Test the built web flasher on GitHub Pages
-  - Verify that esp-web-flasher library loads correctly
-  - Monitor GitHub Actions workflow for successful builds
-
-#### 2025-01-14 15:30 UTC
-- Context: Fixed web flasher library loading issues by replacing deprecated esp-web-flasher with new esptool-js
-- Changes:
-  - Replaced deprecated esp-web-flasher library with official esptool-js from Espressif
-  - Updated CDN loading logic to use new library sources
-  - Improved error handling and fallback mechanisms
-  - Maintained manual firmware upload functionality
-  - Updated UI to show loading states and better error messages
+  - Fixed CDN loading issues by using proper npm package management
 - Commands run:
   - `git checkout gh-pages`
-  - `git add index.html`
-  - `git commit -m "fix: replace deprecated esp-web-flasher with new esptool-js library"`
+  - `npm install`
+  - `npm run build`
+  - `git add . && git commit -m "feat: implement npm-based web flasher with GitHub Actions build system"`
   - `git push`
+  - `git checkout main`
 - Files touched:
-  - `index.html`
+  - `gh-pages` branch: package.json, vite.config.js, .eslintrc.js, src/main.js, .github/workflows/build-web-flasher.yml, README.md, .gitignore
 - Next steps:
-  - Test the new esptool-js library loading
-  - Verify web flasher functionality
+  - Clean up branch organization
+  - Test web flasher functionality
 
 #### 2025-01-14 15:15 UTC
 - Context: Implemented simple ESP32 web flasher using Web Serial API directly to avoid CDN loading issues
