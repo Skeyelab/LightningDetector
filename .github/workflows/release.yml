@@ -28,6 +28,28 @@ jobs:
           ${{ runner.os }}-pio-release-
           ${{ runner.os }}-pio-
 
+    - name: Cache Python packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-release-${{ hashFiles('**/requirements.txt') }}-platformio
+        restore-keys: |
+          ${{ runner.os }}-pip-release-platformio
+          ${{ runner.os }}-pip-release-
+          ${{ runner.os }}-pip-platformio
+          ${{ runner.os }}-pip-
+
+    - name: Cache Build Artifacts
+      uses: actions/cache@v4
+      with:
+        path: |
+          .pio/build
+          .pio/.tmpdir
+        key: ${{ runner.os }}-release-build-${{ matrix.environment }}-${{ hashFiles('src/**', 'include/**', '**/platformio.ini') }}
+        restore-keys: |
+          ${{ runner.os }}-release-build-${{ matrix.environment }}-
+          ${{ runner.os }}-release-build-
+
     - name: Setup Python
       uses: actions/setup-python@v4
       with:
@@ -40,8 +62,13 @@ jobs:
 
     - name: Install Dependencies
       run: |
-        pio lib install "jgromes/RadioLib@^6.5.0"
-        pio lib install "olikraus/U8g2@^2.36.0"
+        # Check if libraries already exist to avoid redundant installs
+        if [ ! -d ".pio/libdeps/${{ matrix.environment }}/RadioLib" ]; then
+          pio lib install "jgromes/RadioLib@^6.5.0"
+        fi
+        if [ ! -d ".pio/libdeps/${{ matrix.environment }}/U8g2" ]; then
+          pio lib install "olikraus/U8g2@^2.36.0"
+        fi
 
     - name: Build ${{ matrix.environment }} Firmware
       run: |
@@ -81,7 +108,7 @@ jobs:
             -e "s/{{BUILD_DATE}}/$(date -u +"%Y-%m-%d %H:%M UTC")/g" \
             -e "s/{{FIRMWARE_FILE}}/${{ matrix.environment }}_firmware.bin/g" \
             -e "s|{{REPO_URL}}|https://github.com/${{ github.repository }}|g" \
-            -e "s/{{REPO_NAME}}/${{ github.repository }}/g" \
+            -e "s|{{REPO_NAME}}|${{ github.repository }}|g" \
             scripts/web_flasher_template.html > release_artifacts/${{ matrix.environment }}_web_flasher.html
 
     - name: Upload Release Artifacts
