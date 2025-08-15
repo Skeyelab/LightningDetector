@@ -28,28 +28,28 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    
+
     steps:
     - name: Checkout
       uses: actions/checkout@v4
-      
+
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '18'
         cache: 'npm'
         cache-dependency-path: web-flasher/package-lock.json
-        
+
     - name: Install dependencies
       run: |
         cd web-flasher
         npm ci
-        
+
     - name: Build web flasher
       run: |
         cd web-flasher
         npm run build
-        
+
     - name: Copy firmware files to dist
       run: |
         cd web-flasher
@@ -59,25 +59,25 @@ jobs:
         cp sender_manifest.json dist/
         cp receiver_manifest.json dist/
         echo "✅ Firmware files copied to dist folder"
-        
+
     - name: Setup Pages
       uses: actions/configure-pages@v4
-      
+
     - name: Upload artifact
       uses: actions/upload-pages-artifact@v3
       with:
         path: './web-flasher/dist'
-        
+
     - name: Deploy to GitHub Pages
       id: deployment
       uses: actions/deploy-pages@v4
-      
+
     - name: Copy firmware files to Pages
       run: |
         # The firmware files need to be copied to the dist folder before upload
         # This step is now handled by copying files to dist before the upload step
         echo "Firmware files will be included in the dist folder"
-        
+
     - name: Build status
       run: |
         echo "✅ Web flasher built successfully"

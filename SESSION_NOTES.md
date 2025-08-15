@@ -15,6 +15,30 @@
 
 ### Session log
 
+#### 2025-01-15 17:00 UTC
+- Context: GitHub Actions workflow failed with "Permission denied" error when trying to push to gh-pages branch
+- Changes:
+  - Fixed GitHub Actions permissions by adding proper permissions block (contents: read, pages: write, id-token: write)
+  - Updated workflow to use official GitHub Pages actions instead of third-party peaceiris/actions-gh-pages
+  - Added proper firmware file copying to dist folder before upload step
+  - Created .nojekyll file to ensure proper static file serving on GitHub Pages
+  - Updated deployment script to handle firmware files correctly
+  - Resolved workflow permission issues that prevented deployment
+- Commands run:
+  - `cd web-flasher && ./deploy.sh` (tested updated deployment script)
+  - `git add -A && git commit -m "fix github-actions permissions"'` (committed fixes)
+  - `git push` (pushed to GitHub)
+- Files touched:
+  - `.github/workflows/deploy-web-flasher.yml` (fixed permissions and workflow)
+  - `web-flasher/deploy.sh` (updated to handle firmware files correctly)
+  - `web-flasher/.nojekyll` (created for proper GitHub Pages serving)
+  - `SESSION_NOTES.md` (updated with new session log)
+- Next steps:
+  - Monitor GitHub Actions workflow execution
+  - Verify successful deployment to GitHub Pages
+  - Test web flasher functionality on deployed site
+  - Ensure manifests and firmware files are accessible
+
 #### 2025-01-15 16:45 UTC
 - Context: User reported "Failed to download manifest" error after web flasher deployment
 - Changes:
