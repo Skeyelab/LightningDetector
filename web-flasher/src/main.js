@@ -1,44 +1,373 @@
-import { connect, ESPLoader } from 'esp-web-flasher';
+// SBT PIO Web Flasher using ESP Web Tools
+// Based on working examples like Squeezelite-ESP32 installer
+// This provides a modern, reliable way to flash ESP32/ESP8266 devices
 
-// Global state
-let flasher = null;
+// Global variables
+let selectedDeviceType = 'receiver';
 let isFlashing = false;
-let selectedFirmware = null;
-let latestRelease = null;
-let selectedDeviceType = 'transmitter'; // Default to transmitter
-let deviceSelectionInitialized = false; // Prevent duplicate event listeners
-let flashButtonInitialized = false; // Prevent duplicate flash button listeners
+let currentPort = null;
+let installButton = null;
+let hasPortError = false; // Track if we've had port errors
 
 // DOM elements
-const elements = {
-  flashButton: null,
-  status: null,
-  progressContainer: null,
-  progressFill: null,
-  progressText: null,
-  versionInfo: null,
-  manualUpload: null,
-  firmwareDetails: null,
-  transmitterRadio: null,
-  receiverRadio: null,
-  senderFile: null,
-  receiverFile: null
-};
+const elements = {};
 
 // Initialize DOM elements
 function initializeElements() {
-  elements.flashButton = document.getElementById('flashButton');
+  elements.deviceSelector = document.querySelector('input[name="deviceType"]:checked');
   elements.status = document.getElementById('status');
-  elements.progressContainer = document.getElementById('progressContainer');
-  elements.progressFill = document.getElementById('progressFill');
-  elements.progressText = document.getElementById('progressText');
-  elements.versionInfo = document.getElementById('versionInfo');
-  elements.manualUpload = document.getElementById('manualUpload');
+  elements.espWebToolsContainer = document.getElementById('espWebToolsContainer');
   elements.firmwareDetails = document.getElementById('firmwareDetails');
-  elements.transmitterRadio = document.getElementById('transmitter');
-  elements.receiverRadio = document.getElementById('receiver');
-  elements.senderFile = document.getElementById('senderFile');
-  elements.receiverFile = document.getElementById('receiverFile');
+  elements.errorGuidance = document.getElementById('errorGuidance');
+  elements.errorDetails = document.getElementById('errorDetails');
+  elements.improvStatus = document.getElementById('improvStatus');
+  elements.improvStatusText = document.getElementById('improvStatusText');
+}
+
+// Initialize the web flasher
+async function initializeFlasher() {
+  try {
+    // Check if Web Serial API is available
+    if (!('serial' in navigator)) {
+      throw new Error('Web Serial API not supported. Please use Chrome/Edge or enable experimental features.');
+    }
+
+    // Set up minimal error monitoring for critical issues
+    setupMinimalErrorMonitoring();
+
+    // Create ESP Web Tools install button
+    createESPWebToolsButton();
+
+    updateStatus('Web flasher initialized successfully with ESP Web Tools', 'success');
+
+  } catch (error) {
+    console.error('Failed to initialize flasher:', error);
+    updateStatus(`Failed to initialize: ${error.message}`, 'error');
+  }
+}
+
+// Set up minimal error monitoring for critical issues only
+function setupMinimalErrorMonitoring() {
+  // Only intercept the most critical errors that break the user experience
+  const originalConsoleError = console.error;
+  console.error = function(...args) {
+    const message = args.join(' ');
+
+    // Only intercept critical serial port errors that break functionality
+    if (message.includes('Failed to execute \'setSignals\' on \'SerialPort\'') ||
+        message.includes('Failed to set control signals')) {
+
+      console.log('[CRITICAL] Control signal error detected');
+      hasPortError = true;
+
+      // Show user guidance immediately
+      setTimeout(() => {
+        showCriticalErrorGuidance('Control signal error detected. This usually means the ESP32 is not in download mode or there are USB connection issues.');
+      }, 1000);
+
+      return; // Don't spam console with these errors
+    }
+
+    // Only intercept port already open errors
+    if (message.includes('Failed to execute \'open\' on \'SerialPort\'') ||
+        message.includes('The port is already open')) {
+
+      console.log('[CRITICAL] Port conflict detected');
+      hasPortError = true;
+
+      // Show user guidance immediately
+      setTimeout(() => {
+        showCriticalErrorGuidance('Port conflict detected. Another application is using the serial port.');
+      }, 1000);
+
+      return; // Don't spam console with these errors
+    }
+
+    // Log all other errors normally (including Improv errors)
+    originalConsoleError.apply(console, args);
+  };
+}
+
+// Show critical error guidance for issues that break functionality
+function showCriticalErrorGuidance(message) {
+  if (!elements.errorGuidance || !elements.errorDetails) return;
+
+  const guidance = `
+    <h5>Critical Issue Detected</h5>
+    <p>${message}</p>
+    <ul>
+      <li><strong>Immediate Action Required:</strong> This issue prevents flashing from working</li>
+      <li><strong>Check Device:</strong> Ensure ESP32 is in download mode (hold BOOT while connecting USB)</li>
+      <li><strong>USB Connection:</strong> Use a data cable, not just a charging cable</li>
+      <li><strong>Close Other Apps:</strong> Close Arduino IDE, PlatformIO, or serial monitors</li>
+      <li><strong>Try Different Port:</strong> Use a different USB port on your computer</li>
+      <li><strong>Refresh Page:</strong> If issues persist, refresh this page</li>
+    </ul>
+  `;
+
+  elements.errorDetails.innerHTML = guidance;
+  elements.errorGuidance.style.display = 'block';
+
+  // Update status to alert user
+  updateStatus('Critical issue detected - see guidance below', 'error');
+}
+
+// Create ESP Web Tools install button with minimal, focused error handling
+function createESPWebToolsButton() {
+  // Clear the container
+  if (elements.espWebToolsContainer) {
+    elements.espWebToolsContainer.innerHTML = '';
+  }
+
+  // Create container for ESP Web Tools
+  const container = document.createElement('div');
+  container.className = 'esp-web-tools-container';
+  container.style.cssText = 'margin: 20px 0; padding: 20px; border: 2px dashed #ccc; border-radius: 8px; text-align: center;';
+
+  // Create the ESP Web Tools install button
+  installButton = document.createElement('esp-web-install-button');
+
+  // Set up the manifest for our firmware based on device type
+  const manifestPath = selectedDeviceType === 'transmitter' ? './firmware_manifest.json' : './receiver_manifest.json';
+  installButton.manifest = manifestPath;
+
+  // Customize the button appearance
+  installButton.style.cssText = `
+    --esp-tools-button-color: #667eea;
+    --esp-tools-button-text-color: white;
+    --esp-tools-button-border-radius: 8px;
+  `;
+
+  // Add custom slots for better UX
+  const customButton = document.createElement('button');
+  customButton.slot = 'activate';
+  customButton.textContent = `Flash ${selectedDeviceType === 'transmitter' ? 'Transmitter' : 'Receiver'} Firmware`;
+  customButton.className = 'btn btn-primary btn-lg';
+  customButton.style.cssText = 'padding: 15px 30px; font-size: 18px; margin: 10px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; cursor: pointer;';
+
+  const unsupportedMessage = document.createElement('div');
+  unsupportedMessage.slot = 'unsupported';
+  unsupportedMessage.innerHTML = `
+    <div style="color: #721c24; background-color: #f8d7da; border: 1px solid #f5c6cb; padding: 15px; border-radius: 5px; margin: 10px;">
+      <strong>Browser Not Supported</strong><br>
+      Please use Google Chrome or Microsoft Edge to flash firmware.
+    </div>
+  `;
+
+  const notAllowedMessage = document.createElement('div');
+  notAllowedMessage.slot = 'not-allowed';
+  notAllowedMessage.innerHTML = `
+    <div style="color: #721c24; background-color: #f8d7da; border: 1px solid #f5c6cb; padding: 15px; border-radius: 5px; margin: 10px;">
+      <strong>HTTPS Required</strong><br>
+      Web Serial requires a secure connection (HTTPS) to work.
+    </div>
+  `;
+
+  // Add elements to the install button
+  installButton.appendChild(customButton);
+  installButton.appendChild(unsupportedMessage);
+  installButton.appendChild(notAllowedMessage);
+
+  // Add simple, focused event listeners
+  installButton.addEventListener('install-start', handleInstallStart);
+  installButton.addEventListener('install-success', handleInstallSuccess);
+  installButton.addEventListener('install-error', handleInstallError);
+  installButton.addEventListener('install-progress', handleInstallProgress);
+
+  // Add simple instructions
+  const instructions = document.createElement('div');
+  instructions.innerHTML = `
+    <div style="margin: 20px 0; text-align: left;">
+      <h4>Instructions:</h4>
+      <ol>
+        <li>Connect your ESP32 device to your computer via USB</li>
+        <li>Click the "Flash Firmware" button above</li>
+        <li>Select the COM port when prompted</li>
+        <li>Wait for the flashing process to complete</li>
+        <li>Your device will restart with the new firmware</li>
+      </ol>
+      <p><strong>Note:</strong> Make sure your device is in download mode (hold BOOT button while connecting USB)</p>
+
+      <h4>If Flashing Fails:</h4>
+      <ul>
+        <li><strong>Check Device:</strong> Ensure ESP32 is properly connected and in download mode</li>
+        <li><strong>Try Again:</strong> Click the flash button again</li>
+        <li><strong>Refresh Page:</strong> If issues persist, refresh the page</li>
+        <li><strong>Different USB Port:</strong> Try a different USB port or cable</li>
+      </ul>
+    </div>
+  `;
+
+  // Add everything to the container
+  container.appendChild(installButton);
+  container.appendChild(instructions);
+
+  // Insert the container into the espWebToolsContainer
+  if (elements.espWebToolsContainer) {
+    elements.espWebToolsContainer.appendChild(container);
+  }
+}
+
+// Handle installation start
+function handleInstallStart(event) {
+  console.log('Installation started:', event.detail);
+  updateStatus('Installation started - connecting to device...', 'info');
+  isFlashing = true;
+  hideErrorGuidance();
+  hideImprovStatus();
+
+  // Reset port error flag for new attempt
+  hasPortError = false;
+}
+
+// Handle installation success
+function handleInstallSuccess(event) {
+  console.log('Installation successful:', event.detail);
+  updateStatus('Firmware flashed successfully! Device will restart shortly.', 'success');
+  isFlashing = false;
+  currentPort = null;
+  hideErrorGuidance();
+  hideImprovStatus();
+
+  // Reset port error flag on success
+  hasPortError = false;
+}
+
+// Handle installation progress
+function handleInstallProgress(event) {
+  console.log('Installation progress:', event.detail);
+  if (event.detail && event.detail.progress) {
+    updateStatus(`Flashing in progress: ${Math.round(event.detail.progress * 100)}%`, 'info');
+  }
+}
+
+// Handle installation errors with simple, focused guidance
+function handleInstallError(event) {
+  console.error('Installation failed:', event.detail);
+  const error = event.detail.error || 'Unknown error occurred';
+  updateStatus(`Installation failed: ${error}`, 'error');
+  isFlashing = false;
+  currentPort = null;
+
+  // Show simple error guidance
+  showSimpleErrorGuidance(error);
+}
+
+// Show simple, focused error guidance
+function showSimpleErrorGuidance(error) {
+  if (!elements.errorGuidance || !elements.errorDetails) return;
+
+  let guidance = '';
+
+  if (error.includes('Failed to set control signals') || error.includes('setSignals')) {
+    guidance = `
+      <h5>Connection Issue</h5>
+      <p>There was a problem connecting to your ESP32 device.</p>
+      <ul>
+        <li><strong>Enter Download Mode:</strong> Hold BOOT button while connecting USB, then release</li>
+        <li><strong>Check USB Cable:</strong> Use a data cable, not just a charging cable</li>
+        <li><strong>Try Different Port:</strong> Use a different USB port on your computer</li>
+        <li><strong>Reconnect Device:</strong> Unplug and reconnect the ESP32</li>
+      </ul>
+    `;
+  } else if (error.includes('port is already open') || error.includes('already open')) {
+    guidance = `
+      <h5>Port in Use</h5>
+      <p>Another application is using the serial port.</p>
+      <ul>
+        <li><strong>Close Other Apps:</strong> Close Arduino IDE, PlatformIO, or serial monitors</li>
+        <li><strong>Refresh Page:</strong> Refresh this page to reset connections</li>
+        <li><strong>Reconnect Device:</strong> Unplug and reconnect the ESP32</li>
+      </ul>
+    `;
+  } else if (error.includes('Improv')) {
+    guidance = `
+      <h5>Improv Not Available</h5>
+      <p>This is normal - the flasher will continue with standard serial flashing.</p>
+      <ul>
+        <li><strong>Continue:</strong> The error is expected and flashing should proceed</li>
+        <li><strong>Check Device:</strong> Ensure your ESP32 is properly connected</li>
+        <li><strong>Try Again:</strong> Click the flash button again</li>
+      </ul>
+    `;
+  } else {
+    guidance = `
+      <h5>General Error</h5>
+      <p>An unexpected error occurred during flashing.</p>
+      <ul>
+        <li><strong>Try Again:</strong> Click the flash button to retry</li>
+        <li><strong>Check Connection:</strong> Ensure ESP32 is properly connected</li>
+        <li><strong>Refresh Page:</strong> If issues persist, refresh the page</li>
+      </ul>
+    `;
+  }
+
+  elements.errorDetails.innerHTML = guidance;
+  elements.errorGuidance.style.display = 'block';
+}
+
+// Hide error guidance
+function hideErrorGuidance() {
+  if (elements.errorGuidance) {
+    elements.errorGuidance.style.display = 'none';
+  }
+}
+
+// Show Improv status indicator
+function showImprovStatus(message, type = 'info') {
+  if (!elements.improvStatus || !elements.improvStatusText) return;
+
+  elements.improvStatusText.textContent = message;
+  elements.improvStatus.style.display = 'block';
+
+  // Update colors based on type
+  if (type === 'error') {
+    elements.improvStatus.style.background = '#f8d7da';
+    elements.improvStatus.style.borderColor = '#f5c6cb';
+    elements.improvStatusText.style.color = '#721c24';
+  } else if (type === 'warning') {
+    elements.improvStatus.style.background = '#fff3cd';
+    elements.improvStatus.style.borderColor = '#ffeaa7';
+    elements.improvStatusText.style.color = '#856404';
+  } else {
+    elements.improvStatus.style.background = '#e8f4fd';
+    elements.improvStatus.style.borderColor = '#bee5eb';
+    elements.improvStatusText.style.color = '#0c5460';
+  }
+}
+
+// Hide Improv status indicator
+function hideImprovStatus() {
+  if (elements.improvStatus) {
+    elements.improvStatus.style.display = 'none';
+  }
+}
+
+
+
+// Handle device type selection
+function handleDeviceSelection() {
+  const radioButtons = document.querySelectorAll('input[name="deviceType"]');
+
+  radioButtons.forEach(radio => {
+    radio.addEventListener('change', (event) => {
+      selectedDeviceType = event.target.value;
+      console.log(`${selectedDeviceType} selected`);
+
+      // Update the ESP Web Tools button with new manifest
+      createESPWebToolsButton();
+
+      // Update status
+      const deviceName = selectedDeviceType === 'transmitter' ? 'Transmitter' : 'Receiver';
+      updateStatus(`${deviceName} firmware selected`, 'info');
+
+      // Update firmware details
+      updateFirmwareDetails();
+
+      // Hide any previous error guidance
+      hideErrorGuidance();
+    });
+  });
 }
 
 // Update firmware details display based on selected device
@@ -51,15 +380,15 @@ function updateFirmwareDetails() {
       name: 'Transmitter (Sender)',
       description: 'Lightning detection and environmental monitoring device',
       features: ['AS3935 Lightning Sensor', 'Environmental Sensors', 'LoRa Transmission', 'Battery Powered'],
-      firmware: 'sender_firmware.bin',
-      size: '~500KB'
+      firmware: 'sender_firmware_v1.0.0.bin',
+      size: '~100KB'
     },
     receiver: {
       name: 'Receiver',
       description: 'LoRa reception and WiFi data forwarding device',
       features: ['LoRa Reception', 'WiFi Connectivity', 'Data Forwarding', 'Web Interface'],
-      firmware: 'receiver_firmware.bin',
-      size: '~450KB'
+      firmware: 'receiver_firmware_v1.0.0.bin',
+      size: '~100KB'
     }
   };
 
@@ -89,182 +418,6 @@ function updateFirmwareDetails() {
   `;
 }
 
-// Handle device type selection
-function handleDeviceSelection() {
-  // Prevent duplicate event listener initialization
-  if (deviceSelectionInitialized) {
-    console.log('Device selection already initialized, skipping...');
-    return;
-  }
-
-  if (elements.transmitterRadio && elements.receiverRadio) {
-    console.log('Initializing device selection event listeners...');
-
-    elements.transmitterRadio.addEventListener('change', () => {
-      console.log('Transmitter selected');
-      selectedDeviceType = 'transmitter';
-      updateFirmwareDetails();
-    });
-
-    elements.receiverRadio.addEventListener('change', () => {
-      console.log('Receiver selected');
-      selectedDeviceType = 'receiver';
-      updateFirmwareDetails();
-    });
-
-    // Mark as initialized
-    deviceSelectionInitialized = true;
-    console.log('Device selection event listeners initialized');
-  } else {
-    console.warn('Device selection radio buttons not found');
-  }
-}
-
-// Handle firmware file uploads
-function handleFirmwareUploads() {
-  if (elements.senderFile && elements.receiverFile) {
-    elements.senderFile.addEventListener('change', (event) => {
-      const file = event.target.files[0];
-      if (file) {
-        console.log('Sender firmware file selected:', file.name, file.size, 'bytes');
-        updateStatus(`Sender firmware loaded: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`, 'success');
-      }
-    });
-
-    elements.receiverFile.addEventListener('change', (event) => {
-      const file = event.target.files[0];
-      if (file) {
-        console.log('Receiver firmware file selected:', file.name, file.size, 'bytes');
-        updateStatus(`Receiver firmware loaded: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`, 'success');
-      }
-    });
-  }
-}
-
-// Fetch firmware from GitHub release
-async function fetchFirmware(deviceType) {
-  if (!latestRelease || !latestRelease.firmwareManifest) {
-    throw new Error('No firmware manifest available. Please upload firmware manually or check releases.');
-  }
-
-  const deviceKey = deviceType === 'transmitter' ? 'transmitter' : 'receiver';
-  const firmwareInfo = latestRelease.firmwareManifest.firmware_files[deviceKey];
-
-  if (!firmwareInfo) {
-    throw new Error(`No firmware found for ${deviceType} in release ${latestRelease.tag_name}`);
-  }
-
-    // For now, we'll use a placeholder since direct GitHub downloads have CORS issues
-  // In production, you'd either:
-  // 1. Host firmware files on a CORS-enabled service
-  // 2. Use GitHub API to get download URLs
-  // 3. Implement server-side proxy
-
-  updateStatus(`Firmware ${firmwareInfo.filename} selected from release ${latestRelease.tag_name}`, 'info');
-
-    // Simulate firmware data for now
-  // TODO: Implement actual firmware download with CORS-compatible URLs
-  const firmwareData = new ArrayBuffer(firmwareInfo.size || 512000);
-
-  console.log(`Would download: ${firmwareInfo.filename} from ${latestRelease.tag_name}`);
-  console.log('Note: Direct GitHub downloads blocked by CORS. Need CORS-enabled hosting.');
-
-  updateStatus(`Firmware prepared: ${firmwareInfo.filename} (${(firmwareData.byteLength / 1024).toFixed(1)} KB)`, 'success');
-
-  return {
-    data: firmwareData,
-    filename: firmwareInfo.filename,
-    size: firmwareData.byteLength,
-    checksum: firmwareInfo.checksum
-  };
-}
-
-// Validate device compatibility with selected firmware
-async function validateDeviceCompatibility(connection, deviceType) {
-  try {
-    // Get device information from the connection
-    const chipName = connection.chipName || 'Unknown';
-    const flashSize = connection.flashSize || 'Unknown';
-
-    console.log('Device info:', { chipName, flashSize, deviceType });
-
-    // Check if we have a valid chip name
-    if (!chipName || chipName === 'Unknown' || chipName === null) {
-      console.warn('Chip detection failed, but allowing for testing purposes');
-      return {
-        compatible: true, // Allow for testing even if chip detection fails
-        reason: 'Warning: Could not identify ESP32 chip type, but proceeding anyway',
-        chipName: 'Unknown',
-        flashSize: flashSize,
-        warning: true
-      };
-    }
-
-    // Validate chip type compatibility
-    const supportedChips = ['ESP32', 'ESP32-S2', 'ESP32-S3', 'ESP32-C3'];
-    if (!supportedChips.some(chip => chipName.includes(chip))) {
-      return {
-        compatible: false,
-        reason: `Unsupported chip type: ${chipName}. Supported: ${supportedChips.join(', ')}`,
-        chipName: chipName,
-        flashSize: flashSize
-      };
-    }
-
-    // Check flash size compatibility
-    const minFlashSize = 4; // 4MB minimum
-    if (flashSize && flashSize !== 'Unknown') {
-      const flashSizeMB = parseInt(flashSize) / (1024 * 1024);
-      if (flashSizeMB < minFlashSize) {
-        return {
-          compatible: false,
-          reason: `Insufficient flash size: ${flashSizeMB.toFixed(1)}MB. Minimum required: ${minFlashSize}MB`,
-          chipName: chipName,
-          flashSize: flashSize
-        };
-      }
-    }
-
-    // All checks passed
-    return {
-      compatible: true,
-      reason: 'Device is compatible',
-      chipName: chipName,
-      flashSize: flashSize,
-      deviceType: deviceType
-    };
-
-  } catch (error) {
-    console.error('Device compatibility validation error:', error);
-    return {
-      compatible: false,
-      reason: `Validation error: ${error.message}`,
-      chipName: 'Unknown',
-      flashSize: 'Unknown'
-    };
-  }
-}
-
-// Initialize the web flasher
-async function initializeFlasher() {
-  try {
-    // Check if Web Serial API is available
-    if (!('serial' in navigator)) {
-      throw new Error('Web Serial API not supported. Please use Chrome/Edge or enable experimental features.');
-    }
-
-    // Initialize ESPLoader
-    flasher = new ESPLoader();
-
-    updateStatus('Web flasher initialized successfully', 'success');
-    elements.flashButton.disabled = false;
-
-  } catch (error) {
-    console.error('Failed to initialize flasher:', error);
-    updateStatus(`Failed to initialize: ${error.message}`, 'error');
-  }
-}
-
 // Update status display
 function updateStatus(message, type = 'info') {
   if (elements.status) {
@@ -274,321 +427,84 @@ function updateStatus(message, type = 'info') {
   console.log(`[${type.toUpperCase()}] ${message}`);
 }
 
-// Update progress bar
-function updateProgress(percent, text) {
-  if (elements.progressFill) {
-    elements.progressFill.style.width = `${percent}%`;
-  }
-  if (elements.progressText) {
-    elements.progressText.textContent = text;
-  }
-}
-
-// Show progress container
-function showProgress() {
-  if (elements.progressContainer) {
-    elements.progressContainer.style.display = 'block';
-  }
-}
-
-// Hide progress container
-function hideProgress() {
-  if (elements.progressContainer) {
-    elements.progressContainer.style.display = 'none';
-  }
-}
-
-// Fetch latest release from GitHub
-async function fetchLatestRelease() {
-  try {
-    const response = await fetch('https://api.github.com/repos/Skeyelab/LightningDetector/releases/latest');
-    if (!response.ok) {
-      if (response.status === 403) {
-        throw new Error('GitHub API rate limit exceeded. Please try again later or check the repository manually.');
-      } else if (response.status === 404) {
-        throw new Error('No releases found. This repository may not have any releases yet.');
-      } else {
-        throw new Error(`GitHub API error: ${response.status}`);
-      }
-    }
-
-    const release = await response.json();
-    latestRelease = release;
-
-    // Fetch firmware manifest if available
-    try {
-      // Use raw GitHub content URL which supports CORS
-      const manifestResponse = await fetch(`https://raw.githubusercontent.com/Skeyelab/LightningDetector/main/web-flasher/firmware_manifest.json`);
-      if (manifestResponse.ok) {
-        const manifest = await manifestResponse.json();
-        latestRelease.firmwareManifest = manifest;
-        console.log('Firmware manifest loaded:', manifest);
-      }
-    } catch (manifestError) {
-      console.warn('Could not load firmware manifest:', manifestError.message);
-    }
-
-    if (elements.versionInfo) {
-      elements.versionInfo.innerHTML = `
-        <strong>Latest Release:</strong> ${release.tag_name}<br>
-        <strong>Published:</strong> ${new Date(release.published_at).toLocaleDateString()}<br>
-        <strong>Description:</strong> ${release.body || 'No description available'}
-        ${latestRelease.firmwareManifest ? '<br><strong>Firmware:</strong> Available for download' : ''}
-      `;
-    }
-
-    return release;
-  } catch (error) {
-    console.error('Failed to fetch latest release:', error);
-
-    // Provide helpful fallback message
-    if (elements.versionInfo) {
-      elements.versionInfo.innerHTML = `
-        <strong>Release Information Unavailable</strong><br>
-        <em>${error.message}</em><br><br>
-        <strong>Alternative:</strong> Download firmware manually from the
-        <a href="https://github.com/Skeyelab/LightningDetector/releases" target="_blank">GitHub releases page</a>
-      `;
-    }
-
-    updateStatus(`Failed to fetch release: ${error.message}`, 'warning');
-    return null;
-  }
-}
-
-// Start flashing process
-function startFlashing() {
-  if (isFlashing) {
-    updateStatus('Flashing already in progress', 'warning');
-    return;
-  }
-
-  const deviceType = selectedDeviceType;
-  const deviceName = deviceType === 'transmitter' ? 'Transmitter' : 'Receiver';
-
-  // Start the process immediately while we have user gesture context
-  updateStatus(`Preparing to flash ${deviceName} firmware...`, 'info');
-  showProgress();
-  updateProgress(0, `Preparing ${deviceName} firmware...`);
-
-  updateProgress(10, 'Requesting serial port access...');
-  updateStatus(`Requesting serial port access for ${deviceName} firmware...`, 'info');
-
-  // Let the connect() function handle port selection and opening
-  // This avoids double port selection prompts
-  updateProgress(20, 'Connecting to ESP32...');
-  updateStatus(`Connecting to ESP32. Starting ${deviceName} flash process...`, 'info');
-
-  // Create a logger object for the connect function
-  const logger = {
-    log: (message) => {
-      console.log(`[ESP32] ${message}`);
-      updateStatus(message, 'info');
-    },
-    error: (message) => {
-      console.error(`[ESP32] ${message}`);
-      updateStatus(message, 'error');
-    }
-  };
-
-  console.log('Calling connect() function without pre-selecting port...');
-  console.log('connect function type:', typeof connect);
-
-  // Call connect() without a port - it will handle port selection internally
-  const connectPromise = connect(logger);
-  console.log('connectPromise created:', connectPromise);
-  console.log('connectPromise type:', typeof connectPromise);
-  console.log('connectPromise constructor:', connectPromise?.constructor?.name);
-
-  connectPromise.then(connection => {
-    console.log('connect() Promise resolved with:', connection);
-    console.log('Connection type:', typeof connection);
-    console.log('Connection constructor:', connection?.constructor?.name);
-
-    if (connection && typeof connection === 'object') {
-      console.log('Connection keys:', Object.keys(connection));
-      console.log('Connection methods:', Object.getOwnPropertyNames(connection));
-    }
-
-    return connection;
-  }).catch(connectError => {
-    console.error('connect() Promise failed:', connectError);
-    throw new Error(`ESP32 connection failed: ${connectError.message}`);
-  })
-    .then(async connection => {
-      console.log('ESP32 connection established:', connection);
-      console.log('Connection type:', typeof connection);
-      console.log('Connection constructor:', connection?.constructor?.name);
-      console.log('Connection keys:', connection ? Object.keys(connection) : 'undefined');
-
-      // Validate the connection object
-      if (!connection) {
-        throw new Error('ESP32 connection failed - no connection object returned');
-      }
-
-      // Check if connection has required methods
-      if (typeof connection.log !== 'function') {
-        console.warn('Connection object missing log method, but continuing...');
-        console.log('Available methods on connection:', Object.getOwnPropertyNames(connection));
-      }
-
-      updateProgress(40, 'Reading device information...');
-      updateStatus('Reading ESP32 device information...', 'info');
-
-      // Try to read chip info if it's not already available
-      if (!connection.chipName || connection.chipName === 'Unknown') {
-        try {
-          console.log('Chip name unknown, attempting to detect...');
-          // Force chip detection - some methods that might work:
-          if (typeof connection.detect_chip === 'function') {
-            await connection.detect_chip();
-          } else if (typeof connection.read_reg === 'function') {
-            // Try to read chip ID register to identify chip
-            console.log('Attempting manual chip detection...');
-          }
-        } catch (detectionError) {
-          console.warn('Chip detection failed:', detectionError);
-        }
-      }
-
-      // Log detailed device information for debugging
-      if (connection) {
-        console.log('Device Details after detection:');
-        console.log('- Chip Name:', connection.chipName);
-        console.log('- Flash Size:', connection.flashSize);
-        console.log('- Connected:', connection.connected);
-        console.log('- IS_STUB:', connection.IS_STUB);
-        console.log('- Debug Mode:', connection.debug);
-      }
-
-      updateProgress(42, 'ESP32 identified');
-      updateStatus(`ESP32 identified. Starting ${deviceName} firmware flash...`, 'info');
-
-      // Validate device compatibility before proceeding
-      updateProgress(45, 'Validating device compatibility...');
-
-      // Check if the connected device is compatible with the selected firmware
-      const deviceCompatibility = await validateDeviceCompatibility(connection, deviceType);
-      if (!deviceCompatibility.compatible) {
-        // If chip detection failed but connection succeeded, allow with warning
-        if (connection.connected && (deviceCompatibility.chipName === 'Unknown' || !deviceCompatibility.chipName)) {
-          console.warn('Device identification failed but connection is active. Proceeding with caution...');
-          updateStatus('Warning: Could not identify device type, but connection is active. Proceeding...', 'warning');
-        } else {
-          throw new Error(`Device compatibility check failed: ${deviceCompatibility.reason}`);
-        }
-      }
-
-      if (deviceCompatibility.warning) {
-        updateStatus(`Device compatibility: ${deviceCompatibility.reason}`, 'warning');
-      } else {
-        updateStatus(`Device compatibility verified: ${deviceCompatibility.chipName}`, 'success');
-      }
-
-      // Get firmware from GitHub release or user upload
-      let firmwareData = null;
-      let firmwareFilename = 'Unknown';
-
-      try {
-        // Try to fetch from GitHub release first
-        updateProgress(50, 'Fetching firmware from GitHub...');
-        const firmware = await fetchFirmware(deviceType);
-        firmwareData = firmware.data;
-        firmwareFilename = firmware.filename;
-        updateStatus(`Using firmware: ${firmwareFilename}`, 'success');
-      } catch (fetchError) {
-        console.warn('Could not fetch firmware from GitHub:', fetchError.message);
-        updateStatus('GitHub firmware not available, please upload firmware manually', 'warning');
-
-        // Check if user has uploaded firmware files
-        const uploadedFile = deviceType === 'transmitter' ?
-          elements.senderFile?.files[0] : elements.receiverFile?.files[0];
-
-        if (uploadedFile) {
-          updateProgress(50, 'Reading uploaded firmware...');
-          firmwareData = await uploadedFile.arrayBuffer();
-          firmwareFilename = uploadedFile.name;
-          updateStatus(`Using uploaded firmware: ${firmwareFilename}`, 'success');
-        } else {
-          throw new Error('No firmware available. Please upload firmware manually or check GitHub releases.');
-        }
-      }
-
-      updateProgress(60, 'Flashing firmware...');
-      updateStatus(`Flashing ${firmwareFilename} to ESP32...`, 'info');
-
-      // TODO: Implement real ESPLoader flashing here
-      // For now, simulate the process
-      await new Promise(resolve => setTimeout(resolve, 3000));
-
-      updateProgress(80, 'Verifying flash...');
-      updateStatus('Verifying firmware installation...', 'info');
-
-      // TODO: Implement real verification here
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      return { success: true, firmware: firmwareFilename };
-    })
-    .then((result) => {
-      if (result && result.success) {
-        updateProgress(100, 'Flash complete!');
-        const firmwareInfo = result.firmware ? ` using ${result.firmware}` : '';
-        updateStatus(`${deviceName} firmware flashed successfully${firmwareInfo}!`, 'success');
-      } else {
-        throw new Error('Firmware flashing failed');
-      }
-    })
-    .catch(error => {
-      console.error('Flashing failed:', error);
-
-      let errorMessage = 'Unknown error occurred';
-      if (error.name === 'NotFoundError') {
-        errorMessage = 'No serial port selected. Please select a port and try again.';
-      } else if (error.name === 'SecurityError') {
-        errorMessage = 'Serial port access denied. Please allow access and try again.';
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-
-      updateStatus(`Flashing failed: ${errorMessage}`, 'error');
-    })
-    .finally(() => {
-      isFlashing = false;
-      elements.flashButton.disabled = false;
-      hideProgress();
-    });
-
-  // Set isFlashing immediately to prevent multiple clicks
-  isFlashing = true;
-  elements.flashButton.disabled = true;
-}
-
 // Initialize when page loads
 window.addEventListener('load', async () => {
   console.log('SBT PIO Web Flasher page loaded');
+  console.log('Using ESP Web Tools for reliable firmware flashing');
 
   initializeElements();
   await initializeFlasher();
-  await fetchLatestRelease();
 
   console.log('Initializing device selection...');
-  handleDeviceSelection(); // Initialize device selection listeners
+  handleDeviceSelection();
 
-  console.log('Initializing firmware uploads...');
-  handleFirmwareUploads(); // Initialize firmware upload listeners
-
-  console.log('Updating firmware details...');
-  updateFirmwareDetails(); // Display initial firmware details
-
-  // Add event listeners
-  if (elements.flashButton && !flashButtonInitialized) {
-    console.log('Initializing flash button event listener...');
-    elements.flashButton.addEventListener('click', startFlashing);
-    flashButtonInitialized = true;
-    console.log('Flash button event listener initialized');
-  } else if (elements.flashButton && flashButtonInitialized) {
-    console.log('Flash button already initialized, skipping...');
-  }
+  console.log('Initializing firmware details...');
+  updateFirmwareDetails();
 
   console.log('Page initialization complete');
 });
+
+// Add cleanup on page unload
+window.addEventListener('beforeunload', () => {
+  if (currentPort && currentPort.readable) {
+    try {
+      currentPort.close();
+    } catch (error) {
+      console.log('Error closing port on unload:', error);
+    }
+  }
+});
+
+// Simple recovery function
+window.recoverFromError = function() {
+  hideErrorGuidance();
+  updateStatus('Ready to flash firmware', 'info');
+  if (installButton) {
+    installButton.style.opacity = '1';
+    installButton.style.pointerEvents = 'auto';
+  }
+
+  // Reset port error flag
+  hasPortError = false;
+};
+
+// Reset port state function for manual port conflict resolution
+window.resetPortState = function() {
+  console.log('[MANUAL] User requested port state reset');
+  updateStatus('Resetting port state...', 'warning');
+
+  try {
+    // Try to close any existing ports
+    if (currentPort && currentPort.readable) {
+      try {
+        currentPort.close();
+        console.log('[MANUAL] Closed existing port');
+      } catch (closeError) {
+        console.log('[MANUAL] Error closing port:', closeError);
+      }
+    }
+
+    // Reset state variables
+    currentPort = null;
+    hasPortError = false;
+
+    // Hide error guidance
+    hideErrorGuidance();
+
+    // Update status
+    updateStatus('Port state reset completed. Try flashing again.', 'success');
+
+    // Re-enable the install button
+    if (installButton) {
+      installButton.style.opacity = '1';
+      installButton.style.pointerEvents = 'auto';
+    }
+
+    console.log('[MANUAL] Port state reset completed');
+
+  } catch (error) {
+    console.error('[MANUAL] Port state reset failed:', error);
+    updateStatus('Port state reset failed. Please refresh the page.', 'error');
+  }
+};
+

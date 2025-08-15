@@ -428,6 +428,46 @@
             color: #495057;
         }
 
+        .error-guidance {
+            transition: all 0.3s ease;
+        }
+
+        .error-guidance h5 {
+            color: #856404;
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+
+        .error-guidance p {
+            margin-bottom: 15px;
+            color: #856404;
+        }
+
+        .error-guidance ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+
+        .error-guidance li {
+            margin: 8px 0;
+            color: #856404;
+        }
+
+        .btn-warning:hover {
+            background: #e0a800 !important;
+            transform: translateY(-1px);
+        }
+
+        .btn-info:hover {
+            background: #138496 !important;
+            transform: translateY(-1px);
+        }
+
+        .btn-danger:hover {
+            background: #c82333 !important;
+            transform: translateY(-1px);
+        }
+
         @media (max-width: 768px) {
             .device-options {
                 grid-template-columns: 1fr;
@@ -521,7 +561,7 @@
 
             <div class="section">
                 <h2>🚀 Firmware Flashing</h2>
-                <p>Connect your ESP32 device and flash the latest firmware directly from your browser.</p>
+                <p>Connect your ESP32 device and flash the latest firmware directly from your browser using ESP Web Tools.</p>
 
                 <div class="firmware-selection">
                     <h3>📡 Select Device Type</h3>
@@ -569,19 +609,35 @@
                     </div>
                 </div>
 
-                <button id="flashButton" class="flash-button" disabled>
-                    🔌 Connect & Flash
-                </button>
+                <!-- ESP Web Tools will be inserted here by JavaScript -->
+                <div id="espWebToolsContainer"></div>
 
                 <div id="status" class="status info">
-                    Initializing web flasher...
+                    Initializing web flasher with ESP Web Tools...
                 </div>
 
-                <div id="progressContainer" class="progress-container">
-                    <div class="progress-bar">
-                        <div id="progressFill" class="progress-fill"></div>
+                <!-- Improv status indicator -->
+                <div id="improvStatus" class="improv-status" style="display: none; margin: 15px 0; padding: 15px; background: #e8f4fd; border: 1px solid #bee5eb; border-radius: 8px; text-align: center;">
+                    <span style="color: #0c5460; font-weight: 500;">ℹ️ System Status</span>
+                    <div id="improvStatusText" style="margin-top: 8px; color: #0c5460;">
+                        Monitoring system status...
                     </div>
-                    <div id="progressText" class="progress-text">Ready to flash</div>
+                </div>
+
+                <!-- Error guidance section -->
+                <div id="errorGuidance" class="error-guidance" style="display: none; margin: 20px 0; padding: 20px; background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px;">
+                    <h4 style="margin-top: 0; color: #856404;">🔧 Troubleshooting Common Issues</h4>
+                    <div id="errorDetails">
+                        <!-- Dynamic error guidance will be inserted here -->
+                    </div>
+                    <div style="margin-top: 15px; text-align: center;">
+                        <button onclick="window.recoverFromError()" class="btn btn-warning" style="background: #ffc107; color: #212529; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-right: 10px;">
+                            🔄 Try Again
+                        </button>
+                        <button onclick="window.resetPortState()" class="btn btn-info" style="background: #17a2b8; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
+                            🔧 Reset Port State
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -695,6 +751,12 @@
             </div>
         </div>
     </div>
+
+    <!-- ESP Web Tools -->
+    <script
+      type="module"
+      src="https://unpkg.com/esp-web-tools@10/dist/web/install-button.js?module"
+    ></script>
 
     <script type="module" src="/src/main.js"></script>
 </body>
