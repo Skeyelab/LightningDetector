@@ -54,6 +54,24 @@
   - Deploy to GitHub Pages to test the complete fix
   - Verify ESP32 connection and flashing workflow works end-to-end
 
+#### 2025-01-14 17:00 UTC
+- Context: Enhanced web flasher with improved firmware workflow and file upload support
+- Changes:
+  - Added support for manual firmware file uploads (sender/receiver .bin files)
+  - Improved progress reporting during flashing process with better async/await handling
+  - Added file selection feedback and logging
+  - Enhanced user experience with comprehensive status updates
+  - Fixed async function usage in flashing workflow
+- Commands run:
+  - `cd web-flasher && npm run build` (verified improvements work)
+  - `git add -A && git commit -m "feat(web-flasher): improve firmware flashing workflow..." && git push origin main`
+- Files touched:
+  - `web-flasher/src/main.js` (added file upload handling, improved flashing workflow)
+- Next steps:
+  - Deploy to GitHub Pages to test complete enhanced workflow
+  - Test manual firmware file uploads
+  - Verify end-to-end ESP32 flashing functionality
+
 #### 2024-08-15 01:05 UTC
 - Context: Successfully migrated from dual-branch (main + gh-pages) to single-branch approach
 - Changes:

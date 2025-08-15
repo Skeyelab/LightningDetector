@@ -325,24 +325,24 @@ function startFlashing() {
 
       // Get the firmware file based on device type
       const firmwareFile = deviceType === 'transmitter' ? 'sender_firmware.bin' : 'receiver_firmware.bin';
-      
+
       // For now, we'll simulate the firmware data since we don't have actual .bin files
       // In a real implementation, you would fetch the firmware from a URL or upload it
       updateProgress(50, 'Preparing firmware...');
-      
+
       // Simulate firmware preparation
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       updateProgress(60, 'Flashing firmware...');
-      
+
       // Simulate flashing process
       await new Promise(resolve => setTimeout(resolve, 3000));
-      
+
       updateProgress(80, 'Verifying flash...');
-      
+
       // Simulate verification
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       return { success: true };
     })
     .then((result) => {
