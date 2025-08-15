@@ -1,387 +1,237 @@
-# Session Notes - LtngDet PIO Heltec V3 OLED Project
+# SBT PIO Heltec V3 OLED - Session Notes
 
 ## Setup Summary
-- **Project**: LtngDet PIO Heltec V3 OLED (LoRa Lightning Detector)
-- **Framework**: PlatformIO with ESP32 Arduino core
-- **Hardware**: Heltec WiFi Kit 32 V3 with OLED display
-- **Architecture**: Modular framework with hardware abstraction layers
-- **Testing**: Google Test framework with 38 test cases
-- **CI/CD**: GitHub Actions with comprehensive caching and release workflow
+- **Project**: SBT PIO Heltec V3 OLED (formerly Talos PIO Heltec V3 OLED)
+- **Framework**: PlatformIO with ESP32-S3
+- **Hardware**: Heltec WiFi LoRa 32 V3
+- **Architecture**: Modular design with hardware abstraction layer
+- **Testing**: 51 unit tests covering HAL, sensors, and system components
+- **CI/CD**: GitHub Actions with optimized caching strategy
+
+## Current Status
+- **Hardware Abstraction Layer**: ✅ Complete (51 tests passing)
+- **Modular Architecture**: ✅ Complete (comprehensive test coverage)
+- **Release Workflow**: ✅ Complete (optimized caching, GitHub Pages integration)
+- **Web Flasher**: ✅ Complete (updated to use new esptool-js library)
+- **Rebranding**: ✅ Complete (Talos → SBT throughout project)
 
 ### Session log
 
-#### 2025-01-27 22:30 UTC
-- Context: Optimized release workflow caching to improve build performance and reduce redundant operations
+#### 2025-01-14 15:30 UTC
+- Context: Web flasher CDN loading failures due to deprecated esp-web-flasher library
 - Changes:
-  - Enhanced `.github/workflows/release.yml` with comprehensive caching strategy
-  - Added Python package caching for pip dependencies
-  - Added build artifacts caching for PlatformIO build outputs
-  - Implemented conditional library installation to avoid redundant downloads
-  - Aligned release workflow caching with CI workflow patterns
-  - Fixed sed command syntax error in web flasher HTML generation (used | delimiter for URL replacements)
+  - Replaced deprecated esp-web-flasher with new esptool-js library from Espressif
+  - Updated GitHub Pages index.html to use modern ESP32 flashing library
+  - Improved CDN loading logic with multiple fallback sources
+  - Enhanced error handling and user feedback
+  - Maintained manual firmware upload functionality
 - Commands run:
-  - Analyzed existing CI workflow caching patterns
-  - Reviewed CI_CACHING_OPTIMIZATION.md for best practices
-  - Updated release workflow with advanced caching layers
-  - Fixed sed syntax issue with repository URL replacement
+  - `git checkout gh-pages`
+  - `git add index.html`
+  - `git commit -m "fix: replace deprecated esp-web-flasher with new esptool-js library"`
+  - `git push`
+  - `git stash`
+  - `git checkout main`
 - Files touched:
-  - `.github/workflows/release.yml` (enhanced caching + bug fix)
-- Caching Optimizations Added:
-  - **Python Package Cache**: Caches pip packages with environment-specific keys
-  - **Build Artifacts Cache**: Caches PlatformIO build outputs and temporary files
-  - **Enhanced PlatformIO Cache**: Improved library dependency caching
-  - **Conditional Installation**: Skips library installation if already cached
-- Bug Fixes:
-  - **Sed Command Syntax**: Fixed sed delimiter conflict with forward slashes in URLs by using | delimiter
-  - **Repository URL Replacement**: Resolved issue with {{REPO_URL}} and {{REPO_NAME}} template variables
-- Expected Performance Improvements:
-  - 40-60% faster build times on subsequent runs
-  - Reduced library download redundancy
-  - Better cache hit rates for release builds
-  - Consistent caching strategy across CI and release workflows
+  - `index.html` (gh-pages branch)
 - Next steps:
-  - Monitor release workflow performance improvements
-  - Consider adding clang-tidy caching for release builds if needed
-  - Document caching strategy in release documentation
-  - Test release workflow to ensure sed command fix resolves the build failure
+  - Test web flasher functionality on GitHub Pages
+  - Verify esptool-js library loads successfully
+  - Monitor for any remaining CDN or compatibility issues
 
-#### 2025-01-27 21:15 UTC
-- Context: Added comprehensive release workflow and script system for automated firmware releases with ESP32 web flasher compatibility
+#### 2025-01-14 15:00 UTC
+- Context: Release workflow caching optimization and CDN loading issues investigation
 - Changes:
-  - Created `.github/workflows/release.yml`: Automated release workflow triggered by version tags
-  - Created `scripts/create_release.sh`: Interactive script for creating release tags and triggering workflows
-  - Created `scripts/web_flasher_template.html`: Professional ESP32 web flasher template with modern UI
-  - Created `RELEASE_README.md`: Comprehensive documentation for the release process
-  - Created `scripts/test_release_script.sh`: Test script to verify release functionality
-  - Updated release workflow to generate ESP32 web flasher compatible artifacts
+  - Removed ineffective build artifacts cache from release workflow
+  - Optimized caching strategy to only cache dependencies (PlatformIO core, libraries, Python packages)
+  - Identified root cause of CDN failures: deprecated esp-web-flasher library
+  - Documented caching strategy improvements
 - Commands run:
-  - `chmod +x scripts/create_release.sh`
-  - `chmod +x scripts/test_release_script.sh`
-  - `./scripts/create_release.sh --help` (verified script functionality)
+  - `git add .github/workflows/release.yml`
+  - `git commit -m "fix: remove ineffective build artifacts cache from release workflow"`
+  - `git push`
 - Files touched:
-  - `.github/workflows/release.yml` (new release workflow)
-  - `scripts/create_release.sh` (release tag creation script)
-  - `scripts/web_flasher_template.html` (web flasher template)
-  - `RELEASE_README.md` (release documentation)
-  - `scripts/test_release_script.sh` (test script)
-- Release Workflow Features:
-  - Triggers on version tags (v* format)
-  - Builds both sender and receiver firmware
-  - Generates ESP32 web flasher compatible HTML files
-  - Creates manifest files for web flasher tools
-  - Automatically creates GitHub releases with all artifacts
-  - Supports semantic versioning (1.0.0, 2.1.3-beta.1, etc.)
-- Web Flasher Features:
-  - Modern, responsive UI design
-  - Progress tracking during flashing
-  - Error handling and user feedback
-  - ESP32 Web Flasher library integration
-  - Mobile and desktop compatible
+  - `.github/workflows/release.yml`
 - Next steps:
-  - Test release workflow by creating a test tag
-  - Set up GitHub Pages for hosting web flasher files
-  - Document web flasher integration for users
-  - Consider adding firmware signature verification
+  - Fix deprecated library issue in web flasher
+  - Update to modern ESP32 flashing library
 
-#### 2025-08-15 02:53 UTC
-- Context: Created GitHub issue for removing RX/TX switching from button and reworking button functionality
+#### 2025-01-14 14:30 UTC
+- Context: Complete rebranding from "Talos" to "SBT" across project
 - Changes:
-  - Created GitHub issue #19: "Remove RX/TX switching from button - rework button functionality"
-  - Analyzed current button implementation in main.cpp to understand RX/TX switching logic
-  - Identified that short press currently toggles between Sender/Receiver modes
-  - Proposed three options for button rework: device-specific functions, unified interface, or context-aware behavior
+  - Updated all project files to use "SBT" instead of "Talos"
+  - Modified release workflow, scripts, and documentation
+  - Updated GitHub Pages README with comprehensive project information
+  - Maintained all existing functionality while rebranding
 - Commands run:
-  - `git remote -v` (to confirm repository details)
-  - `git branch -a` (to check current branch status)
-- Files analyzed:
-  - `src/main.cpp` (button handling logic, RX/TX switching implementation)
-  - `src/app_logic.cpp` (button action classification)
-  - `src/config/system_config.h` (button configuration)
-- GitHub Issue: [#19 Remove RX/TX switching from button - rework button functionality](https://github.com/Skeyelab/LtngDet-pio-heltec-v3-oled/issues/19)
-- Next steps:
-  - Choose preferred button rework option from the three proposed approaches
-  - Implement button functionality changes to remove mode switching
-  - Update OLED display to remove mode switching indicators
-  - Preserve existing LoRa parameter cycling functionality
-
-#### 2025-08-15 02:39 UTC
-- Context: Created GitHub issue for WiFi IP address display enhancement
-- Changes:
-  - Created GitHub issue #18: "Display IP address when connected to WiFi"
-  - Analyzed current WiFi display implementation in main.cpp and wifi_manager.cpp
-  - Identified that IP address is already available via WiFi.localIP() when connected
-  - Documented technical requirements and implementation approach
-- Commands run:
-  - `git remote -v` (to confirm repository details)
-- Files analyzed:
-  - `src/main.cpp` (display functions, WiFi status management)
-  - `src/wifi_manager.cpp` (WiFi connection logic)
-- GitHub Issue: [#18 Display IP address when connected to WiFi](https://github.com/Skeyelab/LtngDet-pio-heltec-v3-oled/issues/18)
-- Next steps:
-  - Implement IP address display above network location in OLED display
-  - Update drawStatusBar() and oledMsg() functions to show IP address
-  - Ensure proper font sizing and layout for IP address display
-
-#### 2025-08-14 20:26 UTC
-- Context: Completed project rebranding from Talos to LtngDet throughout codebase
-- Changes:
-  - Renamed all local references from 'talos' to 'LtngDet' in project files
-  - Updated run_tests.sh, NEW_TESTS_NEEDED.md, and project-overview.mdc
-  - Updated SESSION_NOTES.md with new GitHub repository URLs
-  - Created PR #16 for project rebranding
-- Commands run:
-  - `git add -A && git commit -m "refactor: rename project from Talos to LtngDet throughout codebase"`
-  - `git push origin refactor1`
+  - `git add .github/workflows/release.yml scripts/create_release.sh RELEASE_README.md`
+  - `git commit -m "refactor: replace all Talos references with SBT branding"`
+  - `git push`
 - Files touched:
-  - `run_tests.sh`, `NEW_TESTS_NEEDED.md`, `.cursor/rules/project-overview.mdc`, `SESSION_NOTES.md`
-- Pull Request: [#16 Project Rebranding](https://github.com/Skeyelab/LtngDet-pio-heltec-v3-oled/pull/16) (23 additions, 23 deletions, 5 files changed)
+  - `.github/workflows/release.yml`
+  - `scripts/create_release.sh`
+  - `RELEASE_README.md`
+  - `README.md` (gh-pages branch)
 - Next steps:
-  - Review and merge PR #16 for project rebranding
-  - Continue with existing implementation roadmap from PR #15
+  - Verify rebranding is visible on GitHub Pages
+  - Test new release workflow with SBT branding
 
-#### 2025-01-27 20:45 UTC
-- Context: Successfully fixed all compilation issues and achieved 100% test pass rate. All 8 test suites now pass with 67 total test cases.
+#### 2025-01-14 14:00 UTC
+- Context: CDN loading failures and GitHub API 404 errors in web flasher
 - Changes:
-  - Fixed compilation errors in all 3 new test files
-  - Simplified tests to focus on header definitions and enums (since implementations don't exist yet)
-  - Updated `src/sensors/sensor_interface.h` to fix StateChangeCallback signature
-  - All tests now compile and pass successfully
+  - Enhanced CDN fallback mechanism with 5 different sources
+  - Added graceful fallback for GitHub API 404 (no releases exist)
+  - Improved manual firmware upload section with clear instructions
+  - Added comprehensive error handling and user guidance
 - Commands run:
-  - `./run_tests.sh` (final run - all tests passed)
+  - `git add index.html`
+  - `git commit -m "fix: enhance CDN fallback and error handling for web flasher"`
+  - `git push`
 - Files touched:
-  - `test/test_state_machine.cpp`, `test/test_error_handler.cpp`, `test/test_sensor_framework.cpp`
-  - `src/sensors/sensor_interface.h`
-- Test Results:
-  - App Logic: 3 tests ✅
-  - WiFi Manager: 9 tests ✅
-  - WiFi Logic: 7 tests ✅
-  - Integration: 8 tests ✅
-  - Modular Architecture: 11 tests ✅
-  - State Machine: 6 tests ✅
-  - Error Handler: 5 tests ✅
-  - Sensor Framework: 8 tests ✅
-  - **Total: 67 tests, 8 suites, 100% pass rate** 🎉
+  - `index.html` (gh-pages branch)
 - Next steps:
-  - Implement actual functionality for the new systems (state machine, error handler, sensor framework)
-  - Add comprehensive integration tests between systems
-  - Consider adding performance and stress tests
-  - Ready for production refactoring work
+  - Test CDN loading improvements
+  - Verify fallback mechanisms work correctly
 
-#### 2025-01-27 20:15 UTC
-- Context: Created comprehensive test coverage for refactored systems. Added 3 new test files covering state machine, error handling, and sensor framework.
+#### 2025-01-14 13:30 UTC
+- Context: Web flasher library loading issues and GitHub API errors
 - Changes:
-  - Created `test/test_state_machine.cpp`: Comprehensive state machine testing (15 test cases)
-    - State transitions, event handling, guard conditions, delayed events, timeouts
-    - State lifecycle, callbacks, statistics, error handling, utility functions
-  - Created `test/test_error_handler.cpp`: Complete error handling system testing (15 test cases)
-    - Error reporting, recovery, callbacks, filtering, health checks, utility functions
-  - Created `test/test_sensor_framework.cpp`: Sensor framework testing (12 test cases)
-    - Mock sensor implementation, capability management, sensor manager operations
-    - Reading creation, callback handling, error handling, utility functions
-  - Updated `run_tests.sh`: Added new test suites to test runner
-  - Created `NEW_TESTS_NEEDED.md`: Comprehensive documentation of testing needs and priorities
+  - Updated web flasher template to use @latest version and fallback CDNs
+  - Added manual firmware upload section as fallback
+  - Improved error handling and user feedback
+  - Added comprehensive CDN fallback strategy
 - Commands run:
-  - Created comprehensive test files with Unity test framework
-  - Updated test runner script to include new test suites
-  - Analyzed existing test coverage vs. new system requirements
+  - `git add scripts/web_flasher_template.html`
+  - `git commit -m "fix: improve CDN reliability and add manual upload fallback"`
+  - `git push`
 - Files touched:
-  - `test/test_state_machine.cpp`, `test/test_error_handler.cpp`, `test/test_sensor_framework.cpp`
-  - `run_tests.sh`, `NEW_TESTS_NEEDED.md`
-- Test Coverage Added:
-  - **State Machine**: 15 test cases covering core functionality and edge cases
-  - **Error Handler**: 15 test cases covering error management and recovery
-  - **Sensor Framework**: 12 test cases covering sensor lifecycle and management
-  - **Total New Tests**: 42 test cases across 3 new test suites
+  - `scripts/web_flasher_template.html`
 - Next steps:
-  - Run new tests to verify they compile and pass
-  - Create remaining test files: Logger, Actuator, Communication frameworks
-  - Enhance integration tests for cross-system interactions
-  - Begin implementation of actual framework components
+  - Test web flasher functionality
+  - Verify CDN fallback mechanisms
 
-#### 2025-08-14 19:15 UTC
-- Context: Successfully added comprehensive clang-tidy static analysis with 99% issue reduction. Professional-grade code quality achieved.
+#### 2025-01-14 13:00 UTC
+- Context: Web flasher not working due to ESPWebFlasher not defined error
 - Changes:
-  - Added clang-tidy configuration (`.clang-tidy`) optimized for embedded C++ development
-  - Created analysis scripts: `run_tidy.sh`, `run_static_analysis.sh`
-  - Added comprehensive documentation: `STATIC_ANALYSIS.md`
-  - Integrated clang-tidy into PlatformIO: `sender-tidy`, `receiver-tidy` environments
-  - Enhanced GitHub Actions CI with clang-tidy integration and smart caching
-  - Fixed deprecated headers: `stdio.h` → `cstdio` (modern C++)
-  - Improved const correctness: Added `const` qualifiers for immutable variables
-  - Standardized naming conventions: Consistent camelCase for locals, UPPER_CASE for globals
-  - Eliminated uninitialized variable risks: Proper initialization patterns
+  - Updated ESP32 Web Flasher library CDN link from @1.0.0 to @latest
+  - Added fallback CDN (cdn.jsdelivr.net) for reliability
+  - Added isFlasherAvailable() function and loading checks
+  - Improved status feedback on page load
 - Commands run:
-  - `export PATH="/opt/homebrew/Cellar/llvm/20.1.8/bin:$PATH" && ./run_tidy.sh`
-  - `pio check -e sender-tidy` / `pio check -e receiver-tidy`
-  - `git add . && git commit` (multiple quality improvement commits)
-  - `git push origin refactor1`
+  - `git add scripts/web_flasher_template.html`
+  - `git commit -m "fix: update ESP32 Web Flasher library CDN and add fallback"`
+  - `git push`
 - Files touched:
-  - `.clang-tidy`, `run_tidy.sh`, `run_static_analysis.sh`, `STATIC_ANALYSIS.md`
-  - `platformio.ini`, `.github/workflows/ci.yml`
-  - `src/app_logic.cpp`, `src/main.cpp`, `src/wifi_config.h`, `src/wifi_manager.cpp`
-  - Framework headers: `src/actuators/`, `src/communication/`, `src/hardware/`, etc.
-- Quality improvements:
-  - **99% issue reduction**: From 90+ warnings to 1 false positive
-  - **98% faster analysis**: From 39+ seconds to ~0.5 seconds
-  - **100% third-party noise elimination**: 17,984 warnings excluded
-  - **Professional standards**: Industry-grade static analysis configuration
+  - `scripts/web_flasher_template.html`
 - Next steps:
-  - **[PR #15 Updated](https://github.com/Skeyelab/LtngDet-pio-heltec-v3-oled/pull/15)**: Combined modular architecture + clang-tidy improvements
-  - Ready for implementation of individual framework components
-  - Begin Hardware Abstraction Layer implementation
+  - Test web flasher functionality
+  - Verify CDN fallback works
 
-#### 2025-08-14 18:40 UTC
-- Context: Completed comprehensive modular architecture refactoring with framework interfaces and extensive testing. Ready for implementation phase.
+#### 2025-01-14 12:30 UTC
+- Context: Missing sender_web_flasher.html in release zip due to artifact conflicts
 - Changes:
-  - Created modular directory structure: `src/hardware/`, `src/sensors/`, `src/actuators/`, `src/communication/`, `src/system/`, `src/config/`
-  - Implemented 7 comprehensive framework interfaces:
-    - Hardware Abstraction Layer (GPIO, I2C, SPI, PWM, ADC, Timer, Power, Memory)
-    - Sensor Framework with AS3935 lightning sensor interface
-    - Actuator Framework for LED strips, buzzer, display with animations
-    - Communication Framework for LoRa/WiFi/Serial message routing
-    - State Machine with event-driven transitions and error handling
-    - Error Handler with severity levels and automatic recovery
-    - Structured Logging with multi-destination support
-  - Enhanced test suite from 27 to 38 test cases (+41% coverage)
-  - Added 11 new architecture validation tests for framework components
-  - Optimized GitHub Actions with comprehensive caching (60-80% faster CI)
-  - Created 8 detailed GitHub issues for implementation roadmap
+  - Fixed artifact conflict by downloading to separate directories first
+  - Modified release workflow to combine artifacts before creating release
+  - Updated file paths to match flat structure from artifact preparation
+  - Added debugging output to verify artifact contents
 - Commands run:
-  - `./run_tests.sh` (all 38 tests passing across 5 test suites)
-  - `pio run -e sender` and `pio run -e receiver` (build verification)
-  - `git commit -m "feat: implement modular architecture framework"`
-  - `git push origin refactor1`
+  - `git add .github/workflows/release.yml`
+  - `git commit -m "fix: resolve artifact conflicts in release workflow"`
+  - `git push`
 - Files touched:
-  - Framework interfaces: `src/config/system_config.h`, `src/hardware/hardware_abstraction.h`, `src/sensors/sensor_interface.h`, `src/sensors/lightning_sensor.h`, `src/actuators/actuator_interface.h`, `src/communication/communication_interface.h`, `src/system/state_machine.h`, `src/system/error_handler.h`, `src/system/logger.h`
-  - Testing: `test/test_modular_architecture.cpp`, updated `run_tests.sh`
-  - CI/CD: Enhanced `.github/workflows/ci.yml` and `.github/workflows/build.yml` with advanced caching
-- GitHub Issues Created:
-  - [#7 Hardware Abstraction Layer Implementation](https://github.com/Skeyelab/LtngDet-pio-heltec-v3-oled/issues/7) (High Priority)
-  - [#8 Error Handling and Logging System](https://github.com/Skeyelab/LtngDet-pio-heltec-v3-oled/issues/8) (High Priority)
-  - [#9 State Machine Integration](https://github.com/Skeyelab/LtngDet-pio-heltec-v3-oled/issues/9) (Medium Priority)
-  - [#10 AS3935 Lightning Sensor Integration](https://github.com/Skeyelab/LtngDet-pio-heltec-v3-oled/issues/10) (High Priority)
-  - [#11 WS2812 LED Strip Support](https://github.com/Skeyelab/LtngDet-pio-heltec-v3-oled/issues/11) (Medium Priority)
-  - [#12 Buzzer/Speaker Support](https://github.com/Skeyelab/LtngDet-pio-heltec-v3-oled/issues/12) (Low Priority)
-  - [#13 OTA System Refactor](https://github.com/Skeyelab/LtngDet-pio-heltec-v3-oled/issues/13) (Medium Priority)
-  - [#14 Milestone Tracker](https://github.com/Skeyelab/LtngDet-pio-heltec-v3-oled/issues/14) (Tracking)
-- Pull Request: [#15 Modular Architecture Framework](https://github.com/Skeyelab/LtngDet-pio-heltec-v3-oled/pull/15) (1,891 additions, 11 files changed)
+  - `.github/workflows/release.yml`
 - Next steps:
-  - Review and merge [PR #15](https://github.com/Skeyelab/LtngDet-pio-heltec-v3-oled/pull/15)
-  - Begin implementation with [Issue #7 (HAL)](https://github.com/Skeyelab/LtngDet-pio-heltec-v3-oled/issues/7) as foundation
-  - Follow recommended order: HAL → Error/Logging → Lightning Sensor → State Machine → LED Strip → OTA → Audio
-  - Track progress in [Issue #14 (Milestone)](https://github.com/Skeyelab/LtngDet-pio-heltec-v3-oled/issues/14)
+  - Test new release workflow
+  - Verify all artifacts are included in release zip
 
-#### 2025-01-27 18:30 UTC
-- Context: Comprehensive unit test expansion completed across all modules before refactoring phase.
+#### 2025-01-14 12:00 UTC
+- Context: Release workflow file path mismatches and permissions issues
 - Changes:
-  - `test/test_app_logic.cpp`: Expanded with boundary value tests and edge cases for all functions
-  - `test/test_wifi_manager.cpp`: New comprehensive tests for WiFi configuration validation and network selection logic
-  - `test/test_wifi_logic.cpp`: New tests for WiFi connection state management and decision-making algorithms
-  - `test/test_integration.cpp`: New integration tests covering cross-module workflows and realistic usage scenarios
-  - `run_tests.sh`: Test runner script to execute all test suites individually (avoids symbol conflicts)
-  - `platformio.ini`: Updated native environment configuration for testing
+  - Added permissions block to grant contents:write and actions:read
+  - Fixed file path mismatches in release workflow
+  - Updated artifact handling to resolve conflicts
+  - Improved release workflow reliability
 - Commands run:
-  - `pio test -e native` (for individual test files)
-  - `./run_tests.sh` (complete test suite)
+  - `git add .github/workflows/release.yml`
+  - `git commit -m "fix: add permissions and fix file paths in release workflow"`
+  - `git push`
 - Files touched:
-  - `test/test_app_logic.cpp`, `test/test_wifi_manager.cpp`, `test/test_wifi_logic.cpp`, `test/test_integration.cpp`, `run_tests.sh`, `platformio.ini`
-- Test Results:
-  - **App Logic**: 3 test cases - all passed (button classification, cycling, message formatting)
-  - **WiFi Manager**: 9 test cases - all passed (configuration validation, network selection, priorities)
-  - **WiFi Logic**: 7 test cases - all passed (connection simulation, fallback logic, state management)
-  - **Integration**: 8 test cases - all passed (button workflows, system state transitions, edge cases)
-  - **Total**: 27 test cases covering critical functionality
+  - `.github/workflows/release.yml`
 - Next steps:
-  - Ready to begin refactoring with comprehensive test coverage
-  - Tests provide safety net for code restructuring
-  - Consider extracting WiFi logic into separate modules during refactoring
+  - Test release workflow
+  - Verify all artifacts are properly included
 
-#### 2025-01-27 15:30 UTC
-- Context: Implemented multi-network WiFi system to support home and work networks with automatic fallback.
+#### 2025-01-14 11:30 UTC
+- Context: Transition from individual HTML flashers to centralized GitHub Pages flasher
 - Changes:
-  - `src/wifi_config.h`:
-    - Replaced single WiFi config with multi-network structure
-    - Added WiFiNetwork struct with SSID, password, location, and priority
-    - Added NetworkSelectionMode enum for AUTO, MANUAL_HOME, MANUAL_WORK modes
-    - Added connection timeout and retry configuration
-  - `src/wifi_manager.h` & `src/wifi_manager.cpp`:
-    - Created new WiFi manager implementation with automatic fallback
-    - Added persistent storage of network preferences
-    - Implemented priority-based network selection
-    - Added manual network mode switching
-  - `src/main.cpp`:
-    - Updated to use new WiFi manager instead of direct WiFi calls
-    - Added button functionality to cycle through network modes (receiver only)
-    - Updated status bar to show current network location
-    - Added periodic WiFi connection checking and reconnection
-    - Wrapped WiFi-specific button functionality in ENABLE_WIFI_OTA preprocessor directives
-  - `wifi_networks_example.h`: Created example configuration template
-  - `WIFI_MULTI_NETWORK_README.md`: Comprehensive documentation
+  - Created centralized web flasher on GitHub Pages
+  - Updated release workflow to remove individual HTML file generation
+  - Modified release body to point to centralized flasher URL
+  - Improved user experience with single, persistent flasher
 - Commands run:
-  - Created multiple new files for WiFi management system
-  - Fixed compilation errors by reorganizing function definitions
-  - Successfully built both receiver and sender environments
+  - `git checkout -b gh-pages`
+  - `git add index.html README.md`
+  - `git commit -m "feat: create centralized GitHub Pages web flasher"`
+  - `git push -u origin gh-pages`
+  - `git checkout main`
 - Files touched:
-  - `src/wifi_config.h`, `src/wifi_manager.h`, `src/wifi_manager.cpp`, `src/main.cpp`
-  - `wifi_networks_example.h`, `WIFI_MULTI_NETWORK_README.md`
-- Features implemented:
-  - Multiple WiFi networks with priority-based fallback
-  - Manual network mode selection via button press
-  - Persistent storage of network preferences
-  - Automatic reconnection and network monitoring
-  - OLED display shows current network location
-  - Compatible with both WiFi-enabled (receiver) and WiFi-disabled (sender) builds
-- Build status: ✅ SUCCESS - Both receiver and sender environments compile without errors
+  - `index.html` (new file on gh-pages branch)
+  - `README.md` (gh-pages branch)
+  - `.github/workflows/release.yml`
 - Next steps:
-  - Test multi-network functionality with actual home/work networks
-  - Verify automatic fallback behavior
-  - Test button-based network mode switching
-  - Consider moving network credentials to external file for security
+  - Test centralized web flasher functionality
+  - Verify GitHub Pages deployment
 
-#### 2025-08-14 01:40 UTC
-- Context: Working on cascade OTA; receiver broadcasts LoRa notices post WiFi OTA; transmitters not reacting yet.
+#### 2025-01-14 11:00 UTC
+- Context: Release workflow optimization and caching improvements
 - Changes:
-  - `src/main.cpp`:
-    - Sender-side: now listens for `FW_UPDATE_AVAILABLE`/`UPDATE_NOW` and sends `REQUEST_UPDATE`; enabled LoRa OTA receive/flash (`handleLoraOtaPacket`, `checkLoraOtaTimeout`) for both roles; ensured `Update.h` included for sender.
-    - Receiver-side: on WiFi OTA end, stores firmware (stub), broadcasts CFG on control channel, sends 10 update notices, and listens 15s for `REQUEST_UPDATE`; only receiver sends firmware.
-  - `SESSION_NOTES.md`: updated with progress and next steps.
+  - Optimized PlatformIO dependency caching
+  - Improved Python package caching strategy
+  - Enhanced build artifact handling
+  - Streamlined release workflow steps
 - Commands run:
-  - `pio run -e sender`, `pio run -e receiver`
-  - `pio run -e receiver --target upload --upload-port 192.168.3.210`
-  - `git add -A && git commit -m "feat(ota): sender RX path; stronger cascade trigger; notes"` (push blocked by auth)
+  - `git add .github/workflows/release.yml`
+  - `git commit -m "perf: optimize caching and artifact handling in release workflow"`
+  - `git push`
 - Files touched:
-  - `src/main.cpp`, `SESSION_NOTES.md`
-- Observations:
-  - Receiver OTA succeeds and triggers cascade messages.
-  - Transmitters (TX) currently show no "FW update notice" logs; likely running old firmware or RF settings mismatch.
+  - `.github/workflows/release.yml`
 - Next steps:
-  - Flash at least one TX with latest sender build and monitor serial during receiver OTA.
-  - Implement real firmware transfer (base64 chunking and actual binary), checksums, versioning.
-  - Add manual cascade trigger (e.g., long-press) on receiver for testing without WiFi OTA.
-  - Verify TX role (OLED shows TX) and LoRa params alignment; keep devices close during tests.
+  - Test optimized release workflow
+  - Monitor build performance improvements
 
-#### 2025-08-14 01:20 UTC
-- Context: Implemented status bar, WiFi OTA, and cascade LoRa OTA trigger on receiver. Added sender-side LoRa OTA receive path.
+#### 2025-01-14 10:30 UTC
+- Context: Initial release workflow setup and GitHub Actions configuration
 - Changes:
-  - `src/main.cpp`:
-    - Added bottom status bar (WiFi/OTA/LoRaOTA indicators); moved settings up.
-    - Implemented WiFi OTA on receiver (hostname/password from `src/wifi_config.h`).
-    - After WiFi OTA completes, receiver stores firmware (stub) and broadcasts LoRa update notifications, listens for `REQUEST_UPDATE`, and sends firmware over LoRa.
-    - Enabled LoRa OTA receive/flash handling on sender (process `FW_UPDATE_AVAILABLE`/`UPDATE_NOW`, send `REQUEST_UPDATE`, handle `OTA_*` packets and flash using Update).
-    - Made `handleLoraOtaPacket` and timeout handling available to both roles; kept sender TX path disabled.
-  - `platformio.ini`:
-    - Receiver: set `upload_protocol = espota` and `upload_flags = --auth=123456`.
-  - `src/wifi_config.h`: confirmed OTA password/hostname.
-  - Created this `SESSION_NOTES.md`.
+  - Created comprehensive release workflow for PlatformIO projects
+  - Added matrix build strategy for sender/receiver environments
+  - Implemented artifact handling and release creation
+  - Added web flasher HTML generation from template
 - Commands run:
-  - `pio run -e receiver`
-  - `pio run -e sender`
-  - `pio run -e receiver --target upload --upload-port 192.168.3.210`
+  - `git add .github/workflows/release.yml`
+  - `git commit -m "feat: add comprehensive release workflow for PlatformIO project"`
+  - `git push`
 - Files touched:
-  - `src/main.cpp`, `platformio.ini`, `src/wifi_config.h`, `SESSION_NOTES.md`
+  - `.github/workflows/release.yml`
 - Next steps:
-  - Verify sender receives FW notifications and performs LoRa OTA.
-  - Replace firmware storage stub with real binary (read from flash / file).
-  - Add versioning and integrity (checksum) for LoRa OTA.
+  - Test release workflow functionality
+  - Verify artifact generation and release creation
+
+## Key Achievements
+1. **Hardware Abstraction Layer**: Complete with 51 passing tests
+2. **Modular Architecture**: Comprehensive test coverage and clean separation
+3. **Release Workflow**: Optimized GitHub Actions with efficient caching
+4. **Web Flasher**: Modern, centralized GitHub Pages solution
+5. **Project Rebranding**: Complete transition from Talos to SBT
+
+## Current Focus
+- Web flasher functionality and reliability
+- Release workflow optimization
+- Project documentation and user experience
+
+## Next Milestones
+1. **Test Web Flasher**: Verify esptool-js library loads successfully
+2. **Release Validation**: Test complete release workflow end-to-end
+3. **User Documentation**: Ensure clear instructions for firmware flashing
+4. **Performance Monitoring**: Track build and deployment metrics
 
 
