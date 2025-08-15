@@ -1,6 +1,6 @@
 # Lightning Detection System - PlatformIO Heltec V3
 
-[![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/Skeyelab/LtngDet-pio-heltec-v3-oled)
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/Skeyelab/LightningDetector)
 [![Tests](https://img.shields.io/badge/tests-112%20passing-brightgreen)](./run_tests.sh)
 [![Platform](https://img.shields.io/badge/platform-ESP32--S3-blue)](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/)
 [![Framework](https://img.shields.io/badge/framework-Arduino-red)](https://www.arduino.cc/)
@@ -56,8 +56,8 @@ A distributed lightning detection system built for Heltec WiFi LoRa 32 V3 boards
 pip install platformio
 
 # Clone the repository
-git clone https://github.com/Skeyelab/LtngDet-pio-heltec-v3-oled.git
-cd LtngDet-pio-heltec-v3-oled
+git clone https://github.com/Skeyelab/LightningDetector.git
+cd LightningDetector
 ```
 
 ### Build Options
@@ -264,8 +264,8 @@ uint8_t percent = Power::getBatteryPercent();
 - Pass static analysis checks
 
 ### Issue Tracking
-- [Hardware Abstraction Layer](https://github.com/Skeyelab/LtngDet-pio-heltec-v3-oled/issues/7) ✅ **COMPLETE**
-- [Modular Architecture](https://github.com/Skeyelab/LtngDet-pio-heltec-v3-oled/issues/14) 🚧 **IN PROGRESS**
+- [Hardware Abstraction Layer](https://github.com/Skeyelab/LightningDetector/issues/7) ✅ **COMPLETE**
+- [Modular Architecture](https://github.com/Skeyelab/LightningDetector/issues/14) 🚧 **IN PROGRESS**
 
 ## 📚 Documentation
 
@@ -316,9 +316,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Support
 
-- **Issues**: [GitHub Issues](https://github.com/Skeyelab/LtngDet-pio-heltec-v3-oled/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/Skeyelab/LtngDet-pio-heltec-v3-oled/discussions)
-- **Documentation**: [Project Wiki](https://github.com/Skeyelab/LtngDet-pio-heltec-v3-oled/wiki)
+- **Issues**: [GitHub Issues](https://github.com/Skeyelab/LightningDetector/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/Skeyelab/LightningDetector/discussions)
+- **Documentation**: [Project Wiki](https://github.com/Skeyelab/LightningDetector/wiki)
 
 ---
 
