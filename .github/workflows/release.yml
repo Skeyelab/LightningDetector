@@ -5,6 +5,11 @@ on:
     tags:
       - 'v*'
 
+# Add permissions block to fix the 403 error
+permissions:
+  contents: write
+  actions: read
+
 jobs:
   release-build:
     runs-on: ubuntu-latest
@@ -167,11 +172,11 @@ jobs:
           - Commit: ${{ github.sha }}
 
         files: |
-          release_artifacts/sender/sender_firmware.bin
-          release_artifacts/sender/sender_manifest.json
-          release_artifacts/sender/sender_web_flasher.html
-          release_artifacts/receiver/receiver_firmware.bin
-          release_artifacts/receiver/receiver_manifest.json
-          release_artifacts/receiver/receiver_web_flasher.html
+          release_artifacts/sender_firmware.bin
+          release_artifacts/sender_manifest.json
+          release_artifacts/sender_web_flasher.html
+          release_artifacts/receiver_firmware.bin
+          release_artifacts/receiver_manifest.json
+          release_artifacts/receiver_web_flasher.html
         draft: false
         prerelease: false
