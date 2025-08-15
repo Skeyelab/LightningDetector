@@ -1,0 +1,6 @@
+# Git mailmap file to map email addresses to proper display names
+# This tells GitHub and Git how to display author information
+# Format: Proper Name <proper@email.com> <old@email.com>
+
+Skeyelab <eric@skeyelab.com> <edahl@nd.edu>
+Skeyelab <eric@skeyelab.com> Eric Dahl <edahl@nd.edu>
