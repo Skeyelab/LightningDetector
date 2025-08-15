@@ -243,7 +243,19 @@ function startFlashing() {
       if (!port) {
         throw new Error('Port object is undefined - cannot proceed with connection');
       }
-      return connect(port);
+
+      console.log('Calling connect() function...');
+      const connectionResult = connect(port);
+      console.log('connect() returned:', connectionResult);
+      console.log('Connection result type:', typeof connectionResult);
+      console.log('Connection result constructor:', connectionResult?.constructor?.name);
+
+      if (connectionResult && typeof connectionResult === 'object') {
+        console.log('Connection result keys:', Object.keys(connectionResult));
+        console.log('Connection result methods:', Object.getOwnPropertyNames(connectionResult));
+      }
+
+      return connectionResult;
     })
     .then(connection => {
       console.log('ESP32 connection established:', connection);
@@ -259,6 +271,7 @@ function startFlashing() {
       // Check if connection has required methods
       if (typeof connection.log !== 'function') {
         console.warn('Connection object missing log method, but continuing...');
+        console.log('Available methods on connection:', Object.getOwnPropertyNames(connection));
       }
 
       updateProgress(40, 'ESP32 identified');
