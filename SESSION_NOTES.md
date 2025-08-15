@@ -9,6 +9,7 @@
 - **CI/CD**: GitHub Actions with optimized caching strategy
 - **Web Flasher**: npm-based web flasher with GitHub Actions build system
 - **Branch Organization**: Clean separation between device code (main) and web flasher (gh-pages)
+- **GitHub Pages**: Configured with automatic build and deployment
 
 ## Current Status
 - **Hardware Abstraction Layer**: ✅ Complete (51 tests passing)
@@ -17,8 +18,35 @@
 - **Web Flasher**: ✅ Complete (npm-based with GitHub Actions build system)
 - **Rebranding**: ✅ Complete (Talos → SBT throughout project)
 - **Branch Organization**: ✅ Complete (clean separation of concerns)
+- **GitHub Pages Setup**: ✅ Complete (automatic build and deployment)
 
 ### Session log
+
+#### 2025-01-14 16:00 UTC
+- Context: Configured GitHub Pages to use the new npm-based web flasher build system
+- Changes:
+  - Updated GitHub Actions workflow to trigger on gh-pages branch
+  - Created src/main.js with proper esp-web-flasher imports and functionality
+  - Tested successful build with Vite bundler
+  - Removed PlatformIO files from gh-pages branch
+  - Configured automatic build and deployment to GitHub Pages
+- Commands run:
+  - `git checkout gh-pages`
+  - `rm -rf .pio/ .vscode/`
+  - `mkdir -p src`
+  - `npm install`
+  - `npm run build`
+  - `git add . && git commit -m "feat: configure GitHub Pages with npm-based web flasher build system"`
+  - `git push`
+  - `git checkout main`
+- Files touched:
+  - `.github/workflows/build-web-flasher.yml` (updated trigger conditions)
+  - `src/main.js` (created with web flasher functionality)
+  - Removed `.pio/` and `.vscode/` from gh-pages branch
+- Next steps:
+  - Monitor GitHub Actions workflow execution
+  - Test web flasher functionality on GitHub Pages
+  - Verify automatic deployment works correctly
 
 #### 2025-01-14 15:45 UTC
 - Context: Cleaned up branch organization to separate device firmware from web flasher
