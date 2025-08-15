@@ -217,43 +217,22 @@ function startFlashing() {
   navigator.serial.requestPort()
     .then(port => {
       updateProgress(20, 'Opening serial port...');
-      updateStatus(`Opening serial port for ${deviceName} firmware...`, 'info');
+      updateStatus(`Serial port selected for ${deviceName} firmware...`, 'info');
 
-      console.log('Port before opening:', port);
+      console.log('Port selected:', port);
       console.log('Port type:', typeof port);
       console.log('Port constructor:', port?.constructor?.name);
 
-      // Try to open the port with better error handling
-      return port.open({ baudRate: 115200 }).then(() => {
-        console.log('Port opened successfully, returning port:', port);
-        return port;
-      }).catch(openError => {
-        console.error('Port open error:', openError);
-
-        let errorMessage = 'Unknown port opening error';
-        if (openError.name === 'NetworkError') {
-          errorMessage = 'Serial port failed to open. This usually means:\n' +
-            '• The device is not properly connected\n' +
-            '• Another application is using the port\n' +
-            '• The device needs to be in download mode\n' +
-            '• Try unplugging and reconnecting the device';
-        } else if (openError.name === 'InvalidStateError') {
-          errorMessage = 'Port is already open or in an invalid state';
-        } else if (openError.name === 'NotSupportedError') {
-          errorMessage = 'This serial port is not supported by your browser';
-        } else if (openError.message) {
-          errorMessage = openError.message;
-        }
-
-        throw new Error(errorMessage);
-      });
+      // Don't open the port here - let the connect() function handle it
+      // The connect() function will open the port with the correct settings
+      return port;
     })
     .then(port => {
       console.log('Port after opening:', port);
       console.log('Port type after opening:', typeof port);
 
-      updateProgress(30, 'Connected to ESP32');
-      updateStatus(`Connected to ESP32. Starting ${deviceName} flash process...`, 'info');
+      updateProgress(30, 'Connecting to ESP32...');
+      updateStatus(`Connecting to ESP32. Starting ${deviceName} flash process...`, 'info');
 
       // Use the connect function from esp-web-flasher
       console.log('About to call connect() with port:', port);
