@@ -15,6 +15,32 @@
 
 ### Session log
 
+#### 2025-01-15 16:45 UTC
+- Context: User reported "Failed to download manifest" error after web flasher deployment
+- Changes:
+  - Fixed manifest download issues by updating paths from relative (./filename) to absolute (/filename)
+  - Updated both sender_manifest.json and receiver_manifest.json to use absolute paths
+  - Modified JavaScript to use absolute paths for manifest URLs
+  - Added manifest accessibility testing and better error handling
+  - Created test-manifests.html for debugging file accessibility
+  - Rebuilt and redeployed with corrected paths
+- Commands run:
+  - `cd web-flasher && npm run build` (successful rebuild)
+  - `./deploy.sh` (deployment preparation)
+  - `git add -A && git commit -m "fix manifest download issues"` (committed fixes)
+  - `git push` (pushed to GitHub)
+- Files touched:
+  - `web-flasher/sender_manifest.json` (updated paths to absolute)
+  - `web-flasher/receiver_manifest.json` (updated paths to absolute)
+  - `web-flasher/src/main.js` (added error handling and absolute paths)
+  - `web-flasher/test-manifests.html` (created for debugging)
+  - `SESSION_NOTES.md` (updated with new session log)
+- Next steps:
+  - Test the deployed web flasher to ensure manifests load correctly
+  - Verify ESP Web Tools can access the manifest files
+  - Test firmware flashing with actual ESP32 devices
+  - Monitor for any remaining manifest access issues
+
 #### 2025-01-15 16:30 UTC
 - Context: Web flasher was not working due to CORS issues when trying to fetch from GitHub API and releases
 - Changes:

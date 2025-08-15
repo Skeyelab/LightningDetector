@@ -15,19 +15,19 @@
 <body>
     <h1>Manifest and Firmware File Test</h1>
     <p>This page tests if the manifest and firmware files are accessible.</p>
-    
+
     <div id="results"></div>
-    
+
     <script>
         const results = document.getElementById('results');
-        
+
         function addResult(message, type) {
             const div = document.createElement('div');
             div.className = `test-result ${type}`;
             div.textContent = message;
             results.appendChild(div);
         }
-        
+
         async function testFile(url, description) {
             try {
                 const response = await fetch(url);
@@ -43,21 +43,21 @@
                 return false;
             }
         }
-        
+
         async function runTests() {
             addResult('🧪 Starting file accessibility tests...', 'info');
-            
+
             // Test manifests
             await testFile('/sender_manifest.json', 'Sender Manifest');
             await testFile('/receiver_manifest.json', 'Receiver Manifest');
-            
+
             // Test firmware files
             await testFile('/sender_firmware_v1.0.0.bin', 'Sender Firmware');
             await testFile('/receiver_firmware_v1.0.0.bin', 'Receiver Firmware');
-            
+
             addResult('🏁 Tests completed!', 'info');
         }
-        
+
         // Run tests when page loads
         runTests();
     </script>

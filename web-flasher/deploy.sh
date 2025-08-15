@@ -19,11 +19,18 @@ mkdir -p $DEPLOY_DIR
 # Copy built files
 cp -r dist/* $DEPLOY_DIR/
 
-# Copy firmware files and manifests
-cp sender_firmware_v1.0.0.bin $DEPLOY_DIR/
-cp receiver_firmware_v1.0.0.bin $DEPLOY_DIR/
-cp sender_manifest.json $DEPLOY_DIR/
-cp receiver_manifest.json $DEPLOY_DIR/
+# Copy firmware files and manifests (these should already be in dist from the build)
+if [ -f "dist/sender_firmware_v1.0.0.bin" ]; then
+    echo "✅ Firmware files already in dist folder"
+else
+    echo "⚠️  Firmware files not found in dist, copying from root..."
+    cp sender_firmware_v1.0.0.bin dist/
+    cp receiver_firmware_v1.0.0.bin dist/
+    cp sender_manifest.json dist/
+    cp receiver_manifest.json dist/
+    # Copy updated dist contents
+    cp -r dist/* $DEPLOY_DIR/
+fi
 
 # Copy README for GitHub Pages
 cp README.md $DEPLOY_DIR/

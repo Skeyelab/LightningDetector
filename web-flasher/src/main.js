@@ -19,7 +19,7 @@ function initializeElements() {
 function getManifestUrl() {
   const deviceType = selectedDeviceType;
   const manifestName = deviceType === 'transmitter' ? 'sender_manifest.json' : 'receiver_manifest.json';
-  
+
   // Use absolute paths that work on GitHub Pages
   return `/${manifestName}`;
 }

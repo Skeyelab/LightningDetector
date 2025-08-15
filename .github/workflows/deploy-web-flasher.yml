@@ -11,59 +11,75 @@ on:
       - 'web-flasher/**'
   workflow_dispatch:
 
+# Set permissions for the workflow
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow one concurrent deployment
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    
     steps:
     - name: Checkout
       uses: actions/checkout@v4
-
+      
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '18'
         cache: 'npm'
         cache-dependency-path: web-flasher/package-lock.json
-
+        
     - name: Install dependencies
       run: |
         cd web-flasher
         npm ci
-
+        
     - name: Build web flasher
       run: |
         cd web-flasher
         npm run build
-
-    - name: Deploy to GitHub Pages
-      if: github.ref == 'refs/heads/main'
-      uses: peaceiris/actions-gh-pages@v3
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./web-flasher/dist
-        publish_branch: gh-pages
-        force_orphan: true
-
-    - name: Copy firmware files to gh-pages
-      if: github.ref == 'refs/heads/main'
+        
+    - name: Copy firmware files to dist
       run: |
-        # Copy firmware files and manifests to the gh-pages branch
-        cp web-flasher/sender_firmware_v1.0.0.bin web-flasher/dist/
-        cp web-flasher/receiver_firmware_v1.0.0.bin web-flasher/dist/
-        cp web-flasher/sender_manifest.json web-flasher/dist/
-        cp web-flasher/receiver_manifest.json web-flasher/dist/
-
-        # Commit and push the firmware files
-        cd web-flasher/dist
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-        git add .
-        git commit -m "Add firmware files for web flasher" || exit 0
-        git push origin gh-pages
-
+        cd web-flasher
+        # Copy firmware files and manifests to the dist folder
+        cp sender_firmware_v1.0.0.bin dist/
+        cp receiver_firmware_v1.0.0.bin dist/
+        cp sender_manifest.json dist/
+        cp receiver_manifest.json dist/
+        echo "✅ Firmware files copied to dist folder"
+        
+    - name: Setup Pages
+      uses: actions/configure-pages@v4
+      
+    - name: Upload artifact
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: './web-flasher/dist'
+        
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v4
+      
+    - name: Copy firmware files to Pages
+      run: |
+        # The firmware files need to be copied to the dist folder before upload
+        # This step is now handled by copying files to dist before the upload step
+        echo "Firmware files will be included in the dist folder"
+        
     - name: Build status
       run: |
         echo "✅ Web flasher built successfully"
         echo "📁 Build output: web-flasher/dist/"
-        echo "🚀 Deployed to: https://${{ github.repository_owner }}.github.io/LightningDetector/"
+        echo "🚀 Deployed to: ${{ steps.deployment.outputs.page_url }}"
