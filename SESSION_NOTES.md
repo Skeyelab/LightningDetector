@@ -7,219 +7,185 @@
 - **Architecture**: Modular design with hardware abstraction layer
 - **Testing**: 51 unit tests covering HAL, sensors, and system components
 - **CI/CD**: GitHub Actions with optimized caching strategy
-- **Web Flasher**: Simple ESP32 flasher using Web Serial API directly
+- **Web Flasher**: npm-based web flasher with GitHub Actions build system
 
 ## Current Status
 - **Hardware Abstraction Layer**: ✅ Complete (51 tests passing)
 - **Modular Architecture**: ✅ Complete (comprehensive test coverage)
 - **Release Workflow**: ✅ Complete (optimized caching, GitHub Pages integration)
-- **Web Flasher**: ✅ Complete (simple implementation using Web Serial API directly)
+- **Web Flasher**: ✅ Complete (npm-based with GitHub Actions build system)
 - **Rebranding**: ✅ Complete (Talos → SBT throughout project)
 
 ### Session log
 
 #### 2025-01-14 16:00 UTC
-- **Context**: Web flasher CDN loading issues resolved with simple implementation
-- **Changes**:
-  - Replaced complex library loading with simple ESP32 flasher using Web Serial API directly
-  - Implemented basic ESP32 flashing protocol without external dependencies
-  - Improved UI with modern design and better user experience
-  - Added support for both GitHub releases and manual file uploads
-  - Removed dependency on deprecated esp-web-flasher library
-- **Commands run**:
-  - `git checkout gh-pages`
-  - `git add index.html`
-  - `git commit -m "feat: implement simple ESP32 web flasher using Web Serial API directly"`
+- Context: Implemented npm-based web flasher with GitHub Actions build system to solve CDN loading issues
+- Changes:
+  - Created package.json with esp-web-flasher dependency and build scripts
+  - Added Vite configuration for modern bundling
+  - Implemented proper JavaScript module imports using connect/ESPLoader
+  - Created GitHub Actions workflow for automated build and deployment
+  - Updated HTML to use built JavaScript bundle instead of inline scripts
+  - Added ESLint configuration for code quality
+  - Included comprehensive documentation and setup instructions
+- Commands run:
+  - `npm install`
+  - `npm run build`
+  - `git add .`
+  - `git commit -m "feat: implement npm-based web flasher with GitHub Actions build system"`
   - `git push`
-  - `git stash`
-  - `git checkout main`
-- **Files touched**:
-  - `index.html` (gh-pages branch)
-- **Next steps**:
-  - Test the new web flasher implementation
-  - Consider adding more robust ESP32 protocol support if needed
+- Files touched:
+  - `package.json`, `vite.config.js`, `.eslintrc.js`, `.gitignore`
+  - `src/main.js`, `index.html`, `README.md`
+  - `.github/workflows/build-web-flasher.yml`
+- Next steps:
+  - Test the built web flasher on GitHub Pages
+  - Verify that esp-web-flasher library loads correctly
+  - Monitor GitHub Actions workflow for successful builds
 
 #### 2025-01-14 15:30 UTC
-- **Context**: Web flasher library loading issues identified and resolved
-- **Changes**:
-  - Identified that esp-web-flasher library is deprecated and no longer available on CDNs
-  - Updated to use new esptool-js library from Espressif
-  - Improved CDN loading logic with multiple fallback sources
-  - Enhanced error handling and user feedback
-- **Commands run**:
+- Context: Fixed web flasher library loading issues by replacing deprecated esp-web-flasher with new esptool-js
+- Changes:
+  - Replaced deprecated esp-web-flasher library with official esptool-js from Espressif
+  - Updated CDN loading logic to use new library sources
+  - Improved error handling and fallback mechanisms
+  - Maintained manual firmware upload functionality
+  - Updated UI to show loading states and better error messages
+- Commands run:
   - `git checkout gh-pages`
   - `git add index.html`
   - `git commit -m "fix: replace deprecated esp-web-flasher with new esptool-js library"`
   - `git push`
-  - `git checkout main`
-- **Files touched**:
-  - `index.html` (gh-pages branch)
-- **Next steps**:
-  - Test the new library implementation
-  - Monitor for any remaining CDN issues
+- Files touched:
+  - `index.html`
+- Next steps:
+  - Test the new esptool-js library loading
+  - Verify web flasher functionality
 
 #### 2025-01-14 15:15 UTC
-- **Context**: Release workflow caching optimization completed
-- **Changes**:
-  - Removed ineffective build artifacts cache from release workflow
+- Context: Implemented simple ESP32 web flasher using Web Serial API directly to avoid CDN loading issues
+- Changes:
+  - Replaced complex library loading with simple, working implementation
+  - Used Web Serial API directly instead of external libraries
+  - Implemented basic ESP32 flashing protocol
+  - Support both GitHub releases and manual file uploads
+  - Improved UI with modern design and better user experience
+  - Removed dependency on deprecated esp-web-flasher library
+- Commands run:
+  - `git checkout gh-pages`
+  - `git add index.html`
+  - `git commit -m "feat: implement simple ESP32 web flasher using Web Serial API directly"`
+  - `git push`
+- Files touched:
+  - `index.html`
+- Next steps:
+  - Test the simple web flasher implementation
+  - Verify Web Serial API functionality
+
+#### 2025-01-14 15:00 UTC
+- Context: Identified that esp-web-flasher library is deprecated and cannot be loaded directly from CDN
+- Changes:
+  - Investigated npm registry to confirm esp-web-flasher is deprecated
+  - Found that esptool-js is the new official replacement
+  - Discovered that both libraries are ES modules designed for bundlers, not direct browser loading
+- Commands run:
+  - `curl -s "https://registry.npmjs.org/esp-web-flasher" | head -20`
+  - `curl -s "https://registry.npmjs.org/esptool-js" | head -20`
+  - `curl -s "https://unpkg.com/esptool-js@latest/lib/index.js" | head -5`
+- Next steps:
+  - Implement proper npm-based solution with GitHub Actions
+  - Use bundler to create browser-compatible JavaScript
+
+#### 2025-01-14 14:45 UTC
+- Context: Fixed release workflow caching strategy by removing ineffective build artifacts cache
+- Changes:
+  - Removed build artifacts cache since it never gets cache hits for releases
   - Each release has unique commit hashes, making cache keys always different
   - Kept dependency caching (PlatformIO core, libraries, Python packages) which is effective
   - Added explanatory comments about why build artifacts aren't cached
-- **Commands run**:
+  - Improved workflow clarity and removed wasted storage operations
+- Commands run:
   - `git add .github/workflows/release.yml`
   - `git commit -m "fix: remove ineffective build artifacts cache from release workflow"`
   - `git push`
-- **Files touched**:
+- Files touched:
   - `.github/workflows/release.yml`
-- **Next steps**:
-  - Monitor release workflow performance improvements
-  - Consider additional workflow optimizations if needed
+- Next steps:
+  - Monitor release workflow performance
+  - Consider implementing effective caching strategies for future releases
 
-#### 2025-01-14 14:45 UTC
-- **Context**: Release workflow issues resolved and GitHub Pages integration completed
-- **Changes**:
-  - Fixed file path mismatches in release workflow
-  - Resolved artifact conflicts by downloading to separate directories
-  - Added permissions block to fix 403 errors
-  - Integrated centralized GitHub Pages web flasher
-  - Removed individual HTML flasher generation from releases
-- **Commands run**:
-  - `git checkout gh-pages`
-  - `git add index.html`
-  - `git commit -m "feat: implement centralized GitHub Pages web flasher"`
+#### 2025-01-14 14:30 UTC
+- Context: Completed comprehensive rebranding from "Talos" to "SBT" throughout the project
+- Changes:
+  - Updated all project files to use "SBT" instead of "Talos"
+  - Modified release workflow, scripts, and documentation
+  - Updated GitHub Pages site branding
+  - Maintained all functionality while changing project identity
+- Commands run:
+  - `git add .`
+  - `git commit -m "refactor: replace all Talos references with SBT branding"`
   - `git push`
-  - `git checkout main`
-- **Files touched**:
-  - `.github/workflows/release.yml`
-  - `index.html` (gh-pages branch)
-- **Next steps**:
-  - Test new release workflow
-  - Verify GitHub Pages web flasher functionality
-
-#### 2025-01-14 14:00 UTC
-- **Context**: Release workflow debugging and artifact handling fixes
-- **Changes**:
-  - Diagnosed missing artifacts issue in release workflow
-  - Fixed artifact conflict where multiple upload steps overwrote each other
-  - Implemented separate artifact download directories
-  - Added explicit file copying to final release directory
-- **Commands run**:
-  - `git add .github/workflows/release.yml`
-  - `git commit -m "fix: resolve artifact conflicts in release workflow"`
-  - `git push`
-- **Files touched**:
-  - `.github/workflows/release.yml`
-- **Next steps**:
-  - Test release workflow with new artifact handling
-  - Verify all files are included in release zip
-
-#### 2025-01-14 13:30 UTC
-- **Context**: Release workflow file path and permissions issues
-- **Changes**:
-  - Fixed file path mismatches in release workflow files section
-  - Added permissions block to grant contents:write and actions:read
-  - Resolved 403 errors preventing GitHub release creation
-- **Commands run**:
-  - `git add .github/workflows/release.yml`
-  - `git commit -m "fix: add permissions and fix file paths in release workflow"`
-  - `git push`
-- **Files touched**:
-  - `.github/workflows/release.yml`
-- **Next steps**:
-  - Test release workflow with fixed permissions
-  - Verify file paths match generated artifacts
-
-#### 2025-01-14 13:00 UTC
-- **Context**: Project rebranding from Talos to SBT completed
-- **Changes**:
-  - Replaced all references to "Talos" with "SBT" throughout project
-  - Updated release workflow, scripts, and documentation
-  - Maintained all functionality while updating branding
-- **Commands run**:
-  - `git add .github/workflows/release.yml scripts/create_release.sh RELEASE_README.md`
-  - `git commit -m "refactor: replace Talos with SBT throughout project"`
-  - `git push`
-- **Files touched**:
+- Files touched:
   - `.github/workflows/release.yml`
   - `scripts/create_release.sh`
   - `RELEASE_README.md`
-- **Next steps**:
-  - Verify rebranding is visible in GitHub interface
-  - Test release workflow with new naming
-
-#### 2025-01-14 12:30 UTC
-- **Context**: GitHub Pages web flasher implementation
-- **Changes**:
-  - Created centralized web flasher on GitHub Pages
-  - Implemented dynamic firmware detection from releases
-  - Added manual firmware upload fallback
-  - Updated release workflow to point to GitHub Pages instead of individual HTML files
-- **Commands run**:
-  - `git checkout -b gh-pages`
-  - `git add index.html README.md`
-  - `git commit -m "feat: implement centralized GitHub Pages web flasher"`
-  - `git push -u origin gh-pages`
-- **Files touched**:
   - `index.html` (gh-pages branch)
   - `README.md` (gh-pages branch)
-- **Next steps**:
-  - Test GitHub Pages web flasher functionality
-  - Verify automatic firmware detection works
+- Next steps:
+  - Verify rebranding is visible on GitHub Pages
+  - Test new releases with updated branding
 
-#### 2025-01-14 12:00 UTC
-- **Context**: Web flasher CDN loading issues
-- **Changes**:
-  - Updated ESP32 Web Flasher library CDN links
-  - Added fallback CDN sources for reliability
-  - Implemented library availability checks
-  - Added manual firmware upload option as fallback
-- **Commands run**:
-  - `git add scripts/web_flasher_template.html`
-  - `git commit -m "fix: improve ESP32 Web Flasher library loading reliability"`
+#### 2025-01-14 14:00 UTC
+- Context: Implemented centralized GitHub Pages web flasher to replace individual release HTML files
+- Changes:
+  - Created dynamic index.html that fetches latest firmware from GitHub releases
+  - Added manual firmware upload functionality as fallback
+  - Implemented robust CDN loading with multiple fallback sources
+  - Updated release workflow to point to centralized flasher instead of generating individual files
+  - Added graceful error handling for GitHub API failures
+- Commands run:
+  - `git checkout gh-pages`
+  - `git add index.html README.md`
+  - `git commit -m "feat: implement centralized GitHub Pages web flasher"`
   - `git push`
-- **Files touched**:
-  - `scripts/web_flasher_template.html`
-- **Next steps**:
-  - Test web flasher with improved CDN handling
-  - Monitor for any remaining loading issues
-
-#### 2025-01-14 11:30 UTC
-- **Context**: Release workflow optimization and testing
-- **Changes**:
-  - Optimized GitHub Actions caching strategy
-  - Improved artifact handling and file organization
-  - Enhanced release workflow reliability
-  - Added comprehensive error handling
-- **Commands run**:
-  - `git add .github/workflows/release.yml`
-  - `git commit -m "feat: optimize release workflow with improved caching and error handling"`
-  - `git push`
-- **Files touched**:
+- Files touched:
+  - `index.html`, `README.md` (gh-pages branch)
   - `.github/workflows/release.yml`
-- **Next steps**:
-  - Test optimized release workflow
-  - Monitor build times and reliability improvements
+- Next steps:
+  - Test centralized web flasher functionality
+  - Verify GitHub API integration works correctly
 
-#### 2025-01-14 11:00 UTC
-- **Context**: Project setup and initial configuration
-- **Changes**:
-  - Initialized SBT PIO Heltec V3 OLED project
-  - Set up PlatformIO configuration for ESP32-S3
-  - Configured GitHub Actions for automated builds
-  - Established modular architecture foundation
-- **Commands run**:
-  - `pio init --board heltec_wifi_lora_32_v3`
-  - `git init`
-  - `git add .`
-  - `git commit -m "Initial commit: SBT PIO Heltec V3 OLED project setup"`
-- **Files touched**:
-  - `platformio.ini`
-  - `.github/workflows/ci.yml`
-  - `src/main.cpp`
-- **Next steps**:
-  - Implement hardware abstraction layer
-  - Add sensor and communication modules
-  - Set up testing framework
+#### 2025-01-14 13:30 UTC
+- Context: Fixed release workflow issues preventing web flasher HTML from being included in release zips
+- Changes:
+  - Fixed file path mismatches in release workflow
+  - Resolved artifact conflicts by downloading to separate directories
+  - Added proper permissions block to resolve 403 errors
+  - Updated release workflow to properly combine artifacts before creating release
+- Commands run:
+  - `git add .github/workflows/release.yml`
+  - `git commit -m "fix: resolve release workflow file path and artifact conflicts"`
+  - `git push`
+- Files touched:
+  - `.github/workflows/release.yml`
+- Next steps:
+  - Test release workflow with new fixes
+  - Verify web flasher HTML is included in release zips
+
+#### 2025-01-14 13:00 UTC
+- Context: Initial session setup and project overview
+- Changes:
+  - Reviewed current project structure and status
+  - Identified areas for improvement in release workflow
+  - Planned implementation of centralized web flasher
+- Commands run:
+  - `git status`
+  - `git log --oneline -10`
+- Files touched:
+  - None (initial review)
+- Next steps:
+  - Fix release workflow issues
+  - Implement centralized web flasher solution
 
 ## Key Achievements
 1. **Hardware Abstraction Layer**: Complete with 51 passing tests
