@@ -162,8 +162,8 @@ static void computeIndicesFromCurrent();
 static void broadcastConfigOnControlChannel(uint8_t times = 8, uint32_t intervalMs = 300);
 static void tryReceiveConfigOnControlChannel(uint32_t durationMs = 4000);
 
-// Deep sleep functions
-static void enterDeepSleep();
+// Light sleep functions
+static void enterLightSleep();
 static void configureWakeupSources();
 static void restoreStateAfterWakeup();
 
@@ -554,9 +554,9 @@ static void handleSenderButtonAction(ButtonAction action) {
       break;
 
     case ButtonAction::SleepMode:
-      // Enter deep sleep mode
-      Serial.println("Sleep mode requested");
-      enterDeepSleep();
+      // Enter light sleep mode
+      Serial.println("Light sleep mode requested");
+      enterLightSleep();
       break;
 
     default:
@@ -592,9 +592,9 @@ static void handleReceiverButtonAction(ButtonAction action) {
 
     case ButtonAction::SleepMode:
       Serial.println("[RX_BTN] Sleep mode triggered");
-      // Enter deep sleep mode
-      Serial.println("Sleep mode requested");
-      enterDeepSleep();
+      // Enter light sleep mode
+      Serial.println("Light sleep mode requested");
+      enterLightSleep();
       break;
 
     default:
@@ -705,14 +705,20 @@ static void configureWakeupSources() {
   // Configure button as wake-up source
   esp_sleep_enable_ext0_wakeup((gpio_num_t)BUTTON_PIN, LOW);
   
-  // Also enable timer wake-up as backup (30 seconds)
-  esp_sleep_enable_timer_wakeup(30 * 1000000); // 30 seconds in microseconds
+  // Enable LoRa radio interrupt as wake-up source (for ping detection)
+  esp_sleep_enable_ext1_wakeup(
+    (1ULL << PIN_LORA_DIO1), // Wake on LoRa DIO1 pin (interrupt)
+    ESP_EXT1_WAKEUP_ANY_HIGH // Wake when any of these pins go HIGH
+  );
   
-  Serial.println("[SLEEP] Wake-up sources configured: button (LOW) + 30s timer");
+  // Also enable timer wake-up as backup (60 seconds for light sleep)
+  esp_sleep_enable_timer_wakeup(60 * 1000000); // 60 seconds in microseconds
+  
+  Serial.println("[SLEEP] Wake-up sources configured: button (LOW) + LoRa interrupt + 60s timer");
 }
 
-static void enterDeepSleep() {
-  Serial.println("[SLEEP] Entering deep sleep mode...");
+static void enterLightSleep() {
+  Serial.println("[SLEEP] Entering light sleep mode...");
   
   // Save current state to RTC memory
   sleepCount++;
@@ -723,27 +729,46 @@ static void enterDeepSleep() {
   savePersistedSettings();
   
   // Show sleep message on OLED
-  oledMsg("Sleep Mode", "Entering...");
+  oledMsg("Light Sleep", "Listening...");
   delay(1000);
   
-  // Turn off OLED to save power
+  // Turn off OLED to save power (but keep LoRa radio active)
   u8g2.setPowerSave(1);
   
   // Configure wake-up sources
   configureWakeupSources();
   
-  Serial.println("[SLEEP] Going to sleep now. Press button to wake up.");
+  Serial.println("[SLEEP] Going to light sleep. Device will wake on button press, LoRa interrupt, or 60s timer.");
+  Serial.println("[SLEEP] LoRa radio remains active for ping detection.");
   Serial.flush(); // Ensure all serial output is sent
   
-  // Enter deep sleep
-  esp_deep_sleep_start();
+  // Enter light sleep (keeps LoRa radio powered)
+  esp_light_sleep_start();
 }
 
 static void restoreStateAfterWakeup() {
   if (wasInSleepMode) {
-    Serial.println("[SLEEP] Waking up from deep sleep...");
-    Serial.printf("[SLEEP] Sleep count: %lu, Last sleep time: %lu ms ago\n", 
+    Serial.println("[SLEEP] Waking up from light sleep...");
+    Serial.printf("[SLEEP] Sleep count: %lu, Last sleep time: %lu ms ago\n",
                   sleepCount, millis() - lastSleepTime);
+    
+    // Check wake-up reason
+    esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
+    switch(wakeup_reason) {
+      case ESP_SLEEP_WAKEUP_EXT0:
+        Serial.println("[SLEEP] Woke up due to button press");
+        break;
+      case ESP_SLEEP_WAKEUP_EXT1:
+        Serial.println("[SLEEP] Woke up due to LoRa interrupt (ping received!)");
+        // Process any pending LoRa data
+        break;
+      case ESP_SLEEP_WAKEUP_TIMER:
+        Serial.println("[SLEEP] Woke up due to timer");
+        break;
+      default:
+        Serial.printf("[SLEEP] Woke up due to unknown reason: %d\n", wakeup_reason);
+        break;
+    }
     
     // Reset sleep flag
     wasInSleepMode = false;
@@ -763,7 +788,7 @@ void setup() {
   Serial.begin(115200);
   delay(500);
   Serial.println("\n=== LtngDet LoRa + OLED (Heltec V3) ===");
-  
+
   // Check if we're waking up from deep sleep
   restoreStateAfterWakeup();
 
