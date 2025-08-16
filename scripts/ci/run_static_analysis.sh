@@ -101,7 +101,7 @@ else
     echo "  3. Re-run analysis to verify fixes"
     echo ""
     echo "Individual tool commands:"
-    echo "  ./run_tidy.sh                    # Run only clang-tidy"
+    echo "  ./scripts/ci/run_tidy.sh                    # Run only clang-tidy"
     echo "  pio check -e sender-check        # Run only sender cppcheck"
     echo "  pio check -e receiver-check      # Run only receiver cppcheck"
     echo "  pio check -e sender-tidy         # Run only sender clang-tidy"

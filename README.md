@@ -1,7 +1,7 @@
 # Lightning Detection System - PlatformIO Heltec V3
 
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/Skeyelab/LightningDetector)
-[![Tests](https://img.shields.io/badge/tests-112%20passing-brightgreen)](./run_tests.sh)
+[![Tests](https://img.shields.io/badge/tests-112%20passing-brightgreen)](./scripts/ci/run_tests.sh)
 [![Platform](https://img.shields.io/badge/platform-ESP32--S3-blue)](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/)
 [![Framework](https://img.shields.io/badge/framework-Arduino-red)](https://www.arduino.cc/)
 
@@ -130,12 +130,43 @@ cp wifi_networks_example.h src/wifi_networks.h
 #define LORA_DIO1 14       // LoRa interrupt
 ```
 
+## 📁 Repository Structure
+
+The repository is organized for easy navigation and maintenance:
+
+### Scripts (`scripts/`)
+- **`ci/`** - Continuous Integration scripts
+  - `run_tests.sh` - Comprehensive test suite
+  - `run_static_analysis.sh` - Code analysis tools  
+  - `run_tidy.sh` - Clang-tidy formatting
+- **`dev/`** - Development and deployment scripts
+  - `flash_both.sh` - Flash firmware to devices
+  - `create_release.sh` - Create release packages
+- **`optimize/`** - Performance optimization tools
+  - `optimize_clang_tidy_cache.sh` - Build cache optimization
+
+### Documentation (`docs/`)
+- **`development/`** - Development guides
+  - `QUICK_START_RELEASE.md` - Release quick start
+  - `RELEASE_README.md` - Release procedures
+  - `TROUBLESHOOTING.md` - Common issues and solutions
+- **`deployment/`** - Deployment documentation
+  - `OTA_README.md` - Over-the-air update guide
+  - `WEB_FLASHER_DEPLOYMENT.md` - Web flasher setup
+  - `WIFI_MULTI_NETWORK_README.md` - Multi-network WiFi config
+- **`testing/`** - Testing documentation
+  - `NEW_TESTS_NEEDED.md` - Test coverage gaps
+  - `STATIC_ANALYSIS.md` - Static analysis setup
+- **`project/`** - Project management
+  - `CURSOR_PROJECT_STATUS.md` - Current project status
+  - `CI_CACHING_OPTIMIZATION.md` - CI performance notes
+
 ## 🧪 Testing
 
 ### Run All Tests
 ```bash
 # Execute comprehensive test suite
-./run_tests.sh
+./scripts/ci/run_tests.sh
 ```
 
 ### Individual Test Suites
@@ -282,7 +313,7 @@ uint8_t percent = Power::getBatteryPercent();
 1. **Fork** the repository
 2. **Create** feature branch (`git checkout -b feature/new-sensor`)
 3. **Implement** changes with tests
-4. **Run** test suite (`./run_tests.sh`)
+4. **Run** test suite (`./scripts/ci/run_tests.sh`)
 5. **Submit** pull request
 
 ### Code Standards
