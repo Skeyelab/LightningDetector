@@ -8,20 +8,31 @@ void test_classifyPress() {
   TEST_ASSERT_EQUAL_INT((int)ButtonAction::Ignore, (int)classifyPress(50));
   TEST_ASSERT_EQUAL_INT((int)ButtonAction::Ignore, (int)classifyPress(99));
 
-  // Test ToggleMode range
-  TEST_ASSERT_EQUAL_INT((int)ButtonAction::ToggleMode, (int)classifyPress(100));
-  TEST_ASSERT_EQUAL_INT((int)ButtonAction::ToggleMode, (int)classifyPress(150));
-  TEST_ASSERT_EQUAL_INT((int)ButtonAction::ToggleMode, (int)classifyPress(999));
+  // Test CyclePrimary range (was ToggleMode)
+  TEST_ASSERT_EQUAL_INT((int)ButtonAction::CyclePrimary, (int)classifyPress(100));
+  TEST_ASSERT_EQUAL_INT((int)ButtonAction::CyclePrimary, (int)classifyPress(150));
+  TEST_ASSERT_EQUAL_INT((int)ButtonAction::CyclePrimary, (int)classifyPress(999));
 
-  // Test CycleSF range
-  TEST_ASSERT_EQUAL_INT((int)ButtonAction::CycleSF, (int)classifyPress(1000));
-  TEST_ASSERT_EQUAL_INT((int)ButtonAction::CycleSF, (int)classifyPress(1500));
-  TEST_ASSERT_EQUAL_INT((int)ButtonAction::CycleSF, (int)classifyPress(2999));
+  // Test SecondaryFunction range (was CycleSF)
+  TEST_ASSERT_EQUAL_INT((int)ButtonAction::SecondaryFunction, (int)classifyPress(1000));
+  TEST_ASSERT_EQUAL_INT((int)ButtonAction::SecondaryFunction, (int)classifyPress(1500));
+  TEST_ASSERT_EQUAL_INT((int)ButtonAction::SecondaryFunction, (int)classifyPress(2999));
 
-  // Test CycleBW range
-  TEST_ASSERT_EQUAL_INT((int)ButtonAction::CycleBW, (int)classifyPress(3000));
-  TEST_ASSERT_EQUAL_INT((int)ButtonAction::CycleBW, (int)classifyPress(10000));
-  TEST_ASSERT_EQUAL_INT((int)ButtonAction::CycleBW, (int)classifyPress(UINT32_MAX));
+  // Test ConfigMode range (was CycleBW)
+  TEST_ASSERT_EQUAL_INT((int)ButtonAction::ConfigMode, (int)classifyPress(3000));
+  TEST_ASSERT_EQUAL_INT((int)ButtonAction::ConfigMode, (int)classifyPress(10000));
+  TEST_ASSERT_EQUAL_INT((int)ButtonAction::ConfigMode, (int)classifyPress(UINT32_MAX));
+}
+
+void test_classifyMultipleClicks() {
+  // Test sleep mode activation
+  TEST_ASSERT_EQUAL_INT((int)ButtonAction::SleepMode, (int)classifyMultipleClicks(5, 1500));
+
+  // Test cases that should not trigger sleep mode
+  TEST_ASSERT_EQUAL_INT((int)ButtonAction::Ignore, (int)classifyMultipleClicks(4, 1500)); // too few clicks
+  TEST_ASSERT_EQUAL_INT((int)ButtonAction::Ignore, (int)classifyMultipleClicks(5, 2500)); // too slow
+  TEST_ASSERT_EQUAL_INT((int)ButtonAction::Ignore, (int)classifyMultipleClicks(6, 1500)); // too many clicks
+  TEST_ASSERT_EQUAL_INT((int)ButtonAction::Ignore, (int)classifyMultipleClicks(1, 500));  // single click
 }
 
 void test_cycleIndex() {
@@ -54,6 +65,7 @@ void test_formatTxMessage() {
 int main(int argc, char **argv) {
   UNITY_BEGIN();
   RUN_TEST(test_classifyPress);
+  RUN_TEST(test_classifyMultipleClicks);
   RUN_TEST(test_cycleIndex);
   RUN_TEST(test_formatTxMessage);
   return UNITY_END();

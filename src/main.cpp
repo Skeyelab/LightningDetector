@@ -4,6 +4,7 @@
 #include <SPI.h>
 #include <RadioLib.h>
 #include <Preferences.h>
+#include "app_logic.h"
 
 #ifdef ENABLE_WIFI_OTA
 #include <WiFi.h>
@@ -443,7 +444,7 @@ static void handleSenderButtonAction(ButtonAction action) {
       {
         static uint8_t parameterIndex = 0; // 0=SF, 1=BW, 2=TX Power
         parameterIndex = (parameterIndex + 1) % 3;
-        
+
         if (parameterIndex == 0) {
           const int nextIndex = (currentSfIndex + 1) % (sizeof(sfValues) / sizeof(sfValues[0]));
           const int nextSF = sfValues[nextIndex];
@@ -462,20 +463,20 @@ static void handleSenderButtonAction(ButtonAction action) {
         }
       }
       break;
-      
+
     case ButtonAction::SecondaryFunction:
       // Broadcast current settings to receivers
       startConfigBroadcast(currentFreq, currentBW, currentSF, currentCR, currentTxPower);
       oledMsg("Broadcasting", "Settings");
       Serial.println("Manual config broadcast initiated");
       break;
-      
+
     case ButtonAction::ConfigMode:
       // Enter configuration mode
       oledMsg("Config Mode", "Not Implemented");
       Serial.println("Configuration mode requested");
       break;
-      
+
     case ButtonAction::SleepMode:
       // Enter low power sleep mode
       oledMsg("Sleep Mode", "Entering...");
@@ -483,7 +484,7 @@ static void handleSenderButtonAction(ButtonAction action) {
       delay(1000);
       // TODO: Implement sleep mode with sensor/actuator monitoring
       break;
-      
+
     default:
       break;
   }
@@ -509,7 +510,7 @@ static void handleReceiverButtonAction(ButtonAction action) {
           break;
       }
       break;
-      
+
     case ButtonAction::SecondaryFunction:
 #ifdef ENABLE_WIFI_OTA
       // Cycle through network modes for WiFi-enabled receivers
@@ -569,7 +570,7 @@ static void handleReceiverButtonAction(ButtonAction action) {
       Serial.println("Configuration request (waiting for sender)");
 #endif
       break;
-      
+
     case ButtonAction::ConfigMode:
       // Enter WiFi/OTA configuration mode
 #ifdef ENABLE_WIFI_OTA
@@ -580,7 +581,7 @@ static void handleReceiverButtonAction(ButtonAction action) {
       Serial.println("Configuration mode not available (no WiFi)");
 #endif
       break;
-      
+
     case ButtonAction::SleepMode:
       // Enter low power sleep mode
       oledMsg("Sleep Mode", "Entering...");
@@ -588,7 +589,7 @@ static void handleReceiverButtonAction(ButtonAction action) {
       delay(1000);
       // TODO: Implement sleep mode with sensor/actuator monitoring
       break;
-      
+
     default:
       break;
   }
@@ -602,7 +603,7 @@ static void updateButton() {
   if (lastButtonState == HIGH && s == LOW) {
     buttonPressed = true;
     buttonPressMs = now;
-    
+
     // Handle multi-click detection for sleep mode
     if (!detectingMultiClick) {
       clickCount = 1;
