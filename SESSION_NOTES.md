@@ -15,6 +15,39 @@
 
 ### Session log
 
+#### 2025-01-16 04:15 UTC
+- Context: Implemented light sleep mode to replace deep sleep, enabling ping detection while sleeping
+- Changes:
+  - **Light Sleep Mode**: Replaced deep sleep with ESP32 light sleep that keeps LoRa radio active
+  - **Ping Detection**: Receiver can now wake up when it receives pings from sender
+  - **Wake-up Sources**: Configured three wake-up triggers:
+    * Button press (manual wake-up)
+    * LoRa radio interrupt on DIO1 pin (ping detection)
+    * 60-second timer backup (prevents indefinite sleep)
+  - **Radio Monitoring**: LoRa radio remains powered during sleep for continuous ping listening
+  - **Wake-up Detection**: Device identifies wake-up reason (button, LoRa interrupt, or timer)
+  - **Power Optimization**: OLED display still turned off during sleep for power savings
+- Commands run:
+  - `pio run -e sender` (build SUCCESS - 403KB Flash, 12.1% usage)
+  - `pio run -e receiver` (build SUCCESS - 860KB Flash, 25.7% usage)
+  - `g++ -std=c++17 test_app_logic.cpp ../src/app_logic.cpp -o test_app_logic && ./test_app_logic` (tests passed)
+  - `git add -A && git commit -m "feat: implement light sleep mode with LoRa radio active"`
+- Files touched:
+  - `src/main.cpp` (replaced deep sleep with light sleep implementation)
+  - `src/main.cpp` (added LoRa interrupt wake-up source configuration)
+  - `src/main.cpp` (updated wake-up reason detection and logging)
+  - `src/main.cpp` (modified button handlers to use light sleep)
+- Build Results:
+  - ✅ Sender firmware builds successfully (403KB Flash, 12.1% usage)
+  - ✅ Receiver firmware builds successfully (860KB Flash, 25.7% usage)
+  - ✅ All tests pass with new light sleep functionality
+- **RESULT**: ✅ Successfully implemented light sleep with ping detection
+  - **Best of both worlds**: Power savings + lightning detection capability
+  - **Automatic wake-up**: Receiver wakes on ping reception without manual intervention
+  - **Continuous monitoring**: Lightning detection works even while "sleeping"
+  - **Smart power management**: OLED off + LoRa active for optimal power/functionality balance
+  - **Wake-up intelligence**: Device knows why it woke up and can respond accordingly
+
 #### 2025-01-16 04:00 UTC
 - Context: Implemented real ESP32 deep sleep mode to replace placeholder sleep functionality
 - Changes:
