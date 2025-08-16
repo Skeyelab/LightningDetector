@@ -168,7 +168,7 @@ static void drawStatusBar() {
       String ipAddress = WiFi.localIP().toString();
       const char* ipStr = ipAddress.c_str();
       u8g2.drawStr(xPos, yPos - 10, ipStr); // IP address 10 pixels above network location
-      
+
       // Display network location
       const char* location = getCurrentNetworkLocation();
       u8g2.drawStr(xPos, yPos, location);
