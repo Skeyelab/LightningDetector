@@ -1,6 +1,8 @@
 // SBT PIO Web Flasher using ESP Web Tools
 // Simple, reliable implementation that avoids CORS issues
 
+console.log('SBT PIO Web Flasher main.js loaded');
+
 // Global variables
 let selectedDeviceType = 'transmitter';
 let installButton = null;
@@ -20,8 +22,8 @@ function getManifestUrl() {
   const deviceType = selectedDeviceType;
   const manifestName = deviceType === 'transmitter' ? 'sender_manifest.json' : 'receiver_manifest.json';
 
-  // Use absolute paths that work on GitHub Pages
-  return `/${manifestName}`;
+  // Use relative paths that work on GitHub Pages
+  return `./${manifestName}`;
 }
 
 // Create ESP Web Tools install button
@@ -39,7 +41,7 @@ function createESPWebToolsButton() {
   // Create the ESP Web Tools install button
   installButton = document.createElement('esp-web-install-button');
 
-  // Set the manifest URL (absolute path for GitHub Pages)
+  // Set the manifest URL (relative path for GitHub Pages)
   const manifestUrl = getManifestUrl();
   installButton.manifest = manifestUrl;
 

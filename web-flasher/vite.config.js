@@ -10,6 +10,7 @@ export default defineConfig(({ command }) => {
       assetsDir: 'assets',
       sourcemap: false,
       rollupOptions: {
+        input: 'index.html',
         output: {
           manualChunks: undefined,
           entryFileNames: 'assets/[name]-[hash].js',
