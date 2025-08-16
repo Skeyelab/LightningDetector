@@ -1106,18 +1106,12 @@ void loop() {
 
         // Refresh display when dot state changes
   static bool lastDotState = false;
-  static uint32_t lastDotRefresh = 0;
 
-        if (dotBlinkActive && (now - lastDotRefresh >= 200)) {
-    // Refresh display periodically while dot is active (keep original display content)
-    // The dot will be added automatically by drawPingDot() in oledMsg()
-    oledMsg("Role", isSender ? "Sender" : "Receiver"); // Show normal "Mode" / "Sender" or "Receiver" display
-    lastDotRefresh = now;
-  } else if (lastDotState && !dotBlinkActive) {
-    // Dot just finished - refresh display to clear it (normal content, no dot)
-    oledMsg("Role", isSender ? "Sender" : "Receiver"); // Show normal "Mode" / "Sender" or "Receiver" display
+  if (lastDotState != dotBlinkActive) {
+    // Dot state changed - refresh display to show/hide the dot
+    oledMsg(isSender ? "Sender" : "Receiver"); // Show normal "Mode" / "Sender" or "Receiver" display
+    lastDotState = dotBlinkActive;
   }
-  lastDotState = dotBlinkActive;
 
   // Small delay to prevent overwhelming the system, but keep button responsive
   delay(10);
