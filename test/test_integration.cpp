@@ -27,8 +27,8 @@ void test_button_classification() {
   for (const auto& test : tests) {
     ButtonAction result = classifyPress(test.duration);
     TEST_ASSERT_EQUAL_MESSAGE(
-      (int)test.expectedAction, 
-      (int)result, 
+      (int)test.expectedAction,
+      (int)result,
       (test.name + ": " + test.description).c_str()
     );
   }

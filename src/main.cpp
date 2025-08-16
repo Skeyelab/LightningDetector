@@ -1,9 +1,11 @@
 #include <Arduino.h>
-#include <Wire.h>
-#include <U8g2lib.h>
 #include <SPI.h>
+#include <Wire.h>
 #include <RadioLib.h>
+#include <U8g2lib.h>
 #include <Preferences.h>
+#include <esp_sleep.h>
+#include <driver/rtc_io.h>
 #include "app_logic.h"
 
 #ifdef ENABLE_WIFI_OTA
@@ -160,12 +162,22 @@ static void computeIndicesFromCurrent();
 static void broadcastConfigOnControlChannel(uint8_t times = 8, uint32_t intervalMs = 300);
 static void tryReceiveConfigOnControlChannel(uint32_t durationMs = 4000);
 
+// Deep sleep functions
+static void enterDeepSleep();
+static void configureWakeupSources();
+static void restoreStateAfterWakeup();
+
 // IP address scrolling state
 static String currentIP = "";
 static int ipScrollOffset = 0;
 static uint32_t lastScrollUpdate = 0;
 static const uint32_t SCROLL_INTERVAL_MS = 300; // Scroll every 300ms
 static const int MAX_DISPLAY_WIDTH = 12; // Maximum characters that fit on screen
+
+// RTC memory for deep sleep state preservation
+RTC_DATA_ATTR uint32_t sleepCount = 0;
+RTC_DATA_ATTR uint32_t lastSleepTime = 0;
+RTC_DATA_ATTR bool wasInSleepMode = false;
 
 // Draw status bar at the bottom of the screen
 static void drawStatusBar() {
@@ -542,11 +554,9 @@ static void handleSenderButtonAction(ButtonAction action) {
       break;
 
     case ButtonAction::SleepMode:
-      // Enter low power sleep mode
-      oledMsg("Sleep Mode", "Entering...");
+      // Enter deep sleep mode
       Serial.println("Sleep mode requested");
-      delay(1000);
-      // TODO: Implement sleep mode with sensor/actuator monitoring
+      enterDeepSleep();
       break;
 
     default:
@@ -582,11 +592,9 @@ static void handleReceiverButtonAction(ButtonAction action) {
 
     case ButtonAction::SleepMode:
       Serial.println("[RX_BTN] Sleep mode triggered");
-      // Enter low power sleep mode
-      oledMsg("Sleep Mode", "Entering...");
+      // Enter deep sleep mode
       Serial.println("Sleep mode requested");
-      delay(1000);
-      // TODO: Implement sleep mode with sensor/actuator monitoring
+      enterDeepSleep();
       break;
 
     default:
@@ -692,10 +700,72 @@ static void testButton() {
   Serial.println("[BTN_TEST] Button test complete");
 }
 
+// Deep sleep implementation
+static void configureWakeupSources() {
+  // Configure button as wake-up source
+  esp_sleep_enable_ext0_wakeup((gpio_num_t)BUTTON_PIN, LOW);
+  
+  // Also enable timer wake-up as backup (30 seconds)
+  esp_sleep_enable_timer_wakeup(30 * 1000000); // 30 seconds in microseconds
+  
+  Serial.println("[SLEEP] Wake-up sources configured: button (LOW) + 30s timer");
+}
+
+static void enterDeepSleep() {
+  Serial.println("[SLEEP] Entering deep sleep mode...");
+  
+  // Save current state to RTC memory
+  sleepCount++;
+  lastSleepTime = millis();
+  wasInSleepMode = true;
+  
+  // Save important settings to flash before sleep
+  savePersistedSettings();
+  
+  // Show sleep message on OLED
+  oledMsg("Sleep Mode", "Entering...");
+  delay(1000);
+  
+  // Turn off OLED to save power
+  u8g2.setPowerSave(1);
+  
+  // Configure wake-up sources
+  configureWakeupSources();
+  
+  Serial.println("[SLEEP] Going to sleep now. Press button to wake up.");
+  Serial.flush(); // Ensure all serial output is sent
+  
+  // Enter deep sleep
+  esp_deep_sleep_start();
+}
+
+static void restoreStateAfterWakeup() {
+  if (wasInSleepMode) {
+    Serial.println("[SLEEP] Waking up from deep sleep...");
+    Serial.printf("[SLEEP] Sleep count: %lu, Last sleep time: %lu ms ago\n", 
+                  sleepCount, millis() - lastSleepTime);
+    
+    // Reset sleep flag
+    wasInSleepMode = false;
+    
+    // Restore OLED power
+    u8g2.setPowerSave(0);
+    
+    // Show wake-up message
+    oledMsg("Wake Up", "Resuming...");
+    delay(1000);
+    
+    Serial.println("[SLEEP] State restored, resuming normal operation");
+  }
+}
+
 void setup() {
   Serial.begin(115200);
   delay(500);
   Serial.println("\n=== LtngDet LoRa + OLED (Heltec V3) ===");
+  
+  // Check if we're waking up from deep sleep
+  restoreStateAfterWakeup();
 
   pinMode(BUTTON_PIN, INPUT_PULLUP);
   pinMode(ALT_BUTTON_PIN, INPUT_PULLUP);

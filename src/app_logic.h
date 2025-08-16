@@ -6,7 +6,7 @@
 enum class ButtonAction {
   Ignore,
   CycleSF,      // Short press: cycle through Spreading Factor values
-  CycleBW,      // Medium press: cycle through Bandwidth values  
+  CycleBW,      // Medium press: cycle through Bandwidth values
   SleepMode     // Long press: enter sleep mode
 };
 

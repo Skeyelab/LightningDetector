@@ -4,7 +4,7 @@
 
 void test_classifyPress() {
   std::cout << "Testing classifyPress..." << std::endl;
-  
+
   // Test ignore cases
   assert(classifyPress(0) == ButtonAction::Ignore);
   assert(classifyPress(50) == ButtonAction::Ignore);
@@ -31,7 +31,7 @@ void test_classifyPress() {
 
 void test_cycleIndex() {
   std::cout << "Testing cycleIndex..." << std::endl;
-  
+
   assert(cycleIndex(0, 1) == 0);
   assert(cycleIndex(1, 1) == 0);
   assert(cycleIndex(0, 2) == 1);
@@ -42,7 +42,7 @@ void test_cycleIndex() {
 
 void test_formatTxMessage() {
   std::cout << "Testing formatTxMessage..." << std::endl;
-  
+
   std::string msg = formatTxMessage(123);
   assert(msg == "PING seq=123");
   std::cout << "  ✓ formatTxMessage case passed" << std::endl;
@@ -50,12 +50,12 @@ void test_formatTxMessage() {
 
 int main() {
   std::cout << "Running app_logic tests..." << std::endl;
-  
+
   try {
     test_classifyPress();
     test_cycleIndex();
     test_formatTxMessage();
-    
+
     std::cout << "\n✅ All tests passed!" << std::endl;
     return 0;
   } catch (const std::exception& e) {
