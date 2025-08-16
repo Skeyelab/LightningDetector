@@ -73,6 +73,7 @@ U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE);
 // WiFi and OTA Configuration (Receiver only)
 #ifdef ENABLE_WIFI_OTA
 #include "wifi_manager.h"
+#include "web_interface/web_server.h"
 
 // Firmware storage for LoRa OTA cascade updates
 static uint8_t storedFirmware[64 * 1024]; // 64KB buffer for firmware storage (reduced for DRAM)
@@ -902,6 +903,8 @@ void setup() {
       initOTA();
       oledMsg("WiFi + OTA", "Ready");
     }
+    // Start web interface server regardless of WiFi connection status
+    webServerManager.begin();
   }
 #endif
 
@@ -923,6 +926,11 @@ void loop() {
   static uint32_t lastTxMs = 0;
   static uint32_t lastRxMs = 0;
   uint32_t now = millis();
+
+  // Handle web server requests if receiver role
+  if (!isSender) {
+    webServerManager.loop();
+  }
 
   // Check button more frequently
   updateButton();
