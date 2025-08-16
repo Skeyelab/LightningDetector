@@ -1,4 +1,6 @@
 // Keep this test minimal and host-friendly
+// NOTE: PING text has been replaced with blinking dot indicator in OLED display
+// The formatTxMessage function is retained for internal use and testing
 #include <unity.h>
 #include "app_logic.h"
 

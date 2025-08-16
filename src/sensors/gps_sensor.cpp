@@ -48,7 +48,7 @@ namespace GPS {
     }
 
     // UC6580 class implementation
-    UC6580::UC6580() 
+    UC6580::UC6580()
         : m_initialized(false)
         , m_powered(false)
         , m_messages_received(0)
@@ -73,7 +73,7 @@ namespace GPS {
 
         // Configure GPS enable pin
         if (m_config.enable_pin != 255) {
-            auto result = HardwareAbstraction::GPIO::pinMode(m_config.enable_pin, 
+            auto result = HardwareAbstraction::GPIO::pinMode(m_config.enable_pin,
                                                            HardwareAbstraction::GPIO::Mode::MODE_OUTPUT);
             if (result != HardwareAbstraction::Result::SUCCESS) {
                 return result;
@@ -88,7 +88,7 @@ namespace GPS {
 
         // Configure PPS pin if specified
         if (m_config.pps_pin != 255) {
-            result = HardwareAbstraction::GPIO::pinMode(m_config.pps_pin, 
+            result = HardwareAbstraction::GPIO::pinMode(m_config.pps_pin,
                                                       HardwareAbstraction::GPIO::Mode::MODE_INPUT);
             if (result != HardwareAbstraction::Result::SUCCESS) {
                 return result;
@@ -132,7 +132,7 @@ namespace GPS {
 
         if (m_config.enable_pin != 255) {
             // For Wireless Tracker V1.1: GPIO 3 HIGH = GPS ON
-            auto result = HardwareAbstraction::GPIO::digitalWrite(m_config.enable_pin, 
+            auto result = HardwareAbstraction::GPIO::digitalWrite(m_config.enable_pin,
                                                                 HardwareAbstraction::GPIO::Level::LEVEL_HIGH);
             if (result != HardwareAbstraction::Result::SUCCESS) {
                 return result;
@@ -154,7 +154,7 @@ namespace GPS {
 
         if (m_config.enable_pin != 255) {
             // For Wireless Tracker V1.1: GPIO 3 LOW = GPS OFF
-            auto result = HardwareAbstraction::GPIO::digitalWrite(m_config.enable_pin, 
+            auto result = HardwareAbstraction::GPIO::digitalWrite(m_config.enable_pin,
                                                                 HardwareAbstraction::GPIO::Level::LEVEL_LOW);
             if (result != HardwareAbstraction::Result::SUCCESS) {
                 return result;
@@ -179,7 +179,7 @@ namespace GPS {
         // Send NMEA command to change baud rate
         char command[64];
         snprintf(command, sizeof(command), "$PCAS01,%u*", baud_rate);
-        
+
         // Calculate and append checksum
         uint8_t checksum = 0;
         for (int i = 1; command[i] != '*'; i++) {
@@ -209,7 +209,7 @@ namespace GPS {
         // Send NMEA command to change update rate
         char command[64];
         snprintf(command, sizeof(command), "$PCAS02,%u*", 1000 / rate_hz); // Period in ms
-        
+
         // Calculate and append checksum
         uint8_t checksum = 0;
         for (int i = 1; command[i] != '*'; i++) {
@@ -233,7 +233,7 @@ namespace GPS {
         // UC6580 supports multiple GNSS systems
         // This would require specific commands for the UC6580 chip
         // For now, return success as the chip typically enables all systems by default
-        
+
         return HardwareAbstraction::Result::SUCCESS;
     }
 
@@ -276,14 +276,14 @@ namespace GPS {
 
         // Haversine formula for distance calculation
         const double R = 6371.0; // Earth's radius in km
-        
+
         double lat1_rad = m_data.latitude * M_PI / 180.0;
         double lat2_rad = lat * M_PI / 180.0;
         double dlat = (lat - m_data.latitude) * M_PI / 180.0;
         double dlon = (lon - m_data.longitude) * M_PI / 180.0;
 
-        double a = sin(dlat/2) * sin(dlat/2) + 
-                   cos(lat1_rad) * cos(lat2_rad) * 
+        double a = sin(dlat/2) * sin(dlat/2) +
+                   cos(lat1_rad) * cos(lat2_rad) *
                    sin(dlon/2) * sin(dlon/2);
         double c = 2 * atan2(sqrt(a), sqrt(1-a));
 
@@ -300,7 +300,7 @@ namespace GPS {
         double dlon = (lon - m_data.longitude) * M_PI / 180.0;
 
         double y = sin(dlon) * cos(lat2_rad);
-        double x = cos(lat1_rad) * sin(lat2_rad) - 
+        double x = cos(lat1_rad) * sin(lat2_rad) -
                    sin(lat1_rad) * cos(lat2_rad) * cos(dlon);
 
         double bearing_rad = atan2(y, x);
@@ -335,9 +335,9 @@ namespace GPS {
         Serial.printf("HDOP: %.2f\n", m_data.hdop);
         Serial.printf("Messages Received: %lu\n", m_messages_received);
         Serial.printf("Parse Errors: %lu\n", m_parse_errors);
-        Serial.printf("Last Update: %lu ms ago\n", 
+        Serial.printf("Last Update: %lu ms ago\n",
                      HardwareAbstraction::Timer::millis() - m_data.timestamp);
-        
+
         if (hasValidFix()) {
             Serial.printf("Position: %.6f, %.6f\n", m_data.latitude, m_data.longitude);
             Serial.printf("Altitude: %.2f m\n", m_data.altitude);
@@ -361,7 +361,7 @@ namespace GPS {
         #ifdef ARDUINO
         // Configure UART for GPS communication
         HardwareSerial* serial = nullptr;
-        
+
         switch (m_config.uart_num) {
             case 0:
                 serial = &Serial;
@@ -377,7 +377,7 @@ namespace GPS {
         }
 
         serial->begin(m_config.baud_rate, SERIAL_8N1, m_config.rx_pin, m_config.tx_pin);
-        
+
         // Wait for UART to be ready
         HardwareAbstraction::Timer::delay(100);
         #endif
@@ -392,7 +392,7 @@ namespace GPS {
 
         #ifdef ARDUINO
         HardwareSerial* serial = nullptr;
-        
+
         switch (m_config.uart_num) {
             case 0: serial = &Serial; break;
             case 1: serial = &Serial1; break;
@@ -414,7 +414,7 @@ namespace GPS {
 
         #ifdef ARDUINO
         HardwareSerial* serial = nullptr;
-        
+
         switch (m_config.uart_num) {
             case 0: serial = &Serial; break;
             case 1: serial = &Serial1; break;
@@ -428,12 +428,12 @@ namespace GPS {
         while (index < max_length - 1) {
             if (serial->available()) {
                 char c = serial->read();
-                
+
                 if (c == '\n') {
                     buffer[index] = '\0';
                     return index;
                 }
-                
+
                 if (c != '\r') {
                     buffer[index++] = c;
                 }
@@ -472,7 +472,7 @@ namespace GPS {
 
         // Split NMEA sentence into fields
         const char* fields[32];
-        int field_count = splitNMEA(sentence, fields, 32);
+        const int field_count = splitNMEA(sentence, fields, 32);
 
         if (field_count < 1) {
             m_parse_errors++;
@@ -505,7 +505,7 @@ namespace GPS {
 
     HardwareAbstraction::Result UC6580::parseGGA(const char* fields[], int field_count) {
         // $GPGGA,hhmmss.ss,ddmm.mmmm,a,dddmm.mmmm,a,x,xx,x.x,x.x,M,x.x,M,x.x,xxxx*hh
-        
+
         if (field_count < 15) {
             return HardwareAbstraction::Result::ERROR_COMMUNICATION_FAILED;
         }
@@ -531,7 +531,7 @@ namespace GPS {
         if (strlen(fields[2]) > 0 && strlen(fields[3]) > 0) {
             m_data.latitude = nmeaToDecimal(fields[2], fields[3][0]);
         }
-        
+
         if (strlen(fields[4]) > 0 && strlen(fields[5]) > 0) {
             m_data.longitude = nmeaToDecimal(fields[4], fields[5][0]);
         }
@@ -546,7 +546,7 @@ namespace GPS {
 
     HardwareAbstraction::Result UC6580::parseRMC(const char* fields[], int field_count) {
         // $GPRMC,hhmmss.ss,A,ddmm.mmmm,a,dddmm.mmmm,a,x.x,x.x,ddmmyy,x.x,a*hh
-        
+
         if (field_count < 12) {
             return HardwareAbstraction::Result::ERROR_COMMUNICATION_FAILED;
         }
@@ -588,7 +588,7 @@ namespace GPS {
 
     HardwareAbstraction::Result UC6580::parseGSA(const char* fields[], int field_count) {
         // $GPGSA,A,3,04,05,,09,12,,,24,,,,,2.5,1.3,2.1*39
-        
+
         if (field_count < 18) {
             return HardwareAbstraction::Result::ERROR_COMMUNICATION_FAILED;
         }
@@ -608,7 +608,7 @@ namespace GPS {
         if (strlen(fields[16]) > 0) {
             m_data.hdop = atof(fields[16]);
         }
-        
+
         if (strlen(fields[17]) > 0) {
             m_data.vdop = atof(fields[17]);
         }
@@ -635,7 +635,7 @@ namespace GPS {
         }
 
         // Parse expected checksum
-        char expected_hex[3] = {asterisk[1], asterisk[2], '\0'};
+        const char expected_hex[3] = {asterisk[1], asterisk[2], '\0'};
         uint8_t expected = strtol(expected_hex, nullptr, 16);
 
         return checksum == expected;
@@ -654,7 +654,7 @@ namespace GPS {
 
         int field_count = 0;
         char* token = strtok(buffer, ",");
-        
+
         while (token && field_count < max_fields) {
             fields[field_count++] = token;
             token = strtok(nullptr, ",");
@@ -675,7 +675,7 @@ namespace GPS {
         }
 
         // Extract degrees (everything before last 2 digits before decimal)
-        int deg_len = (dot - nmea_coord) - 2;
+        const int deg_len = (dot - nmea_coord) - 2;
         if (deg_len <= 0) {
             return 0.0;
         }
@@ -683,7 +683,7 @@ namespace GPS {
         char deg_str[16];
         strncpy(deg_str, nmea_coord, deg_len);
         deg_str[deg_len] = '\0';
-        
+
         double degrees = atof(deg_str);
         double minutes = atof(nmea_coord + deg_len);
 
