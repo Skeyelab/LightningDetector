@@ -46,7 +46,8 @@ void ConfigManager::toJson(JsonDocument &doc) {
 
 bool ConfigManager::updateFromJson(const JsonDocument &doc) {
     bool changed = false;
-    for (JsonPair kv : doc.as<JsonObject>()) {
+    JsonObjectConst obj = doc.as<JsonObjectConst>();
+    for (JsonPairConst kv : obj) {
         if (configDoc_[kv.key()] != kv.value()) {
             configDoc_[kv.key()] = kv.value();
             changed = true;
