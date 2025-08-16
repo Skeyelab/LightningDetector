@@ -15,6 +15,28 @@
 
 ### Session log
 
+#### 2025-01-16 07:15 UTC
+- Context: Fixed critical issue where workflow changes don't trigger CI pipeline
+- Changes:
+  - **Workflow Self-Validation Fix**: Added `.github/workflows/**` to trigger paths in `ci.yml`
+    * Ensures workflow modifications trigger CI pipeline for self-validation
+    * Fixes common issue where CI workflow changes don't run CI themselves
+    * Critical for maintaining workflow reliability and testing changes
+  - **Trigger Path Optimization**: Workflow now monitors its own files for changes
+    * Self-documenting: workflow changes trigger workflow execution
+    * Prevents silent failures when workflow logic is modified
+    * Enables iterative workflow development and testing
+- Commands run:
+  - `git add .github/workflows/ci.yml` (staged workflow fix)
+  - `git commit -m "fix(ci): include workflow files in trigger paths for self-validation"`
+  - `git push origin consolidate-github-workflows` (pushed fix to remote)
+- Files touched:
+  - `.github/workflows/ci.yml` (added workflow file monitoring to trigger paths)
+- **RESULT**: ✅ Critical workflow self-validation issue resolved
+  - **Self-Validation**: Workflow changes now trigger CI pipeline execution
+  - **Iterative Development**: Can test workflow modifications immediately
+  - **Reliability**: No more silent workflow failures due to missing triggers
+
 #### 2025-01-16 07:00 UTC
 - Context: Identified and resolved GitHub workflow duplication and conflicts
 - Changes:
@@ -42,6 +64,8 @@
   - **Reduced CI Time**: Single workflow execution instead of multiple overlapping workflows
   - **Clear Separation**: Each workflow now has distinct, non-conflicting purpose
   - **Maintained Functionality**: All CI/CD capabilities preserved in optimized structure
+  - **Pull Request Created**: [PR #37](https://github.com/Skeyelab/LightningDetector/pull/37) ready for review and merge
+  - **Critical Fix Applied**: Added .github/workflows/** to trigger paths to ensure workflow changes trigger CI pipeline
 
 #### 2025-01-16 06:00 UTC
 - Context: Successfully merged main branch changes and resolved merge conflicts
