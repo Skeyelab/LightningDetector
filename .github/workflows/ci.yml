@@ -5,8 +5,11 @@ name: CI/CD Pipeline (Consolidated - Replaces build.yml)
 # - Building (replaces build.yml workflow)
 # - Static analysis (replaces separate linting workflows)
 # - Performance monitoring
-# 
+#
 # The build.yml workflow has been removed to eliminate duplication
+# 
+# IMPORTANT: .github/workflows/** is included in paths to ensure workflow
+# changes trigger the CI pipeline for self-validation
 
 on:
   push:
@@ -19,6 +22,7 @@ on:
       - '**/lib_deps'
       - 'requirements.txt'
       - 'scripts/ci/run_tests.sh'
+      - '.github/workflows/**'
       - '!SESSION_NOTES.md'
       - '!README.md'
       - '!docs/**'
@@ -33,6 +37,7 @@ on:
       - '**/lib_deps'
       - 'requirements.txt'
       - 'scripts/ci/run_tests.sh'
+      - '.github/workflows/**'
       - '!SESSION_NOTES.md'
       - '!README.md'
       - '!docs/**'
