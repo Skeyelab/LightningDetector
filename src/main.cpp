@@ -114,7 +114,7 @@ static uint32_t errorCount = 0;
 // Blinking dot state for ping indication
 static uint32_t dotBlinkStartMs = 0;
 static bool dotBlinkActive = false;
-static const uint32_t DOT_BLINK_DURATION_MS = 400; // 200ms on + 200ms off
+static const uint32_t DOT_FLASH_DURATION_MS = 1000; // 1 second on (half of 2-second ping interval)
 
 // Available values for cycling
 // Old arrays removed - using new arrays defined above
@@ -186,32 +186,35 @@ static void drawStatusBar() {
 #endif
 }
 
-// Trigger ping dot blink
+// Trigger ping dot flash
 static void triggerPingDotBlink() {
-  dotBlinkStartMs = millis();
-  dotBlinkActive = true;
+  if (!dotBlinkActive) {
+    // Only start new flash if not already active (prevents overlapping flashes)
+    dotBlinkStartMs = millis();
+    dotBlinkActive = true;
+    Serial.printf("[DEBUG] *** PING DOT FLASH STARTED at %lu ms ***\n", dotBlinkStartMs);
+  } else {
+    Serial.println("[DEBUG] Ping dot already active - not restarting");
+  }
 }
 
-// Draw blinking dot in upper right corner if active
+// Draw ping flash dot if active
 static void drawPingDot() {
   if (!dotBlinkActive) return;
-  
+
   uint32_t now = millis();
   uint32_t elapsed = now - dotBlinkStartMs;
-  
-  // Stop blinking after duration
-  if (elapsed >= DOT_BLINK_DURATION_MS) {
+
+  // Stop flashing after duration
+  if (elapsed >= DOT_FLASH_DURATION_MS) {
     dotBlinkActive = false;
+    Serial.println("[DEBUG] Ping dot flash finished");
     return;
   }
-  
-  // Blink pattern: on for first 200ms, off for next 200ms
-  bool shouldShow = (elapsed % 400) < 200;
-  
-  if (shouldShow) {
-    // Draw filled circle at coordinates (58, 8) - upper right corner
-    u8g2.drawDisc(58, 8, 2); // x, y, radius
-  }
+
+  // Show solid dot for the entire flash duration
+  u8g2.drawDisc(55, 12, 4); // Main ping flash dot
+  Serial.printf("[DEBUG] *** PING DOT VISIBLE *** elapsed=%lu ms\n", elapsed);
 }
 
 static void oledMsg(const char* l1, const char* l2 = nullptr, const char* l3 = nullptr) {
@@ -248,7 +251,7 @@ static void oledMsg(const char* l1, const char* l2 = nullptr, const char* l3 = n
   // Status bar at the bottom - WiFi and OTA status
   drawStatusBar();
 
-  // Draw blinking dot if ping activity
+    // Draw blinking dot if ping activity
   drawPingDot();
 
   u8g2.sendBuffer();
@@ -716,6 +719,7 @@ void loop() {
         int st = radio.transmit(msg);
         if (st == RADIOLIB_ERR_NONE) {
           Serial.printf("[TX] %s OK\n", msg);
+          Serial.printf("[DEBUG] TX seq counter at: %lu\n", (unsigned long)(seq-1));
           // Trigger blinking dot instead of showing PING text
           triggerPingDotBlink();
         } else {
@@ -813,6 +817,14 @@ void loop() {
         } else {
           char l2[20]; snprintf(l2, sizeof(l2), "RSSI %.1f", rssi);
           if (rx.startsWith("PING ")) {
+            // Extract and log the sequence number for verification
+            const char* seqPtr = strstr(rx.c_str(), "seq=");
+            if (seqPtr) {
+              unsigned long rxSeq = strtoul(seqPtr + 4, nullptr, 10);
+              Serial.printf("[DEBUG] RX parsed seq: %lu\n", rxSeq);
+            }
+            // Log ping reception to serial console
+            Serial.printf("[RX] %s | %s | SNR %.1f | PKT:%lu\n", rx.c_str(), l2, snr, packetCount);
             // Trigger blinking dot instead of showing PING text
             triggerPingDotBlink();
           } else {
@@ -852,6 +864,21 @@ void loop() {
 
   // Check LoRa OTA timeout (both roles)
   checkLoraOtaTimeout();
+
+        // Refresh display when dot state changes
+  static bool lastDotState = false;
+  static uint32_t lastDotRefresh = 0;
+
+        if (dotBlinkActive && (now - lastDotRefresh >= 200)) {
+    // Refresh display periodically while dot is active (keep original display content)
+    // The dot will be added automatically by drawPingDot() in oledMsg()
+    oledRole(); // Show normal "Mode" / "Sender" or "Receiver" display
+    lastDotRefresh = now;
+  } else if (lastDotState && !dotBlinkActive) {
+    // Dot just finished - refresh display to clear it (normal content, no dot)
+    oledRole(); // Show normal "Mode" / "Sender" or "Receiver" display
+  }
+  lastDotState = dotBlinkActive;
 
   // Small delay to prevent overwhelming the system, but keep button responsive
   delay(10);
