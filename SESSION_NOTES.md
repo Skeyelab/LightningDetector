@@ -15,6 +15,34 @@
 
 ### Session log
 
+#### 2025-01-16 07:00 UTC
+- Context: Identified and resolved GitHub workflow duplication and conflicts
+- Changes:
+  - **Workflow Consolidation**: Removed redundant `build.yml` workflow that duplicated functionality in `ci.yml`
+    * Eliminated duplicate build jobs running simultaneously
+    * Reduced CI resource usage and execution time
+    * Consolidated all CI/CD functionality into single comprehensive workflow
+  - **CI Pipeline Optimization**: Enhanced `ci.yml` with clear documentation about consolidation
+    * Added explanatory comments about workflow purpose and structure
+    * Maintained all existing functionality (tests, builds, linting, performance monitoring)
+    * Clear separation of concerns between CI, release, and deployment workflows
+  - **Workflow Structure**: Now have clean, non-conflicting workflow setup:
+    * `ci.yml` - Full CI/CD with tests, builds, and static analysis
+    * `release.yml` - Release-specific builds for GitHub releases
+    * `deploy-web-flasher.yml` - Web deployment to GitHub Pages
+- Commands run:
+  - `git checkout -b consolidate-github-workflows` (created new branch)
+  - `rm .github/workflows/build.yml` (removed redundant workflow)
+  - Updated `ci.yml` with consolidation documentation
+- Files touched:
+  - `.github/workflows/build.yml` (deleted - redundant functionality)
+  - `.github/workflows/ci.yml` (enhanced with consolidation documentation)
+- **RESULT**: ✅ Successfully consolidated GitHub workflows
+  - **Eliminated Duplication**: No more duplicate build jobs running simultaneously
+  - **Reduced CI Time**: Single workflow execution instead of multiple overlapping workflows
+  - **Clear Separation**: Each workflow now has distinct, non-conflicting purpose
+  - **Maintained Functionality**: All CI/CD capabilities preserved in optimized structure
+
 #### 2025-01-16 06:00 UTC
 - Context: Successfully merged main branch changes and resolved merge conflicts
 - Changes:
