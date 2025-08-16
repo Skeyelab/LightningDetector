@@ -5,16 +5,12 @@
 
 enum class ButtonAction {
   Ignore,
-  CyclePrimary,      // Primary function: SF for sender, display mode for receiver
-  SecondaryFunction, // Secondary function: config broadcast/request
-  ConfigMode,        // Configuration/advanced settings
-  SleepMode         // Low power sleep mode (5 rapid clicks)
+  CycleSF,      // Short press: cycle through Spreading Factor values
+  CycleBW,      // Medium press: cycle through Bandwidth values  
+  SleepMode     // Long press: enter sleep mode
 };
 
 ButtonAction classifyPress(uint32_t pressDurationMs);
-
-// New function to detect rapid multiple clicks for sleep mode
-ButtonAction classifyMultipleClicks(uint8_t clickCount, uint32_t totalTimeMs);
 
 int cycleIndex(int currentIndex, int size);
 

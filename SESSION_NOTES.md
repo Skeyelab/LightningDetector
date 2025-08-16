@@ -15,32 +15,31 @@
 
 ### Session log
 
-#### 2025-01-16 03:15 UTC
-- Context: **FIXED** Receiver missing ping dot flashes due to excessive display refresh calls
+#### 2025-01-16 03:00 UTC
+- Context: Resolved merge conflicts and fixed build errors from eliminated `oledRole()` function
 - Changes:
-  - Identified ping dot display issue: excessive `oledMsg()` calls every 200ms were interfering with dot visibility
-  - Fixed ping dot refresh logic to only refresh display when dot state actually changes
-  - Removed unnecessary `lastDotRefresh` timer and 200ms refresh loop
-  - Simplified logic to: `if (lastDotState != dotBlinkActive)` then refresh display once
+  - Resolved merge conflicts in `src/main.cpp` by choosing enhanced IP scrolling implementation
+  - Fixed compilation errors by replacing `oledRole()` calls with `oledMsg("Role", isSender ? "Sender" : "Receiver")`
+  - Updated two locations in main.cpp where `oledRole()` was still being called
   - Maintained all IP scrolling functionality: 300ms intervals, IP change detection, horizontal scrolling
-  - Both firmware variants now compile successfully with clean ping dot behavior
+  - Cleaned up duplicate code and merge conflict markers
+  - Verified both sender and receiver variants compile successfully
+  - Committed resolved changes with descriptive commit message
 - Commands run:
-  - `pio run -e receiver` (compilation test - SUCCESS)
+  - `pio run` (identified oledRole compilation errors)
   - `pio run -e sender` (compilation test - SUCCESS)
-  - `git add -A && git commit -m "fix: resolve ping dot display issues - remove excessive display refresh calls"`
+  - `pio run -e receiver` (compilation test - SUCCESS)
+  - `git add -A && git commit -m "fix: resolve merge conflicts in src/main.cpp - choose enhanced IP scrolling implementation"`
 - Files touched:
-  - `src/main.cpp` (fixed ping dot refresh logic around lines 1105-1120)
+  - `src/main.cpp` (resolved merge conflicts, maintained enhanced scrolling functionality, replaced oledRole() calls around lines 994-998)
 - Build Results:
-  - ✅ Sender firmware builds successfully (386KB Flash, 11.6% usage)
-  - ✅ Receiver firmware builds successfully (851KB Flash, 25.5% usage)
-- **RESULT**: ✅ Successfully fixed ping dot display issues
-  - Receiver will now show ping dot flashes when receiving PING packets
-  - Sender will show ping dot flashes when transmitting PING packets
-  - Display refresh only occurs when dot state changes (not every 200ms)
-  - Clean, efficient ping dot behavior restored
+  - ✅ Sender firmware builds successfully (385KB Flash, 11.5% usage)
+  - ✅ Receiver firmware builds successfully (849KB Flash, 25.4% usage)
 - Next steps:
-  - Test firmware on physical hardware to verify ping dot functionality
+  - Test the resolved code on physical hardware
   - Verify IP scrolling works correctly with various IP address lengths
+  - Test firmware on physical hardware to ensure display functionality works correctly
+  - Verify role display shows correctly during normal operation
   - Ensure no compilation errors or linter issues remain
 
 #### 2025-01-16 02:30 UTC

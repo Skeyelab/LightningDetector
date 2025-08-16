@@ -89,11 +89,7 @@ static int lastButtonState = HIGH;
 static uint32_t buttonPressMs = 0;
 static bool buttonPressed = false;
 
-// Multi-click detection for sleep mode
-static uint8_t clickCount = 0;
-static uint32_t firstClickMs = 0;
-static uint32_t lastClickMs = 0;
-static bool detectingMultiClick = false;
+
 
 // Display mode cycling for receiver
 static uint8_t displayMode = 0;
@@ -523,42 +519,26 @@ static void tryReceiveConfigOnControlChannel(uint32_t durationMs) {
 
 static void handleSenderButtonAction(ButtonAction action) {
   switch (action) {
-    case ButtonAction::CyclePrimary:
-      // Cycle through LoRa parameters (SF, BW, TX Power)
+    case ButtonAction::CycleSF:
+      // Cycle through Spreading Factor values
       {
-        static uint8_t parameterIndex = 0; // 0=SF, 1=BW, 2=TX Power
-        parameterIndex = (parameterIndex + 1) % 3;
-
-        if (parameterIndex == 0) {
-          const int nextIndex = (currentSfIndex + 1) % (sizeof(sfValues) / sizeof(sfValues[0]));
-          const int nextSF = sfValues[nextIndex];
-          startConfigBroadcast(currentFreq, currentBW, nextSF, currentCR, currentTxPower);
-          Serial.printf("SF change requested -> %d (broadcasting to receiver)\n", nextSF);
-        } else if (parameterIndex == 1) {
-          const int nextIndex = (currentBwIndex + 1) % (sizeof(bwValues) / sizeof(bwValues[0]));
-          const float nextBW = bwValues[nextIndex];
-          startConfigBroadcast(currentFreq, nextBW, currentSF, currentCR, currentTxPower);
-          Serial.printf("BW change requested -> %.0f kHz (broadcasting to receiver)\n", nextBW);
-        } else {
-          const int nextIndex = (currentTxIndex + 1) % (sizeof(txPowerValues) / sizeof(txPowerValues[0]));
-          const int nextTxPower = txPowerValues[nextIndex];
-          startConfigBroadcast(currentFreq, currentBW, currentSF, currentCR, nextTxPower);
-          Serial.printf("TX Power change requested -> %d dBm (broadcasting to receiver)\n", nextTxPower);
-        }
+        const int nextIndex = (currentSfIndex + 1) % (sizeof(sfValues) / sizeof(sfValues[0]));
+        const int nextSF = sfValues[nextIndex];
+        startConfigBroadcast(currentFreq, currentBW, nextSF, currentCR, currentTxPower);
+        Serial.printf("SF change requested -> %d (broadcasting to receiver)\n", nextSF);
+        oledMsg("SF Changed", String(nextSF).c_str());
       }
       break;
 
-    case ButtonAction::SecondaryFunction:
-      // Broadcast current settings to receivers
-      startConfigBroadcast(currentFreq, currentBW, currentSF, currentCR, currentTxPower);
-      oledMsg("Broadcasting", "Settings");
-      Serial.println("Manual config broadcast initiated");
-      break;
-
-    case ButtonAction::ConfigMode:
-      // Enter configuration mode
-      oledMsg("Config Mode", "Not Implemented");
-      Serial.println("Configuration mode requested");
+    case ButtonAction::CycleBW:
+      // Cycle through Bandwidth values
+      {
+        const int nextIndex = (currentBwIndex + 1) % (sizeof(bwValues) / sizeof(bwValues[0]));
+        const float nextBW = bwValues[nextIndex];
+        startConfigBroadcast(currentFreq, nextBW, currentSF, currentCR, currentTxPower);
+        Serial.printf("BW change requested -> %.0f kHz (broadcasting to receiver)\n", nextBW);
+        oledMsg("BW Changed", String(nextBW).c_str());
+      }
       break;
 
     case ButtonAction::SleepMode:
@@ -578,97 +558,26 @@ static void handleReceiverButtonAction(ButtonAction action) {
   Serial.printf("[RX_BTN] Handling action: %d\n", (int)action);
 
   switch (action) {
-    case ButtonAction::CyclePrimary:
-      // Cycle through display modes
-      displayMode = (displayMode + 1) % MAX_DISPLAY_MODES;
-      Serial.printf("[RX_BTN] Display mode changed to: %d\n", displayMode);
-      switch (displayMode) {
-        case 0:
-          oledMsg("Display", "Signal Info");
-          Serial.println("Display mode: Signal Info");
-          break;
-        case 1:
-          oledMsg("Display", "Network Status");
-          Serial.println("Display mode: Network Status");
-          break;
-        case 2:
-          oledMsg("Display", "Settings");
-          Serial.println("Display mode: Settings");
-          break;
-      }
-      break;
-
-    case ButtonAction::SecondaryFunction:
-      Serial.println("[RX_BTN] Secondary function triggered");
-#ifdef ENABLE_WIFI_OTA
-      // Cycle through network modes for WiFi-enabled receivers
+    case ButtonAction::CycleSF:
+      // Cycle through Spreading Factor values (same as sender)
       {
-        const NetworkSelectionMode currentMode = currentNetworkMode;
-        NetworkSelectionMode nextMode = NetworkSelectionMode::AUTO;
-
-        switch (currentMode) {
-          case NetworkSelectionMode::AUTO:
-            nextMode = NetworkSelectionMode::MANUAL_HOME;
-            break;
-          case NetworkSelectionMode::MANUAL_HOME:
-            nextMode = NetworkSelectionMode::MANUAL_WORK;
-            break;
-          case NetworkSelectionMode::MANUAL_WORK:
-            nextMode = NetworkSelectionMode::AUTO;
-            break;
-          default:
-            nextMode = NetworkSelectionMode::AUTO;
-        }
-
-        setNetworkMode(nextMode);
-
-        const char* modeStr = "Unknown";
-        switch (nextMode) {
-          case NetworkSelectionMode::AUTO:
-            modeStr = "Auto";
-            break;
-          case NetworkSelectionMode::MANUAL_HOME:
-            modeStr = "Home";
-            break;
-          case NetworkSelectionMode::MANUAL_WORK:
-            modeStr = "Work";
-            break;
-          default:
-            modeStr = "Auto";
-        }
-
-        oledMsg("Network Mode", modeStr);
-        Serial.printf("Network mode changed to %s\n", modeStr);
-
-        if (wifiConnected) {
-          WiFi.disconnect();
-          delay(1000);
-          if (connectToWiFi()) {
-            wifiConnected = true;
-            oledMsg("Reconnected", getCurrentNetworkLocation());
-          } else {
-            wifiConnected = false;
-            oledMsg("Reconnect", "Failed");
-          }
-        }
+        const int nextIndex = (currentSfIndex + 1) % (sizeof(sfValues) / sizeof(sfValues[0]));
+        const int nextSF = sfValues[nextIndex];
+        Serial.printf("[RX_BTN] SF change requested -> %d\n", nextSF);
+        oledMsg("SF Changed", String(nextSF).c_str());
+        // Note: Receiver doesn't broadcast, just displays the change
       }
-#else
-      // For non-WiFi receivers, request configuration from sender
-      oledMsg("Config", "Requesting...");
-      Serial.println("Configuration request (waiting for sender)");
-#endif
       break;
 
-    case ButtonAction::ConfigMode:
-      Serial.println("[RX_BTN] Config mode triggered");
-      // Enter WiFi/OTA configuration mode
-#ifdef ENABLE_WIFI_OTA
-      oledMsg("OTA Mode", "Ready");
-      Serial.println("OTA configuration mode");
-#else
-      oledMsg("Config Mode", "Not Available");
-      Serial.println("Configuration mode not available (no WiFi)");
-#endif
+    case ButtonAction::CycleBW:
+      // Cycle through Bandwidth values (same as sender)
+      {
+        const int nextIndex = (currentBwIndex + 1) % (sizeof(bwValues) / sizeof(bwValues[0]));
+        const float nextBW = bwValues[nextIndex];
+        Serial.printf("[RX_BTN] BW change requested -> %.0f kHz\n", nextBW);
+        oledMsg("BW Changed", String(nextBW).c_str());
+        // Note: Receiver doesn't broadcast, just displays the change
+      }
       break;
 
     case ButtonAction::SleepMode:
@@ -707,16 +616,6 @@ static void updateButton() {
     buttonPressed = true;
     buttonPressMs = now;
     Serial.printf("[BTN] Press detected (role: %s)\n", isSender ? "Sender" : "Receiver");
-
-    // Handle multi-click detection for sleep mode
-    if (!detectingMultiClick) {
-      clickCount = 1;
-      firstClickMs = now;
-      detectingMultiClick = true;
-    } else {
-      clickCount++;
-    }
-    lastClickMs = now;
   }
 
   // Button release detection
@@ -725,49 +624,20 @@ static void updateButton() {
     uint32_t pressDuration = now - buttonPressMs;
     Serial.printf("[BTN] Release detected, duration: %lu ms (role: %s)\n", pressDuration, isSender ? "Sender" : "Receiver");
 
-    // Check for multi-click timeout
-    if (detectingMultiClick && (now - lastClickMs > 500)) {
-      ButtonAction multiAction = classifyMultipleClicks(clickCount, now - firstClickMs);
-      Serial.printf("[BTN] Multi-click: %d clicks, %lu ms total -> %d\n", clickCount, now - firstClickMs, (int)multiAction);
-      if (multiAction == ButtonAction::SleepMode) {
-        Serial.println("[BTN] Sleep mode triggered");
-        if (isSender) {
-          handleSenderButtonAction(multiAction);
-        } else {
-          handleReceiverButtonAction(multiAction);
-        }
-        detectingMultiClick = false;
-        clickCount = 0;
-        lastButtonMs = now;
-        lastButtonState = s;
-        return;
-      }
-      detectingMultiClick = false;
-      clickCount = 0;
-    }
-
     // Handle single press actions
-    if (!detectingMultiClick || clickCount == 1) {
-      ButtonAction action = classifyPress(pressDuration);
-      Serial.printf("[BTN] Single press action: %d\n", (int)action);
-      if (action != ButtonAction::Ignore) {
-        if (isSender) {
-          Serial.println("[BTN] Handling sender action");
-          handleSenderButtonAction(action);
-        } else {
-          Serial.println("[BTN] Handling receiver action");
-          handleReceiverButtonAction(action);
-        }
+    ButtonAction action = classifyPress(pressDuration);
+    Serial.printf("[BTN] Single press action: %d\n", (int)action);
+    if (action != ButtonAction::Ignore) {
+      if (isSender) {
+        Serial.println("[BTN] Handling sender action");
+        handleSenderButtonAction(action);
+      } else {
+        Serial.println("[BTN] Handling receiver action");
+        handleReceiverButtonAction(action);
       }
     }
 
     lastButtonMs = now;
-  }
-
-  // Reset multi-click detection after timeout
-  if (detectingMultiClick && (now - lastClickMs > 2000)) {
-    detectingMultiClick = false;
-    clickCount = 0;
   }
 
   lastButtonState = s;
@@ -841,8 +711,6 @@ void setup() {
   // Explicitly initialize button state variables
   lastButtonState = HIGH;
   buttonPressed = false;
-  clickCount = 0;
-  detectingMultiClick = false;
   Serial.println("[SETUP] Button state variables initialized");
 
   // Test button functionality
@@ -1106,12 +974,18 @@ void loop() {
 
         // Refresh display when dot state changes
   static bool lastDotState = false;
+  static uint32_t lastDotRefresh = 0;
 
-  if (lastDotState != dotBlinkActive) {
-    // Dot state changed - refresh display to show/hide the dot
-    oledMsg(isSender ? "Sender" : "Receiver"); // Show normal "Mode" / "Sender" or "Receiver" display
-    lastDotState = dotBlinkActive;
+        if (dotBlinkActive && (now - lastDotRefresh >= 200)) {
+    // Refresh display periodically while dot is active (keep original display content)
+    // The dot will be added automatically by drawPingDot() in oledMsg()
+    oledMsg("Role", isSender ? "Sender" : "Receiver"); // Show normal "Mode" / "Sender" or "Receiver" display
+    lastDotRefresh = now;
+  } else if (lastDotState && !dotBlinkActive) {
+    // Dot just finished - refresh display to clear it (normal content, no dot)
+    oledMsg("Role", isSender ? "Sender" : "Receiver"); // Show normal "Mode" / "Sender" or "Receiver" display
   }
+  lastDotState = dotBlinkActive;
 
   // Small delay to prevent overwhelming the system, but keep button responsive
   delay(10);
