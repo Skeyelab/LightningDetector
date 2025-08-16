@@ -20,6 +20,7 @@
 #define VEXT_PIN 36        // Vext control: LOW = ON
 #define OLED_RST_PIN 21    // OLED reset pin
 #define BUTTON_PIN 0       // BOOT button on GPIO0 (active LOW)
+#define ALT_BUTTON_PIN 38  // Alternative button pin for testing
 
 // SSD1306 128x64 OLED over HW I2C; pins set via Wire.begin(17,18)
 U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE);
@@ -536,10 +537,13 @@ static void handleSenderButtonAction(ButtonAction action) {
 }
 
 static void handleReceiverButtonAction(ButtonAction action) {
+  Serial.printf("[RX_BTN] Handling action: %d\n", (int)action);
+
   switch (action) {
     case ButtonAction::CyclePrimary:
       // Cycle through display modes
       displayMode = (displayMode + 1) % MAX_DISPLAY_MODES;
+      Serial.printf("[RX_BTN] Display mode changed to: %d\n", displayMode);
       switch (displayMode) {
         case 0:
           oledMsg("Display", "Signal Info");
@@ -557,6 +561,7 @@ static void handleReceiverButtonAction(ButtonAction action) {
       break;
 
     case ButtonAction::SecondaryFunction:
+      Serial.println("[RX_BTN] Secondary function triggered");
 #ifdef ENABLE_WIFI_OTA
       // Cycle through network modes for WiFi-enabled receivers
       {
@@ -617,6 +622,7 @@ static void handleReceiverButtonAction(ButtonAction action) {
       break;
 
     case ButtonAction::ConfigMode:
+      Serial.println("[RX_BTN] Config mode triggered");
       // Enter WiFi/OTA configuration mode
 #ifdef ENABLE_WIFI_OTA
       oledMsg("OTA Mode", "Ready");
@@ -628,6 +634,7 @@ static void handleReceiverButtonAction(ButtonAction action) {
       break;
 
     case ButtonAction::SleepMode:
+      Serial.println("[RX_BTN] Sleep mode triggered");
       // Enter low power sleep mode
       oledMsg("Sleep Mode", "Entering...");
       Serial.println("Sleep mode requested");
@@ -636,18 +643,32 @@ static void handleReceiverButtonAction(ButtonAction action) {
       break;
 
     default:
+      Serial.printf("[RX_BTN] Unknown action: %d\n", (int)action);
       break;
   }
 }
 
 static void updateButton() {
+  static uint32_t callCount = 0;
+  callCount++;
+
   int s = digitalRead(BUTTON_PIN);
   uint32_t now = millis();
+
+  // Debug button state every 5 seconds
+  static uint32_t lastDebugMs = 0;
+  if (now - lastDebugMs >= 5000) {
+    int altState = digitalRead(ALT_BUTTON_PIN);
+    Serial.printf("[BTN_DEBUG] Main pin: %d, Alt pin: %d, lastButtonState: %d, buttonPressed: %s, role: %s, calls: %lu\n",
+                  s, altState, lastButtonState, buttonPressed ? "true" : "false", isSender ? "Sender" : "Receiver", callCount);
+    lastDebugMs = now;
+  }
 
   // Button press detection
   if (lastButtonState == HIGH && s == LOW) {
     buttonPressed = true;
     buttonPressMs = now;
+    Serial.printf("[BTN] Press detected (role: %s)\n", isSender ? "Sender" : "Receiver");
 
     // Handle multi-click detection for sleep mode
     if (!detectingMultiClick) {
@@ -664,11 +685,14 @@ static void updateButton() {
   if (lastButtonState == LOW && s == HIGH && buttonPressed) {
     buttonPressed = false;
     uint32_t pressDuration = now - buttonPressMs;
+    Serial.printf("[BTN] Release detected, duration: %lu ms (role: %s)\n", pressDuration, isSender ? "Sender" : "Receiver");
 
     // Check for multi-click timeout
     if (detectingMultiClick && (now - lastClickMs > 500)) {
       ButtonAction multiAction = classifyMultipleClicks(clickCount, now - firstClickMs);
+      Serial.printf("[BTN] Multi-click: %d clicks, %lu ms total -> %d\n", clickCount, now - firstClickMs, (int)multiAction);
       if (multiAction == ButtonAction::SleepMode) {
+        Serial.println("[BTN] Sleep mode triggered");
         if (isSender) {
           handleSenderButtonAction(multiAction);
         } else {
@@ -687,10 +711,13 @@ static void updateButton() {
     // Handle single press actions
     if (!detectingMultiClick || clickCount == 1) {
       ButtonAction action = classifyPress(pressDuration);
+      Serial.printf("[BTN] Single press action: %d\n", (int)action);
       if (action != ButtonAction::Ignore) {
         if (isSender) {
+          Serial.println("[BTN] Handling sender action");
           handleSenderButtonAction(action);
         } else {
+          Serial.println("[BTN] Handling receiver action");
           handleReceiverButtonAction(action);
         }
       }
@@ -725,12 +752,63 @@ static void sendLoraOtaUpdate(const uint8_t* firmware, size_t firmwareSize);
 // OLED Display Functions
 static void drawStatusBar();
 
+// Simple button test function
+static void testButton() {
+  Serial.println("[BTN_TEST] Starting button test...");
+
+  // Test both button pins
+  int mainState = digitalRead(BUTTON_PIN);
+  int altState = digitalRead(ALT_BUTTON_PIN);
+
+  Serial.printf("[BTN_TEST] Main button (GPIO%d): %d, Alt button (GPIO%d): %d\n",
+                BUTTON_PIN, mainState, ALT_BUTTON_PIN, altState);
+
+  // Test button press detection
+  Serial.println("[BTN_TEST] Press and hold the button for 2 seconds...");
+  uint32_t startTime = millis();
+  bool buttonPressed = false;
+
+  while (millis() - startTime < 2000) {
+    int currentState = digitalRead(BUTTON_PIN);
+    if (currentState == LOW && !buttonPressed) {
+      buttonPressed = true;
+      Serial.println("[BTN_TEST] Button press detected!");
+    }
+    delay(100);
+  }
+
+  if (!buttonPressed) {
+    Serial.println("[BTN_TEST] No button press detected during test");
+  }
+
+  Serial.println("[BTN_TEST] Button test complete");
+}
+
 void setup() {
   Serial.begin(115200);
   delay(500);
   Serial.println("\n=== LtngDet LoRa + OLED (Heltec V3) ===");
 
   pinMode(BUTTON_PIN, INPUT_PULLUP);
+  pinMode(ALT_BUTTON_PIN, INPUT_PULLUP);
+  Serial.printf("[SETUP] Button pin %d configured as INPUT_PULLUP\n", BUTTON_PIN);
+  Serial.printf("[SETUP] Alt button pin %d configured as INPUT_PULLUP\n", ALT_BUTTON_PIN);
+
+  // Test button pin states
+  int initialButtonState = digitalRead(BUTTON_PIN);
+  int initialAltButtonState = digitalRead(ALT_BUTTON_PIN);
+  Serial.printf("[SETUP] Main button state: %d, Alt button state: %d (HIGH=%d, LOW=%d)\n",
+                initialButtonState, initialAltButtonState, HIGH, LOW);
+
+  // Explicitly initialize button state variables
+  lastButtonState = HIGH;
+  buttonPressed = false;
+  clickCount = 0;
+  detectingMultiClick = false;
+  Serial.println("[SETUP] Button state variables initialized");
+
+  // Test button functionality
+  testButton();
 
   // Initialize current values
   currentFreq = LORA_FREQ_MHZ;
@@ -742,10 +820,13 @@ void setup() {
   // initial role from build flags
 #ifdef ROLE_SENDER
   isSender = true;
+  Serial.println("[SETUP] Role: SENDER (from ROLE_SENDER flag)");
 #elif defined(ROLE_RECEIVER)
   isSender = false;
+  Serial.println("[SETUP] Role: RECEIVER (from ROLE_RECEIVER flag)");
 #else
   isSender = true;
+  Serial.println("[SETUP] Role: SENDER (default)");
 #endif
 
   // Load persisted settings (role is now fixed at build time)
@@ -992,11 +1073,11 @@ void loop() {
         if (dotBlinkActive && (now - lastDotRefresh >= 200)) {
     // Refresh display periodically while dot is active (keep original display content)
     // The dot will be added automatically by drawPingDot() in oledMsg()
-    oledRole(); // Show normal "Mode" / "Sender" or "Receiver" display
+    oledMsg("Role", isSender ? "Sender" : "Receiver"); // Show normal "Mode" / "Sender" or "Receiver" display
     lastDotRefresh = now;
   } else if (lastDotState && !dotBlinkActive) {
     // Dot just finished - refresh display to clear it (normal content, no dot)
-    oledRole(); // Show normal "Mode" / "Sender" or "Receiver" display
+    oledMsg("Role", isSender ? "Sender" : "Receiver"); // Show normal "Mode" / "Sender" or "Receiver" display
   }
   lastDotState = dotBlinkActive;
 

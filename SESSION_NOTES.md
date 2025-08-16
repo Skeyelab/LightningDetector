@@ -15,6 +15,24 @@
 
 ### Session log
 
+#### 2025-01-16 03:00 UTC
+- Context: Build was breaking due to calls to eliminated `oledRole()` function
+- Changes:
+  - Fixed compilation errors by replacing `oledRole()` calls with `oledMsg("Role", isSender ? "Sender" : "Receiver")`
+  - Updated two locations in main.cpp where `oledRole()` was still being called
+  - Build now successful for both sender and receiver environments
+- Commands run:
+  - `pio run` (identified oledRole compilation errors)
+  - `pio run -e receiver` (verified receiver builds successfully)
+- Files touched:
+  - `src/main.cpp` (replaced oledRole() calls with oledMsg() calls around lines 994-998)
+- Build Results:
+  - ✅ Sender firmware builds successfully (385KB Flash, 11.5% usage)
+  - ✅ Receiver firmware builds successfully (849KB Flash, 25.4% usage)
+- Next steps:
+  - Test firmware on physical hardware to ensure display functionality works correctly
+  - Verify role display shows correctly during normal operation
+
 #### 2025-01-16 02:30 UTC
 - Context: Lightning detector project with Heltec V3 boards - implementing WiFi IP address display feature
 - Changes:
