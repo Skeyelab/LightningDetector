@@ -15,6 +15,33 @@
 
 ### Session log
 
+#### 2025-01-16 03:30 UTC
+- Context: Repository restructuring to organize scripts and documentation for better maintainability (Linear issue ERI-18)
+- Changes:
+  - Created organized directory structure with `scripts/ci/`, `scripts/dev/`, `scripts/optimize/`, and `docs/` subdirectories
+  - Moved all root-level scripts to appropriate subdirectories based on purpose and usage
+  - Relocated documentation files to organized folders under `docs/` for better discoverability
+  - Updated CI/CD workflow paths in `.github/workflows/ci.yml` to reference moved scripts
+  - Created `scripts/README.md` explaining the new organization and usage patterns
+  - Updated all internal script references to use new paths
+  - Enhanced main README.md with comprehensive repository structure section
+- Commands run:
+  - `mkdir -p scripts/ci scripts/dev scripts/optimize docs/development docs/deployment docs/testing docs/project`
+  - Various `mv` commands to relocate files to new structure
+  - Updated workflow files and documentation references
+- Files touched:
+  - All scripts moved from root to `scripts/` subdirectories
+  - All documentation moved from root to `docs/` subdirectories  
+  - `.github/workflows/ci.yml` (updated script paths)
+  - `scripts/test_release_script.sh` (updated internal references)
+  - `scripts/ci/run_static_analysis.sh` (updated help text)
+  - `README.md` (added repository structure section, updated script references)
+  - Created `scripts/README.md`
+- Next steps:
+  - Test CI/CD pipeline with new script paths
+  - Verify all documentation links work correctly
+  - Consider adding docs/README.md for documentation navigation
+
 #### 2025-01-16 02:45 UTC
 - Context: Resolving merge conflicts between HEAD branch (enhanced IP scrolling) and main branch (basic IP display)
 - Changes:
