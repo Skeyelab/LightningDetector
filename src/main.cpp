@@ -148,6 +148,13 @@ static void computeIndicesFromCurrent();
 static void broadcastConfigOnControlChannel(uint8_t times = 8, uint32_t intervalMs = 300);
 static void tryReceiveConfigOnControlChannel(uint32_t durationMs = 4000);
 
+// IP address scrolling state
+static String currentIP = "";
+static int ipScrollOffset = 0;
+static uint32_t lastScrollUpdate = 0;
+static const uint32_t SCROLL_INTERVAL_MS = 300; // Scroll every 300ms
+static const int MAX_DISPLAY_WIDTH = 12; // Maximum characters that fit on screen
+
 // Draw status bar at the bottom of the screen
 static void drawStatusBar() {
   u8g2.setFont(u8g2_font_5x7_tr); // Smaller font for status bar
@@ -159,11 +166,42 @@ static void drawStatusBar() {
   if (!isSender) {
     // WiFi status
     if (wifiConnected) {
-      // Display IP address above network location
+      // Get IP address and handle scrolling if needed
       String ipAddress = WiFi.localIP().toString();
+
+      // Reset scroll if IP changed
+      if (currentIP != ipAddress) {
+        currentIP = ipAddress;
+        ipScrollOffset = 0;
+        lastScrollUpdate = millis();
+      }
+
+      // Display IP address with scrolling if too long
       const char* ipStr = ipAddress.c_str();
-      u8g2.drawStr(xPos, yPos - 10, ipStr); // IP address 10 pixels above network location
-      
+      int ipLength = strlen(ipStr);
+
+      if (ipLength <= MAX_DISPLAY_WIDTH) {
+        // IP fits, display normally
+        u8g2.drawStr(xPos, yPos - 10, ipStr);
+      } else {
+        // IP is too long, implement scrolling
+        uint32_t now = millis();
+        if (now - lastScrollUpdate >= SCROLL_INTERVAL_MS) {
+          ipScrollOffset++;
+          // Reset scroll when we've shown the entire string
+          if (ipScrollOffset > ipLength - MAX_DISPLAY_WIDTH) {
+            ipScrollOffset = 0;
+          }
+          lastScrollUpdate = now;
+        }
+
+        // Create substring for scrolling display
+        char scrolledIP[MAX_DISPLAY_WIDTH + 1];
+        strncpy(scrolledIP, ipStr + ipScrollOffset, MAX_DISPLAY_WIDTH);
+        scrolledIP[MAX_DISPLAY_WIDTH] = '\0';
+        u8g2.drawStr(xPos, yPos - 10, scrolledIP);
+      }
+
       // Display network location
       const char* location = getCurrentNetworkLocation();
       u8g2.drawStr(xPos, yPos, location);

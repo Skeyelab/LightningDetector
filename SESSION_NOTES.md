@@ -24,16 +24,21 @@
   - Uses `WiFi.localIP().toString().c_str()` API as specified in Linear issue ERI-13
   - Applied consistent 5x7 pixel font for status bar text
   - Integrated seamlessly with existing `oledMsg()` display system
+  - **Enhanced with scrolling**: Added automatic scrolling for long IP addresses (>12 chars)
+  - Scrolling logic: 300ms intervals, resets when IP changes, handles IPv4 addresses properly
+  - Display accommodates both short IPs (displayed fully) and long IPs (scrolled horizontally)
 - Commands run:
   - Code review and analysis of display functions and WiFi management
-  - Implementation via `edit_file` tool for `src/main.cpp`
+  - Implementation via `search_replace` tool for `src/main.cpp`
+  - Added scrolling state variables and logic for long IP addresses
 - Files touched:
-  - `src/main.cpp` (modified `drawStatusBar()` function around line 165)
+  - `src/main.cpp` (modified `drawStatusBar()` function and added scrolling variables around lines 151-203)
 - Migrations:
   - N/A (no database changes)
 - Next steps:
   - Test implementation on physical hardware with WiFi connection
   - Verify IP display updates correctly during WiFi reconnection events
+  - Test scrolling behavior with longer IP addresses (e.g., 192.168.100.255)
   - Ensure no visual conflicts with other OLED display elements
 
 #### 2025-01-15 17:00 UTC
