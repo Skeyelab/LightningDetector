@@ -18,6 +18,9 @@
 #include <Update.h>
 #endif
 
+#include "sensors/lightning_sensor.h"
+#include "sensors/sensor_interface.h"
+
 // Vext power control and OLED reset (Heltec V3)
 #define VEXT_PIN 36        // Vext control: LOW = ON
 #define OLED_RST_PIN 21    // OLED reset pin
@@ -917,6 +920,9 @@ void setup() {
   if (!isSender) {
     tryReceiveConfigOnControlChannel(6000);
   }
+
+  // Initialize lightning sensor
+  initializeLightningSensor();
 }
 
 void loop() {
@@ -1465,3 +1471,142 @@ static bool storeCurrentFirmware() {
   return true;
 }
 #endif
+
+// Global sensor instances
+static Sensors::LightningSensor lightningSensor;
+static SensorSystem::SensorManager& sensorManager = SensorSystem::SensorManager::getInstance();
+
+// Lightning event callback
+void onLightningDetected(const SensorSystem::Reading& reading) {
+    if (reading.type == SensorSystem::DataType::BINARY && 
+        reading.value.binaryValue.length == sizeof(Sensors::LightningData)) {
+        
+        const Sensors::LightningData* data = 
+            reinterpret_cast<const Sensors::LightningData*>(reading.value.binaryValue.data);
+        
+        if (data->lightningDetected) {
+            Serial.printf("⚡ Lightning detected! Distance: %d km, Energy: %lu\n", 
+                         data->distance, data->energy);
+            
+            // Update OLED display with lightning info
+            oledMsg("Lightning Detected!", 
+                   String("Distance: ") + data->distance + "km",
+                   String("Energy: ") + data->energy);
+            
+            // Send lightning data via LoRa if in sender mode
+            #ifdef ROLE_SENDER
+            sendLightningData(*data);
+            #endif
+        } else if (data->isDisturber) {
+            Serial.println("⚠️ Disturber detected (not lightning)");
+        }
+    }
+}
+
+void onSensorError(const char* sensorId, uint32_t errorCode) {
+    Serial.printf("❌ Sensor error - %s: %lu\n", sensorId, errorCode);
+    oledMsg("Sensor Error", String(sensorId), String("Code: ") + errorCode);
+}
+
+void onSensorStateChange(const char* sensorId, SensorSystem::State state) {
+    String stateStr;
+    switch (state) {
+        case SensorSystem::State::READY: stateStr = "Ready"; break;
+        case SensorSystem::State::ERROR: stateStr = "Error"; break;
+        case SensorSystem::State::INITIALIZING: stateStr = "Init"; break;
+        default: stateStr = "Unknown"; break;
+    }
+    Serial.printf("🔄 Sensor %s state: %s\n", sensorId, stateStr.c_str());
+}
+
+void initializeLightningSensor() {
+    Serial.println("🌩️ Initializing Lightning Sensor...");
+    
+    // Register the sensor with the manager
+    if (!sensorManager.registerSensor(&lightningSensor)) {
+        Serial.println("❌ Failed to register lightning sensor");
+        return;
+    }
+    
+    // Set up callbacks
+    lightningSensor.setReadingCallback(onLightningDetected);
+    lightningSensor.setErrorCallback(onSensorError);
+    lightningSensor.setStateChangeCallback(onSensorStateChange);
+    
+    // Initialize the sensor
+    if (lightningSensor.initialize()) {
+        Serial.println("✅ Lightning sensor initialized successfully");
+        
+        // Configure for indoor operation initially
+        lightningSensor.setIndoorMode(true);
+        lightningSensor.setNoiseFloor(2);
+        lightningSensor.setWatchdogThreshold(2);
+        lightningSensor.setSpikeRejection(2);
+        lightningSensor.setMinimumStrikes(5);
+        
+        Serial.println("⚙️ Lightning sensor configured for indoor operation");
+    } else {
+        Serial.printf("❌ Lightning sensor initialization failed: %s\n", 
+                     lightningSensor.getErrorString(lightningSensor.getLastError()));
+    }
+}
+
+#ifdef ROLE_SENDER
+void sendLightningData(const Sensors::LightningData& data) {
+    // Create lightning message packet
+    String message = "LIGHTNING,";
+    message += String(data.distance) + ",";
+    message += String(data.energy) + ",";
+    message += String(data.lastStrikeTime);
+    
+    // Send via LoRa
+    int state = radio.transmit(message);
+    if (state == RADIOLIB_ERR_NONE) {
+        Serial.println("📡 Lightning data transmitted");
+    } else {
+        Serial.printf("❌ Lightning transmission failed: %d\n", state);
+    }
+}
+#endif
+
+// Add to button handling for sensor configuration
+void handleSensorButtonPress() {
+    static uint8_t configMode = 0;
+    
+    switch (configMode) {
+        case 0: // Toggle indoor/outdoor mode
+            if (lightningSensor.isIndoorMode()) {
+                lightningSensor.setIndoorMode(false);
+                oledMsg("Lightning Config", "Mode: OUTDOOR", "");
+                Serial.println("🏞️ Switched to outdoor mode");
+            } else {
+                lightningSensor.setIndoorMode(true);
+                oledMsg("Lightning Config", "Mode: INDOOR", "");
+                Serial.println("🏠 Switched to indoor mode");
+            }
+            break;
+            
+        case 1: // Adjust noise floor
+            {
+                uint8_t currentNoise = lightningSensor.getNoiseFloor();
+                uint8_t newNoise = (currentNoise + 1) % 8;
+                lightningSensor.setNoiseFloor(newNoise);
+                oledMsg("Lightning Config", "Noise Floor", String(newNoise));
+                Serial.printf("🔧 Noise floor set to %d\n", newNoise);
+            }
+            break;
+            
+        case 2: // Calibrate sensor
+            oledMsg("Lightning Config", "Calibrating...", "");
+            if (lightningSensor.calibrate()) {
+                oledMsg("Lightning Config", "Calibration", "SUCCESS");
+                Serial.println("✅ Lightning sensor calibrated");
+            } else {
+                oledMsg("Lightning Config", "Calibration", "FAILED");
+                Serial.println("❌ Lightning sensor calibration failed");
+            }
+            break;
+    }
+    
+    configMode = (configMode + 1) % 3;
+}

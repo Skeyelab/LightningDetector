@@ -157,9 +157,14 @@ namespace Sensors {
         bool powerUp();
         bool powerDown();
         bool clearStatistics();
+        bool applyConfiguration();
         InterruptReason getInterruptReason();
         uint8_t getLightningDistance();
         uint32_t getLightningEnergy();
+        uint32_t measureLCOFrequency();
+        void handleLightningEvent();
+        void handleDisturberEvent();
+        void handleNoiseEvent();
 
         // Validation
         bool validateConfig() const;
