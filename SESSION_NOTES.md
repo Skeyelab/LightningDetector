@@ -15,6 +15,27 @@
 
 ### Session log
 
+#### 2025-01-16 02:30 UTC
+- Context: Lightning detector project with Heltec V3 boards - implementing WiFi IP address display feature
+- Changes:
+  - Added IP address display above network location in WiFi status bar
+  - Modified `drawStatusBar()` function in `src/main.cpp` to show IP address when WiFi connected
+  - IP address appears 10 pixels above network location ("Home"/"Work") text
+  - Uses `WiFi.localIP().toString().c_str()` API as specified in Linear issue ERI-13
+  - Applied consistent 5x7 pixel font for status bar text
+  - Integrated seamlessly with existing `oledMsg()` display system
+- Commands run:
+  - Code review and analysis of display functions and WiFi management
+  - Implementation via `edit_file` tool for `src/main.cpp`
+- Files touched:
+  - `src/main.cpp` (modified `drawStatusBar()` function around line 165)
+- Migrations:
+  - N/A (no database changes)
+- Next steps:
+  - Test implementation on physical hardware with WiFi connection
+  - Verify IP display updates correctly during WiFi reconnection events
+  - Ensure no visual conflicts with other OLED display elements
+
 #### 2025-01-15 17:00 UTC
 - Context: GitHub Actions workflow failed with "Permission denied" error when trying to push to gh-pages branch
 - Changes:
