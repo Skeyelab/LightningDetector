@@ -15,6 +15,43 @@
 
 ### Session log
 
+#### 2025-01-16 06:00 UTC
+- Context: Successfully merged main branch changes and resolved merge conflicts
+- Changes:
+  - **Repository Restructuring**: Integrated ERI-18 changes that organized scripts and documentation
+    * Scripts moved to organized subdirectories: `scripts/ci/`, `scripts/dev/`, `scripts/optimize/`
+    * Documentation moved to organized folders: `docs/development/`, `docs/deployment/`, `docs/testing/`, `docs/project/`
+    * CI/CD workflow paths updated to reference new script locations
+    * Created `scripts/README.md` explaining new organization
+  - **Merge Conflict Resolution**: Successfully resolved conflicts in `SESSION_NOTES.md`
+    * Combined button functionality rework changes with repository restructuring
+    * Maintained all session history from both branches
+    * Clean merge with no duplicate entries
+  - **Build Verification**: Confirmed both firmware variants still compile successfully after merge
+    * Sender: 405KB Flash, 12.1% usage ✅
+    * Receiver: 862KB Flash, 25.8% usage ✅
+    * All tests pass with new button functionality ✅
+- Commands run:
+  - `git fetch origin` (fetched latest main branch)
+  - `git merge origin/main` (merged main branch changes)
+  - `git add SESSION_NOTES.md` (resolved merge conflicts)
+  - `git commit -m "Merge origin/main: resolve conflicts in SESSION_NOTES.md and integrate repository restructuring"`
+  - `pio run -e sender` (build SUCCESS - 405KB Flash, 12.1% usage)
+  - `pio run -e receiver` (build SUCCESS - 862KB Flash, 25.8% usage)
+  - `g++ -std=c++17 test/test_app_logic.cpp src/app_logic.cpp -o test_app_logic && ./test_app_logic` (tests passed)
+- Files touched:
+  - `SESSION_NOTES.md` (resolved merge conflicts, integrated both sets of changes)
+  - Various script and documentation files moved to new organized structure
+- Build Results:
+  - ✅ Sender firmware builds successfully (405KB Flash, 12.1% usage)
+  - ✅ Receiver firmware builds successfully (862KB Flash, 25.8% usage)
+  - ✅ All tests pass with new button functionality
+- **RESULT**: ✅ Successfully merged main branch changes
+  - **Repository Organization**: Scripts and documentation now properly organized in logical folders
+  - **Clean Merge**: All conflicts resolved, no duplicate entries, complete history preserved
+  - **Functionality Preserved**: Button rework and deep sleep features still working correctly
+  - **Ready for Development**: Branch is up-to-date with main and ready for continued development
+
 #### 2025-01-16 05:00 UTC
 - Context: Implemented full-screen ping flash idle mode for enhanced visibility when no buttons are pressed
 - Changes:
