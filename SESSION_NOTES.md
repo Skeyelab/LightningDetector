@@ -15,6 +15,34 @@
 
 ### Session log
 
+#### 2025-01-16 04:15 UTC
+- Context: Lightning detector project with Heltec V3 boards - implementing IP address horizontal scrolling feature as requested in Linear issue ERI-17
+- Changes:
+  - Added IP address horizontal scrolling animation to OLED status bar in `drawStatusBar()` function
+  - Implemented scrolling state variables (ipScrollStartMs, ipScrollActive, ipScrollOffset, ipScrollDirection, etc.)
+  - Added `calculateIPScrollOffset()` function to handle back-and-forth scrolling animation with smooth direction changes
+  - Added `startIPScrolling()` function to initiate scrolling when IP address text exceeds display width (~60 pixels)
+  - Modified `drawStatusBar()` to use scrolling offset when drawing IP address text
+  - Scrolling only activates for long IP addresses that don't fit in the 64-pixel portrait display width
+  - Added proper cleanup - scrolling stops when WiFi disconnected or in sender mode
+  - Scrolling parameters: 100ms update interval, 1 pixel per step for smooth animation
+  - Added function declarations to prevent compilation errors
+  - Uses same timing pattern as existing ping dot animation system for consistency
+- Commands run:
+  - `sudo apt update && sudo apt install -y pipx` (installed pipx package manager)
+  - `pipx install platformio` (installed PlatformIO for building firmware)
+  - `export PATH="$HOME/.local/bin:$PATH" && pio run -e receiver` (successful receiver build)
+  - `export PATH="$HOME/.local/bin:$PATH" && pio run -e sender` (successful sender build)
+- Files touched:
+  - `src/main.cpp` (added scrolling variables, functions, and modified drawStatusBar logic)
+- Migrations:
+  - N/A (no database changes)
+- Next steps:
+  - Test implementation on physical hardware with different IP address lengths
+  - Verify scrolling animation works smoothly and doesn't interfere with other display elements
+  - Ensure scrolling performance is acceptable and doesn't impact LoRa functionality
+  - Consider adjusting scroll speed or timing based on user feedback
+
 #### 2025-01-16 02:30 UTC
 - Context: Lightning detector project with Heltec V3 boards - implementing WiFi IP address display feature
 - Changes:

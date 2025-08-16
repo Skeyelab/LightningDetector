@@ -116,6 +116,14 @@ static uint32_t dotBlinkStartMs = 0;
 static bool dotBlinkActive = false;
 static const uint32_t DOT_FLASH_DURATION_MS = 1000; // 1 second on (half of 2-second ping interval)
 
+// IP address scrolling variables
+static uint32_t ipScrollStartMs = 0;
+static bool ipScrollActive = false;
+static int ipScrollOffset = 0;
+static bool ipScrollDirection = true; // true = right, false = left
+static const uint32_t IP_SCROLL_SPEED_MS = 100; // Update scroll position every 100ms
+static const int IP_SCROLL_STEP = 1; // Pixels to move per step
+
 // Available values for cycling
 // Old arrays removed - using new arrays defined above
 
@@ -152,6 +160,8 @@ static void loadPersistedSettingsAndRole();
 static void computeIndicesFromCurrent();
 static void broadcastConfigOnControlChannel(uint8_t times = 8, uint32_t intervalMs = 300);
 static void tryReceiveConfigOnControlChannel(uint32_t durationMs = 4000);
+static void startIPScrolling();
+static int calculateIPScrollOffset(const char* ipStr);
 
 // Draw status bar at the bottom of the screen
 static void drawStatusBar() {
@@ -164,16 +174,27 @@ static void drawStatusBar() {
   if (!isSender) {
     // WiFi status
     if (wifiConnected) {
-      // Display IP address above network location
+      // Display IP address above network location with scrolling
       String ipAddress = WiFi.localIP().toString();
       const char* ipStr = ipAddress.c_str();
-      u8g2.drawStr(xPos, yPos - 10, ipStr); // IP address 10 pixels above network location
+      
+      // Start scrolling if needed
+      int textWidth = strlen(ipStr) * 5; // Approximate width with 5x7 font
+      if (textWidth > 60) { // If text doesn't fit in ~60 pixels (leaving margin)
+        startIPScrolling();
+      }
+      
+      // Calculate scroll offset and draw IP address
+      int scrollOffset = calculateIPScrollOffset(ipStr);
+      u8g2.drawStr(xPos + scrollOffset, yPos - 10, ipStr); // IP address 10 pixels above network location
 
       // Display network location
       const char* location = getCurrentNetworkLocation();
       u8g2.drawStr(xPos, yPos, location);
       xPos += (strlen(location) * 6); // Approximate character width
     } else {
+      // Stop IP scrolling when WiFi is disconnected
+      ipScrollActive = false;
       u8g2.drawStr(xPos, yPos, "NoWiFi");
       xPos += 20;
     }
@@ -188,6 +209,9 @@ static void drawStatusBar() {
     if (loraOtaActive) {
       u8g2.drawStr(xPos, yPos, "LoRaOTA");
     }
+  } else {
+    // Stop IP scrolling when in sender mode
+    ipScrollActive = false;
   }
 #endif
 }
@@ -221,6 +245,61 @@ static void drawPingDot() {
   // Show solid dot for the entire flash duration
   u8g2.drawDisc(55, 12, 4); // Main ping flash dot
   Serial.printf("[DEBUG] *** PING DOT VISIBLE *** elapsed=%lu ms\n", elapsed);
+}
+
+// Calculate IP address scroll offset for horizontal scrolling animation
+static int calculateIPScrollOffset(const char* ipStr) {
+  if (!ipScrollActive) {
+    return 0; // No scrolling if not active
+  }
+
+  uint32_t now = millis();
+  uint32_t elapsed = now - ipScrollStartMs;
+
+  // Calculate text width (approximate: 5 pixels per character for 5x7 font)
+  int textWidth = strlen(ipStr) * 5;
+  const int displayWidth = 64; // Portrait mode width after rotation
+  const int margin = 2; // Leave some margin
+
+  // Only scroll if text is wider than display
+  if (textWidth <= displayWidth - margin) {
+    return 0; // Text fits, no scrolling needed
+  }
+
+  // Calculate scrolling range
+  int maxOffset = textWidth - displayWidth + margin;
+  
+  // Update scroll position based on time
+  int scrollSteps = elapsed / IP_SCROLL_SPEED_MS;
+  
+  if (ipScrollDirection) {
+    // Scrolling right (offset becomes more negative)
+    ipScrollOffset = -min(scrollSteps * IP_SCROLL_STEP, maxOffset);
+    if (ipScrollOffset <= -maxOffset) {
+      ipScrollDirection = false; // Change direction
+      ipScrollStartMs = now; // Reset timer for smooth direction change
+    }
+  } else {
+    // Scrolling left (offset becomes less negative)
+    ipScrollOffset = -maxOffset + min(scrollSteps * IP_SCROLL_STEP, maxOffset);
+    if (ipScrollOffset >= 0) {
+      ipScrollDirection = true; // Change direction
+      ipScrollStartMs = now; // Reset timer for smooth direction change
+      ipScrollOffset = 0;
+    }
+  }
+
+  return ipScrollOffset;
+}
+
+// Start IP address scrolling animation
+static void startIPScrolling() {
+  if (!ipScrollActive) {
+    ipScrollStartMs = millis();
+    ipScrollActive = true;
+    ipScrollOffset = 0;
+    ipScrollDirection = true;
+  }
 }
 
 static void oledMsg(const char* l1, const char* l2 = nullptr, const char* l3 = nullptr) {
