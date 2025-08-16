@@ -15,7 +15,194 @@
 
 ### Session log
 
+#### 2025-01-16 06:00 UTC
+- Context: Successfully merged main branch changes and resolved merge conflicts
+- Changes:
+  - **Repository Restructuring**: Integrated ERI-18 changes that organized scripts and documentation
+    * Scripts moved to organized subdirectories: `scripts/ci/`, `scripts/dev/`, `scripts/optimize/`
+    * Documentation moved to organized folders: `docs/development/`, `docs/deployment/`, `docs/testing/`, `docs/project/`
+    * CI/CD workflow paths updated to reference new script locations
+    * Created `scripts/README.md` explaining new organization
+  - **Merge Conflict Resolution**: Successfully resolved conflicts in `SESSION_NOTES.md`
+    * Combined button functionality rework changes with repository restructuring
+    * Maintained all session history from both branches
+    * Clean merge with no duplicate entries
+  - **Build Verification**: Confirmed both firmware variants still compile successfully after merge
+    * Sender: 405KB Flash, 12.1% usage ✅
+    * Receiver: 862KB Flash, 25.8% usage ✅
+    * All tests pass with new button functionality ✅
+- Commands run:
+  - `git fetch origin` (fetched latest main branch)
+  - `git merge origin/main` (merged main branch changes)
+  - `git add SESSION_NOTES.md` (resolved merge conflicts)
+  - `git commit -m "Merge origin/main: resolve conflicts in SESSION_NOTES.md and integrate repository restructuring"`
+  - `pio run -e sender` (build SUCCESS - 405KB Flash, 12.1% usage)
+  - `pio run -e receiver` (build SUCCESS - 862KB Flash, 25.8% usage)
+  - `g++ -std=c++17 test/test_app_logic.cpp src/app_logic.cpp -o test_app_logic && ./test_app_logic` (tests passed)
+- Files touched:
+  - `SESSION_NOTES.md` (resolved merge conflicts, integrated both sets of changes)
+  - Various script and documentation files moved to new organized structure
+- Build Results:
+  - ✅ Sender firmware builds successfully (405KB Flash, 12.1% usage)
+  - ✅ Receiver firmware builds successfully (862KB Flash, 25.8% usage)
+  - ✅ All tests pass with new button functionality
+- **RESULT**: ✅ Successfully merged main branch changes
+  - **Repository Organization**: Scripts and documentation now properly organized in logical folders
+  - **Clean Merge**: All conflicts resolved, no duplicate entries, complete history preserved
+  - **Functionality Preserved**: Button rework and deep sleep features still working correctly
+  - **Ready for Development**: Branch is up-to-date with main and ready for continued development
+
+#### 2025-01-16 05:00 UTC
+- Context: Implemented full-screen ping flash idle mode for enhanced visibility when no buttons are pressed
+- Changes:
+  - **Full-Screen Ping Flash**: When idle (no button press for 10 seconds), entire screen flashes with each ping
+    * Large "PING" text centered on screen
+    * Large circle around text for visual impact
+    * Much more visible than small dot indicator
+  - **Interactive Mode**: When any button is pressed, switches to normal display mode with small ping dot
+  - **Auto-Return**: After 30 seconds of no button activity, automatically returns to full-screen ping mode
+  - **Smart Mode Switching**: Seamlessly transitions between idle and interactive modes based on user activity
+  - **Enhanced User Experience**: Provides both high-visibility idle mode and detailed interactive mode
+- Commands run:
+  - `pio run -e sender` (build SUCCESS - 405KB Flash, 12.1% usage)
+  - `pio run -e receiver` (build SUCCESS - 862KB Flash, 25.8% usage)
+  - `g++ -std=c++17 test_app_logic.cpp ../src/app_logic.cpp -o test_app_logic && ./test_app_logic` (tests passed)
+- Files touched:
+  - `src/main.cpp` (added idle mode state variables, checkIdleMode function, drawFullScreenPingFlash function)
+  - `src/main.cpp` (updated button handlers to record press times and exit idle mode)
+  - `src/main.cpp` (modified ping display logic to use full-screen flash when idle)
+  - `src/main.cpp` (added idle mode check to main loop and initialization in setup)
+- Build Results:
+  - ✅ Sender firmware builds successfully (405KB Flash, 12.1% usage)
+  - ✅ Receiver firmware builds successfully (862KB Flash, 25.8% usage)
+  - ✅ All tests pass with new idle mode functionality
+- **RESULT**: ✅ Successfully implemented intelligent display mode switching
+  - **Idle Mode**: Full-screen ping flash for maximum visibility when unattended
+  - **Interactive Mode**: Normal display with small ping dot when user is active
+  - **Automatic Transitions**: Smart switching based on user activity patterns
+  - **Enhanced UX**: Best of both worlds - visible when needed, detailed when wanted
+
+#### 2025-01-16 04:30 UTC
+- Context: Verified all builds and tests are working correctly with the current implementation
+- Changes:
+  - **Build Verification**: Confirmed both firmware variants compile successfully
+    * Sender: 401KB Flash, 12.0% usage ✅
+    * Receiver: 858KB Flash, 25.7% usage ✅
+  - **Test Verification**: All app_logic tests pass with new button functionality ✅
+  - **Code Quality**: Static analysis passes with only minor style warnings (no errors) ✅
+- Commands run:
+  - `pio run -e sender` (build SUCCESS - 401KB Flash, 12.0% usage)
+  - `pio run -e receiver` (build SUCCESS - 858KB Flash, 25.7% usage)
+  - `g++ -std=c++17 test_app_logic.cpp ../src/app_logic.cpp -o test_app_logic && ./test_app_logic` (tests passed)
+  - `pio check` (static analysis PASSED - no critical issues)
+- Files touched:
+  - N/A (verification only)
+- Build Results:
+  - ✅ Sender firmware builds successfully (401KB Flash, 12.0% usage)
+  - ✅ Receiver firmware builds successfully (858KB Flash, 25.7% usage)
+  - ✅ All tests pass with new button functionality
+  - ✅ Static analysis passes with no critical issues
+- **RESULT**: ✅ Project is in excellent working condition
+  - **Simplified Button System**: Both devices have consistent, simple button behavior
+    * Short press: Cycles Spreading Factor (SF7-SF12)
+    * Medium press: Cycles Bandwidth (62.5, 125, 250, 500 kHz)
+    * Long press: Enters real ESP32 deep sleep mode
+  - **Real Sleep Mode**: Actual power-saving deep sleep with state preservation
+  - **Clean Code**: All builds successful, tests passing, no compilation errors
+  - **Ready for Testing**: Firmware is ready to flash to physical hardware
+
+#### 2025-01-16 04:00 UTC
+- Context: Implemented real ESP32 deep sleep mode to replace placeholder sleep functionality
+- Changes:
+  - **Real Deep Sleep**: Replaced placeholder sleep mode with actual ESP32 deep sleep functionality
+  - **State Preservation**: Added RTC memory variables to preserve device state across sleep cycles
+    * `sleepCount`: Tracks number of sleep cycles
+    * `lastSleepTime`: Records when device last went to sleep
+    * `wasInSleepMode`: Flag to detect wake-up from sleep
+  - **Wake-up Sources**: Configured button as primary wake-up source (LOW trigger) + 30-second timer backup
+  - **Power Management**: OLED display is turned off during sleep to conserve power
+  - **State Restoration**: Device automatically restores state and settings after wake-up
+  - **Persistent Storage**: Important settings are saved to flash before entering sleep mode
+- Commands run:
+  - `pio run -e sender` (build SUCCESS - 401KB Flash, 12.0% usage)
+  - `pio run -e receiver` (build SUCCESS - 858KB Flash, 25.7% usage)
+  - `g++ -std=c++17 test_app_logic.cpp ../src/app_logic.cpp -o test_app_logic && ./test_app_logic` (tests passed)
+  - `git add -A && git commit -m "feat: implement real ESP32 deep sleep mode"`
+- Files touched:
+  - `src/main.cpp` (added ESP32 deep sleep includes, RTC memory variables, and sleep functions)
+  - `src/main.cpp` (updated button handlers to call real deep sleep instead of placeholder)
+  - `src/main.cpp` (added wake-up detection and state restoration in setup)
+- Build Results:
+  - ✅ Sender firmware builds successfully (401KB Flash, 12.0% usage)
+  - ✅ Receiver firmware builds successfully (858KB Flash, 25.7% usage)
+  - ✅ All tests pass with new deep sleep functionality
+- **RESULT**: ✅ Successfully implemented real low-power sleep mode
+  - Long press (>3s) now actually enters ESP32 deep sleep mode
+  - Button press wakes device from sleep and restores previous state
+  - RTC memory preserves device state across sleep cycles
+  - OLED display is powered down during sleep for maximum power savings
+  - 30-second timer backup ensures device doesn't sleep indefinitely
+
 #### 2025-01-16 03:30 UTC
+- Context: Simplified button functionality for both devices to three consistent actions
+- Changes:
+  - **Simplified Button Actions**: Both sender and receiver now use identical button behavior
+    * Short press (<1s): Cycles through Spreading Factor values (SF7-SF12)
+    * Medium press (1-3s): Cycles through Bandwidth values (62.5, 125, 250, 500 kHz)
+    * Long press (>3s): Enters sleep mode
+  - **Removed Complex Logic**: Eliminated multi-click detection, device-specific button functions, and role switching
+  - **Unified Behavior**: Both devices now respond identically to button presses for consistent user experience
+  - **Updated Tests**: Modified test files to use new ButtonAction enum values (CycleSF, CycleBW, SleepMode)
+  - **Clean Implementation**: Removed all multi-click variables and complex button state tracking
+- Commands run:
+  - `g++ -std=c++17 test_app_logic.cpp ../src/app_logic.cpp -o test_app_logic && ./test_app_logic` (tests passed)
+  - `pio run -e sender` (build SUCCESS - 386KB Flash, 11.6% usage)
+  - `pio run -e receiver` (build SUCCESS - 850KB Flash, 25.5% usage)
+  - `git add -A && git commit -m "feat: simplify button functionality to three actions"`
+- Files touched:
+  - `src/app_logic.h` (simplified ButtonAction enum to three actions)
+  - `src/main.cpp` (removed classifyMultipleClicks, simplified classifyPress)
+  - `src/main.cpp` (updated button handlers for both devices, removed multi-click logic)
+  - `test/test_app_logic.cpp` (updated tests for new button actions)
+  - `test/test_integration.cpp` (updated integration tests)
+- Build Results:
+  - ✅ Sender firmware builds successfully (386KB Flash, 11.6% usage)
+  - ✅ Receiver firmware builds successfully (850KB Flash, 25.5% usage)
+  - ✅ All tests pass with new button functionality
+- **RESULT**: ✅ Successfully implemented simplified, consistent button behavior
+  - Both devices now have identical button response patterns
+  - Short press cycles SF, medium press cycles BW, long press enters sleep
+  - Clean, maintainable code with no complex multi-click detection
+  - Consistent user experience across sender and receiver devices
+
+#### 2025-01-16 03:00 UTC
+- Context: Resolved merge conflicts and fixed build errors from eliminated `oledRole()` function
+- Changes:
+  - Resolved merge conflicts in `src/main.cpp` by choosing enhanced IP scrolling implementation
+  - Fixed compilation errors by replacing `oledRole()` calls with `oledMsg("Role", isSender ? "Sender" : "Receiver")`
+  - Updated two locations in main.cpp where `oledRole()` was still being called
+  - Maintained all IP scrolling functionality: 300ms intervals, IP change detection, horizontal scrolling
+  - Cleaned up duplicate code and merge conflict markers
+  - Verified both sender and receiver variants compile successfully
+  - Committed resolved changes with descriptive commit message
+- Commands run:
+  - `pio run` (identified oledRole compilation errors)
+  - `pio run -e sender` (compilation test - SUCCESS)
+  - `pio run -e receiver` (compilation test - SUCCESS)
+  - `git add -A && git commit -m "fix: resolve merge conflicts in src/main.cpp - choose enhanced IP scrolling implementation"`
+- Files touched:
+  - `src/main.cpp` (resolved merge conflicts, maintained enhanced scrolling functionality, replaced oledRole() calls around lines 994-998)
+- Build Results:
+  - ✅ Sender firmware builds successfully (385KB Flash, 11.5% usage)
+  - ✅ Receiver firmware builds successfully (849KB Flash, 25.4% usage)
+- Next steps:
+  - Test the resolved code on physical hardware
+  - Verify IP scrolling works correctly with various IP address lengths
+  - Test firmware on physical hardware to ensure display functionality works correctly
+  - Verify role display shows correctly during normal operation
+  - Ensure no compilation errors or linter issues remain
+
+#### 2025-01-16 02:45 UTC
 - Context: Repository restructuring to organize scripts and documentation for better maintainability (Linear issue ERI-18)
 - Changes:
   - Created organized directory structure with `scripts/ci/`, `scripts/dev/`, `scripts/optimize/`, and `docs/` subdirectories
@@ -31,7 +218,7 @@
   - Updated workflow files and documentation references
 - Files touched:
   - All scripts moved from root to `scripts/` subdirectories
-  - All documentation moved from root to `docs/` subdirectories  
+  - All documentation moved from root to `docs/` subdirectories
   - `.github/workflows/ci.yml` (updated script paths)
   - `scripts/test_release_script.sh` (updated internal references)
   - `scripts/ci/run_static_analysis.sh` (updated help text)
@@ -41,25 +228,6 @@
   - Test CI/CD pipeline with new script paths
   - Verify all documentation links work correctly
   - Consider adding docs/README.md for documentation navigation
-
-#### 2025-01-16 02:45 UTC
-- Context: Resolving merge conflicts between HEAD branch (enhanced IP scrolling) and main branch (basic IP display)
-- Changes:
-  - Resolved merge conflicts in `src/main.cpp` by choosing enhanced IP scrolling implementation
-  - Maintained all scrolling functionality: 300ms intervals, IP change detection, horizontal scrolling
-  - Cleaned up duplicate code and merge conflict markers
-  - Verified both sender and receiver variants compile successfully
-  - Committed resolved changes with descriptive commit message
-- Commands run:
-  - `pio run -e sender` (compilation test - SUCCESS)
-  - `pio run -e receiver` (compilation test - SUCCESS)
-  - `git add -A && git commit -m "fix: resolve merge conflicts in src/main.cpp - choose enhanced IP scrolling implementation"`
-- Files touched:
-  - `src/main.cpp` (resolved merge conflicts, maintained enhanced scrolling functionality)
-- Next steps:
-  - Test the resolved code on physical hardware
-  - Verify IP scrolling works correctly with various IP address lengths
-  - Ensure no compilation errors or linter issues remain
 
 #### 2025-01-16 02:30 UTC
 - Context: Lightning detector project with Heltec V3 boards - implementing WiFi IP address display feature
@@ -116,6 +284,39 @@
   - Receiver: Clean 1-second dot flashes on ping reception without overlap
   - All ping functionality and debugging preserved
   - Subtle, unobtrusive visual indication as requested
+
+#### 2025-01-15 18:30 UTC
+- Context: **COMPLETED** ERI-14 Linear issue to remove RX/TX switching from button functionality
+- Changes:
+  - Removed RX/TX mode switching from button short press functionality
+  - Eliminated `savePersistedRole()` and `oledRole()` functions
+  - Updated `loadPersistedSettingsAndRole()` to `loadPersistedSettings()` (no role loading)
+  - Reworked button functionality to be device-specific:
+    * Sender: Short press cycles LoRa parameters (SF, BW, TX Power), Medium press broadcasts config
+    * Receiver: Short press cycles display modes, Medium press changes network mode
+    * Both: Long press enters config mode, 5 rapid clicks enters sleep mode
+  - Updated `ButtonAction` enum to remove `ToggleMode` and add device-specific actions
+  - Implemented multi-click detection for sleep mode functionality
+  - Updated integration tests to reflect new button behavior
+  - Device role now fixed at build time via `ROLE_SENDER`/`ROLE_RECEIVER` build flags
+  - Fixed missing `app_logic.h` include in `main.cpp` causing build failures
+- Commands run:
+  - `g++ -std=c++17 verify_button_logic.cpp -o verify_button_logic && ./verify_button_logic`
+  - `pio run -e sender && pio run -e receiver` (verified successful builds)
+- Files touched:
+  - `src/app_logic.h`, `src/app_logic.cpp` (updated button action classification)
+  - `src/main.cpp` (completely reworked button handling, removed role switching, added missing include)
+  - `test/test_integration.cpp` (updated tests for new button functionality)
+  - `test/test_app_logic.cpp` (updated unit tests for new enum values)
+- Build Results:
+  - ✅ Sender firmware builds successfully (384KB Flash, 11.5% usage)
+  - ✅ Receiver firmware builds successfully (848KB Flash, 25.4% usage)
+  - ✅ Button logic verified with test script
+- **RESULT**: ✅ Successfully implemented device-specific button functionality
+  - No accidental mode switching - role fixed at build time
+  - Intuitive, predictable button behavior tailored to device purpose
+  - Multi-click sleep mode functionality added
+  - All existing LoRa parameter cycling preserved
 
 #### 2025-01-15 17:00 UTC
 - Context: GitHub Actions workflow failed with "Permission denied" error when trying to push to gh-pages branch

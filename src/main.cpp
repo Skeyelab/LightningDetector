@@ -1,9 +1,12 @@
 #include <Arduino.h>
-#include <Wire.h>
-#include <U8g2lib.h>
 #include <SPI.h>
+#include <Wire.h>
 #include <RadioLib.h>
+#include <U8g2lib.h>
 #include <Preferences.h>
+#include <esp_sleep.h>
+#include <driver/rtc_io.h>
+#include "app_logic.h"
 
 #ifdef ENABLE_WIFI_OTA
 #include <WiFi.h>
@@ -19,6 +22,7 @@
 #define VEXT_PIN 36        // Vext control: LOW = ON
 #define OLED_RST_PIN 21    // OLED reset pin
 #define BUTTON_PIN 0       // BOOT button on GPIO0 (active LOW)
+#define ALT_BUTTON_PIN 38  // Alternative button pin for testing
 
 // SSD1306 128x64 OLED over HW I2C; pins set via Wire.begin(17,18)
 U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE);
@@ -87,6 +91,12 @@ static int lastButtonState = HIGH;
 static uint32_t buttonPressMs = 0;
 static bool buttonPressed = false;
 
+
+
+// Display mode cycling for receiver
+static uint8_t displayMode = 0;
+static const uint8_t MAX_DISPLAY_MODES = 3; // Signal info, network status, settings
+
 // LoRa parameters that can be changed at runtime
 static float currentFreq = LORA_FREQ_MHZ;
 static float currentBW = LORA_BW_KHZ;
@@ -147,11 +157,18 @@ static uint32_t loraOtaReceivedSize = 0;
 
 // Persistence helpers
 static void savePersistedSettings();
-static void savePersistedRole();
-static void loadPersistedSettingsAndRole();
+static void loadPersistedSettings();
 static void computeIndicesFromCurrent();
 static void broadcastConfigOnControlChannel(uint8_t times = 8, uint32_t intervalMs = 300);
 static void tryReceiveConfigOnControlChannel(uint32_t durationMs = 4000);
+
+// Deep sleep functions
+static void enterDeepSleep();
+static void configureWakeupSources();
+static void restoreStateAfterWakeup();
+
+// Full-screen ping flash function
+static void drawFullScreenPingFlash();
 
 // IP address scrolling state
 static String currentIP = "";
@@ -159,6 +176,18 @@ static int ipScrollOffset = 0;
 static uint32_t lastScrollUpdate = 0;
 static const uint32_t SCROLL_INTERVAL_MS = 300; // Scroll every 300ms
 static const int MAX_DISPLAY_WIDTH = 12; // Maximum characters that fit on screen
+
+// Full-screen ping flash mode state
+static const uint32_t IDLE_TIMEOUT_MS = 10000; // 10 seconds to enter idle mode
+static const uint32_t INTERACTIVE_TIMEOUT_MS = 30000; // 30 seconds to return to idle mode
+static uint32_t lastButtonPressTime = 0;
+static bool isInIdleMode = false;
+static uint32_t idleModeStartTime = 0;
+
+// RTC memory for deep sleep state preservation
+RTC_DATA_ATTR uint32_t sleepCount = 0;
+RTC_DATA_ATTR uint32_t lastSleepTime = 0;
+RTC_DATA_ATTR bool wasInSleepMode = false;
 
 // Draw status bar at the bottom of the screen
 static void drawStatusBar() {
@@ -256,9 +285,14 @@ static void drawPingDot() {
     return;
   }
 
-  // Show solid dot for the entire flash duration
-  u8g2.drawDisc(55, 12, 4); // Main ping flash dot
-  Serial.printf("[DEBUG] *** PING DOT VISIBLE *** elapsed=%lu ms\n", elapsed);
+  if (isInIdleMode) {
+    // Full-screen ping flash mode
+    drawFullScreenPingFlash();
+  } else {
+    // Interactive mode - show small dot
+    u8g2.drawDisc(55, 12, 4); // Main ping flash dot
+    Serial.printf("[DEBUG] *** PING DOT VISIBLE *** elapsed=%lu ms\n", elapsed);
+  }
 }
 
 static void oledMsg(const char* l1, const char* l2 = nullptr, const char* l3 = nullptr) {
@@ -301,9 +335,7 @@ static void oledMsg(const char* l1, const char* l2 = nullptr, const char* l3 = n
   u8g2.sendBuffer();
 }
 
-static void oledRole() {
-  oledMsg("Mode", isSender ? "Sender" : "Receiver");
-}
+// Role display removed - device role is now fixed at build time
 
 static void oledSettings() {
   oledMsg("Settings", "Updated");
@@ -343,27 +375,22 @@ static void savePersistedSettings() {
   prefs.end();
 }
 
-static void savePersistedRole() {
-  prefs.begin("LtngDet", false);
-  prefs.putBool("sender", isSender);
-  prefs.end();
-}
+// Role persistence removed - device role is now fixed at build time
 
-static void loadPersistedSettingsAndRole() {
+static void loadPersistedSettings() {
   prefs.begin("LtngDet", true);
   bool haveFreq = prefs.isKey("freq");
   bool haveBW = prefs.isKey("bw");
   bool haveSF = prefs.isKey("sf");
   bool haveCR = prefs.isKey("cr");
   bool haveTX = prefs.isKey("tx");
-  bool haveRole = prefs.isKey("sender");
 
   if (haveFreq) currentFreq = prefs.getFloat("freq", currentFreq);
   if (haveBW) currentBW = prefs.getFloat("bw", currentBW);
   if (haveSF) currentSF = prefs.getInt("sf", currentSF);
   if (haveCR) currentCR = prefs.getInt("cr", currentCR);
   if (haveTX) currentTxPower = prefs.getInt("tx", currentTxPower);
-  if (haveRole) isSender = prefs.getBool("sender", isSender);
+  // Role is no longer loaded from preferences - fixed at build time
   prefs.end();
 }
 
@@ -517,112 +544,126 @@ static void tryReceiveConfigOnControlChannel(uint32_t durationMs) {
   }
 }
 
+static void handleSenderButtonAction(ButtonAction action) {
+  // Record button press time and exit idle mode
+  lastButtonPressTime = millis();
+  if (isInIdleMode) {
+    isInIdleMode = false;
+    Serial.println("[IDLE] Exiting idle mode due to button press");
+    oledMsg("Interactive", "Mode");
+    delay(1000);
+  }
+
+  switch (action) {
+    case ButtonAction::CycleSF:
+      // Cycle through Spreading Factor values
+      {
+        const int nextIndex = (currentSfIndex + 1) % (sizeof(sfValues) / sizeof(sfValues[0]));
+        const int nextSF = sfValues[nextIndex];
+        startConfigBroadcast(currentFreq, currentBW, nextSF, currentCR, currentTxPower);
+        Serial.printf("SF change requested -> %d (broadcasting to receiver)\n", nextSF);
+        oledMsg("SF Changed", String(nextSF).c_str());
+      }
+      break;
+    case ButtonAction::CycleBW:
+      // Cycle through Bandwidth values
+      {
+        const int nextIndex = (currentBwIndex + 1) % (sizeof(bwValues) / sizeof(bwValues[0]));
+        const float nextBW = bwValues[nextIndex];
+        startConfigBroadcast(currentFreq, nextBW, currentSF, currentCR, currentTxPower);
+        Serial.printf("BW change requested -> %.0f kHz (broadcasting to receiver)\n", nextBW);
+        oledMsg("BW Changed", String(nextBW).c_str());
+      }
+      break;
+    case ButtonAction::SleepMode:
+      Serial.println("Sleep mode requested");
+      enterDeepSleep();
+      break;
+    default:
+      break;
+  }
+}
+
+static void handleReceiverButtonAction(ButtonAction action) {
+  // Record button press time and exit idle mode
+  lastButtonPressTime = millis();
+  if (isInIdleMode) {
+    isInIdleMode = false;
+    Serial.println("[IDLE] Exiting idle mode due to button press");
+    oledMsg("Interactive", "Mode");
+    delay(1000);
+  }
+
+  Serial.printf("[RX_BTN] Handling action: %d\n", (int)action);
+  switch (action) {
+    case ButtonAction::CycleSF:
+      // Cycle through Spreading Factor values (same as sender)
+      {
+        const int nextIndex = (currentSfIndex + 1) % (sizeof(sfValues) / sizeof(sfValues[0]));
+        const int nextSF = sfValues[nextIndex];
+        Serial.printf("[RX_BTN] SF change requested -> %d\n", nextSF);
+        oledMsg("SF Changed", String(nextSF).c_str());
+      }
+      break;
+    case ButtonAction::CycleBW:
+      // Cycle through Bandwidth values (same as sender)
+      {
+        const int nextIndex = (currentBwIndex + 1) % (sizeof(bwValues) / sizeof(bwValues[0]));
+        const float nextBW = bwValues[nextIndex];
+        Serial.printf("[RX_BTN] BW change requested -> %.0f kHz\n", nextBW);
+        oledMsg("BW Changed", String(nextBW).c_str());
+      }
+      break;
+    case ButtonAction::SleepMode:
+      Serial.println("[RX_BTN] Sleep mode triggered");
+      Serial.println("Sleep mode requested");
+      enterDeepSleep();
+      break;
+    default:
+      Serial.printf("[RX_BTN] Unknown action: %d\n", (int)action);
+      break;
+  }
+}
+
 static void updateButton() {
+  static uint32_t callCount = 0;
+  callCount++;
+
   int s = digitalRead(BUTTON_PIN);
   uint32_t now = millis();
+
+  // Debug button state every 5 seconds
+  static uint32_t lastDebugMs = 0;
+  if (now - lastDebugMs >= 5000) {
+    int altState = digitalRead(ALT_BUTTON_PIN);
+    Serial.printf("[BTN_DEBUG] Main pin: %d, Alt pin: %d, lastButtonState: %d, buttonPressed: %s, role: %s, calls: %lu\n",
+                  s, altState, lastButtonState, buttonPressed ? "true" : "false", isSender ? "Sender" : "Receiver", callCount);
+    lastDebugMs = now;
+  }
 
   // Button press detection
   if (lastButtonState == HIGH && s == LOW) {
     buttonPressed = true;
     buttonPressMs = now;
+    Serial.printf("[BTN] Press detected (role: %s)\n", isSender ? "Sender" : "Receiver");
   }
 
   // Button release detection
   if (lastButtonState == LOW && s == HIGH && buttonPressed) {
     buttonPressed = false;
     uint32_t pressDuration = now - buttonPressMs;
+    Serial.printf("[BTN] Release detected, duration: %lu ms (role: %s)\n", pressDuration, isSender ? "Sender" : "Receiver");
 
-    if (pressDuration < 100) {
-      // Very short press - ignore (debounce)
-    } else if (pressDuration < 1000) {
-      // Short press - toggle mode
-      isSender = !isSender;
-      seq = 0;
-      savePersistedRole();
-      oledRole();
-      Serial.printf("Switched mode -> %s\n", isSender ? "Sender" : "Receiver");
-    } else if (pressDuration < 3000) {
-      // Medium press - cycle SF (sender) or network mode (receiver)
+    // Handle single press actions
+    ButtonAction action = classifyPress(pressDuration);
+    Serial.printf("[BTN] Single press action: %d\n", (int)action);
+    if (action != ButtonAction::Ignore) {
       if (isSender) {
-            const int nextIndex = (currentSfIndex + 1) % (sizeof(sfValues) / sizeof(sfValues[0]));
-    const int nextSF = sfValues[nextIndex];
-        startConfigBroadcast(currentFreq, currentBW, nextSF, currentCR, currentTxPower);
-        Serial.printf("SF change requested -> %d (broadcasting to receiver)\n", nextSF);
+        Serial.println("[BTN] Handling sender action");
+        handleSenderButtonAction(action);
       } else {
-#ifdef ENABLE_WIFI_OTA
-        // Cycle through network modes for receiver
-        const NetworkSelectionMode currentMode = currentNetworkMode;
-        NetworkSelectionMode nextMode = NetworkSelectionMode::AUTO;
-
-        switch (currentMode) {
-          case NetworkSelectionMode::AUTO:
-            nextMode = NetworkSelectionMode::MANUAL_HOME;
-            break;
-          case NetworkSelectionMode::MANUAL_HOME:
-            nextMode = NetworkSelectionMode::MANUAL_WORK;
-            break;
-          case NetworkSelectionMode::MANUAL_WORK:
-            nextMode = NetworkSelectionMode::AUTO;
-            break;
-          default:
-            nextMode = NetworkSelectionMode::AUTO;
-        }
-
-        setNetworkMode(nextMode);
-
-        // Show network mode change on display
-        const char* modeStr = "Unknown";
-        switch (nextMode) {
-          case NetworkSelectionMode::AUTO:
-            modeStr = "Auto";
-            break;
-          case NetworkSelectionMode::MANUAL_HOME:
-            modeStr = "Home";
-            break;
-          case NetworkSelectionMode::MANUAL_WORK:
-            modeStr = "Work";
-            break;
-          default:
-            modeStr = "Auto";
-        }
-
-        oledMsg("Network Mode", modeStr);
-        Serial.printf("Network mode changed to %s\n", modeStr);
-
-        // Reconnect with new mode
-        if (wifiConnected) {
-          WiFi.disconnect();
-          delay(1000);
-          if (connectToWiFi()) {
-            wifiConnected = true;
-            oledMsg("Reconnected", getCurrentNetworkLocation());
-          } else {
-            wifiConnected = false;
-            oledMsg("Reconnect", "Failed");
-          }
-        }
-#else
-        // For non-WiFi receivers, cycle SF instead
-        currentSfIndex = (currentSfIndex + 1) % (sizeof(sfValues) / sizeof(sfValues[0]));
-        currentSF = sfValues[currentSfIndex];
-        updateRadioSettings();
-        savePersistedSettings();
-        Serial.printf("SF changed to %d\n", currentSF);
-#endif
-      }
-    } else {
-      // Long press - cycle BW
-      if (isSender) {
-        const int nextIndex = (currentBwIndex + 1) % (sizeof(bwValues) / sizeof(bwValues[0]));
-        const float nextBW = bwValues[nextIndex];
-        startConfigBroadcast(currentFreq, nextBW, currentSF, currentCR, currentTxPower);
-        Serial.printf("BW change requested -> %.0f kHz (broadcasting to receiver)\n", nextBW);
-      } else {
-        currentBwIndex = (currentBwIndex + 1) % (sizeof(bwValues) / sizeof(bwValues[0]));
-        currentBW = bwValues[currentBwIndex];
-        updateRadioSettings();
-        savePersistedSettings();
-        Serial.printf("BW changed to %.0f kHz\n", currentBW);
+        Serial.println("[BTN] Handling receiver action");
+        handleReceiverButtonAction(action);
       }
     }
 
@@ -649,12 +690,180 @@ static void sendLoraOtaUpdate(const uint8_t* firmware, size_t firmwareSize);
 // OLED Display Functions
 static void drawStatusBar();
 
+// Simple button test function
+static void testButton() {
+  Serial.println("[BTN_TEST] Starting button test...");
+
+  // Test both button pins
+  int mainState = digitalRead(BUTTON_PIN);
+  int altState = digitalRead(ALT_BUTTON_PIN);
+
+  Serial.printf("[BTN_TEST] Main button (GPIO%d): %d, Alt button (GPIO%d): %d\n",
+                BUTTON_PIN, mainState, ALT_BUTTON_PIN, altState);
+
+  // Test button press detection
+  Serial.println("[BTN_TEST] Press and hold the button for 2 seconds...");
+  uint32_t startTime = millis();
+  bool buttonPressed = false;
+
+  while (millis() - startTime < 2000) {
+    int currentState = digitalRead(BUTTON_PIN);
+    if (currentState == LOW && !buttonPressed) {
+      buttonPressed = true;
+      Serial.println("[BTN_TEST] Button press detected!");
+    }
+    delay(100);
+  }
+
+  if (!buttonPressed) {
+    Serial.println("[BTN_TEST] No button press detected during test");
+  }
+
+  Serial.println("[BTN_TEST] Button test complete");
+}
+
+// Deep sleep implementation
+static void configureWakeupSources() {
+  // Configure button as wake-up source
+  esp_sleep_enable_ext0_wakeup((gpio_num_t)BUTTON_PIN, LOW);
+
+  // Also enable timer wake-up as backup (30 seconds)
+  esp_sleep_enable_timer_wakeup(30 * 1000000); // 30 seconds in microseconds
+
+  Serial.println("[SLEEP] Wake-up sources configured: button (LOW) + 30s timer");
+}
+
+// Idle mode management
+static void checkIdleMode() {
+  uint32_t currentTime = millis();
+
+  // Check if we should enter idle mode (no button press for IDLE_TIMEOUT_MS)
+  if (!isInIdleMode && (currentTime - lastButtonPressTime) > IDLE_TIMEOUT_MS) {
+    isInIdleMode = true;
+    idleModeStartTime = currentTime;
+    Serial.println("[IDLE] Entering full-screen ping flash mode");
+    oledMsg("Idle Mode", "Full Screen");
+    delay(1000);
+  }
+
+  // Check if we should exit idle mode (been in interactive mode for INTERACTIVE_TIMEOUT_MS)
+  if (isInIdleMode && (currentTime - idleModeStartTime) > INTERACTIVE_TIMEOUT_MS) {
+    isInIdleMode = false;
+    Serial.println("[IDLE] Returning to full-screen ping flash mode");
+    oledMsg("Idle Mode", "Full Screen");
+    delay(1000);
+  }
+}
+
+// Full-screen ping flash function
+static void drawFullScreenPingFlash() {
+  if (!isInIdleMode) return;
+
+  // Clear the entire screen
+  u8g2.clearBuffer();
+
+  // Draw a large, centered ping indicator
+  u8g2.setFont(u8g2_font_ncenB14_tr);
+  u8g2.setDrawColor(1);
+
+  // Calculate center position
+  int textWidth = u8g2.getStrWidth("PING");
+  int x = (u8g2.getDisplayWidth() - textWidth) / 2;
+  int y = (u8g2.getDisplayHeight() + 14) / 2; // +14 for font height
+
+  // Draw "PING" text
+  u8g2.drawStr(x, y, "PING");
+
+  // Draw a large circle around it
+  int centerX = u8g2.getDisplayWidth() / 2;
+  int centerY = u8g2.getDisplayHeight() / 2;
+  int radius = 25;
+  u8g2.drawCircle(centerX, centerY, radius);
+
+  // Send to display
+  u8g2.sendBuffer();
+}
+
+static void enterDeepSleep() {
+  Serial.println("[SLEEP] Entering deep sleep mode...");
+
+  // Save current state to RTC memory
+  sleepCount++;
+  lastSleepTime = millis();
+  wasInSleepMode = true;
+
+  // Save important settings to flash before sleep
+  savePersistedSettings();
+
+  // Show sleep message on OLED
+  oledMsg("Sleep Mode", "Entering...");
+  delay(1000);
+
+  // Turn off OLED to save power
+  u8g2.setPowerSave(1);
+
+  // Configure wake-up sources
+  configureWakeupSources();
+
+  Serial.println("[SLEEP] Going to sleep now. Press button to wake up.");
+  Serial.flush(); // Ensure all serial output is sent
+
+  // Enter deep sleep
+  esp_deep_sleep_start();
+}
+
+static void restoreStateAfterWakeup() {
+  if (wasInSleepMode) {
+    Serial.println("[SLEEP] Waking up from deep sleep...");
+    Serial.printf("[SLEEP] Sleep count: %lu, Last sleep time: %lu ms ago\n",
+                  sleepCount, millis() - lastSleepTime);
+
+    // Reset sleep flag
+    wasInSleepMode = false;
+
+    // Restore OLED power
+    u8g2.setPowerSave(0);
+
+    // Show wake-up message
+    oledMsg("Wake Up", "Resuming...");
+    delay(1000);
+
+    Serial.println("[SLEEP] State restored, resuming normal operation");
+  }
+}
+
 void setup() {
   Serial.begin(115200);
   delay(500);
   Serial.println("\n=== LtngDet LoRa + OLED (Heltec V3) ===");
 
+  // Check if we're waking up from deep sleep
+  restoreStateAfterWakeup();
+
   pinMode(BUTTON_PIN, INPUT_PULLUP);
+  pinMode(ALT_BUTTON_PIN, INPUT_PULLUP);
+  Serial.printf("[SETUP] Button pin %d configured as INPUT_PULLUP\n", BUTTON_PIN);
+  Serial.printf("[SETUP] Alt button pin %d configured as INPUT_PULLUP\n", ALT_BUTTON_PIN);
+
+  // Test button pin states
+  int initialButtonState = digitalRead(BUTTON_PIN);
+  int initialAltButtonState = digitalRead(ALT_BUTTON_PIN);
+  Serial.printf("[SETUP] Main button state: %d, Alt button state: %d (HIGH=%d, LOW=%d)\n",
+                initialButtonState, initialAltButtonState, HIGH, LOW);
+
+  // Explicitly initialize button state variables
+  lastButtonState = HIGH;
+  buttonPressed = false;
+  Serial.println("[SETUP] Button state variables initialized");
+
+  // Initialize idle mode variables
+  lastButtonPressTime = millis();
+  isInIdleMode = false;
+  idleModeStartTime = 0;
+  Serial.println("[SETUP] Idle mode variables initialized");
+
+  // Test button functionality
+  testButton();
 
   // Initialize current values
   currentFreq = LORA_FREQ_MHZ;
@@ -666,19 +875,22 @@ void setup() {
   // initial role from build flags
 #ifdef ROLE_SENDER
   isSender = true;
+  Serial.println("[SETUP] Role: SENDER (from ROLE_SENDER flag)");
 #elif defined(ROLE_RECEIVER)
   isSender = false;
+  Serial.println("[SETUP] Role: RECEIVER (from ROLE_RECEIVER flag)");
 #else
   isSender = true;
+  Serial.println("[SETUP] Role: SENDER (default)");
 #endif
 
-  // Load persisted settings/role (overrides defaults when present)
-  loadPersistedSettingsAndRole();
+  // Load persisted settings (role is now fixed at build time)
+  loadPersistedSettings();
   computeIndicesFromCurrent();
 
   initDisplay();
   oledMsg("Booting...", "Heltec V3");
-  oledRole();
+  oledMsg("Role", isSender ? "Sender" : "Receiver");
 
   initRadioOrHalt();
 
@@ -714,6 +926,9 @@ void loop() {
 
   // Check button more frequently
   updateButton();
+
+  // Check and manage idle mode transitions
+  checkIdleMode();
 
   if (isSender) {
     if (pendingConfigBroadcast) {
@@ -916,11 +1131,11 @@ void loop() {
         if (dotBlinkActive && (now - lastDotRefresh >= 200)) {
     // Refresh display periodically while dot is active (keep original display content)
     // The dot will be added automatically by drawPingDot() in oledMsg()
-    oledRole(); // Show normal "Mode" / "Sender" or "Receiver" display
+    oledMsg("Role", isSender ? "Sender" : "Receiver"); // Show normal "Mode" / "Sender" or "Receiver" display
     lastDotRefresh = now;
   } else if (lastDotState && !dotBlinkActive) {
     // Dot just finished - refresh display to clear it (normal content, no dot)
-    oledRole(); // Show normal "Mode" / "Sender" or "Receiver" display
+    oledMsg("Role", isSender ? "Sender" : "Receiver"); // Show normal "Mode" / "Sender" or "Receiver" display
   }
   lastDotState = dotBlinkActive;
 

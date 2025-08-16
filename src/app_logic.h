@@ -5,9 +5,9 @@
 
 enum class ButtonAction {
   Ignore,
-  ToggleMode,
-  CycleSF,
-  CycleBW
+  CycleSF,      // Short press: cycle through Spreading Factor values
+  CycleBW,      // Medium press: cycle through Bandwidth values
+  SleepMode     // Long press: enter sleep mode
 };
 
 ButtonAction classifyPress(uint32_t pressDurationMs);

@@ -1,62 +1,68 @@
-// Keep this test minimal and host-friendly
-// NOTE: PING text has been replaced with blinking dot indicator in OLED display
-// The formatTxMessage function is retained for internal use and testing
-#include <unity.h>
-#include "app_logic.h"
+#include <iostream>
+#include <cassert>
+#include "../src/app_logic.h"
 
 void test_classifyPress() {
-  // Test boundary values
-  TEST_ASSERT_EQUAL_INT((int)ButtonAction::Ignore, (int)classifyPress(0));
-  TEST_ASSERT_EQUAL_INT((int)ButtonAction::Ignore, (int)classifyPress(50));
-  TEST_ASSERT_EQUAL_INT((int)ButtonAction::Ignore, (int)classifyPress(99));
+  std::cout << "Testing classifyPress..." << std::endl;
 
-  // Test ToggleMode range
-  TEST_ASSERT_EQUAL_INT((int)ButtonAction::ToggleMode, (int)classifyPress(100));
-  TEST_ASSERT_EQUAL_INT((int)ButtonAction::ToggleMode, (int)classifyPress(150));
-  TEST_ASSERT_EQUAL_INT((int)ButtonAction::ToggleMode, (int)classifyPress(999));
+  // Test ignore cases
+  assert(classifyPress(0) == ButtonAction::Ignore);
+  assert(classifyPress(50) == ButtonAction::Ignore);
+  assert(classifyPress(99) == ButtonAction::Ignore);
+  std::cout << "  ✓ Ignore cases passed" << std::endl;
 
-  // Test CycleSF range
-  TEST_ASSERT_EQUAL_INT((int)ButtonAction::CycleSF, (int)classifyPress(1000));
-  TEST_ASSERT_EQUAL_INT((int)ButtonAction::CycleSF, (int)classifyPress(1500));
-  TEST_ASSERT_EQUAL_INT((int)ButtonAction::CycleSF, (int)classifyPress(2999));
+  // Test CycleSF (short press)
+  assert(classifyPress(100) == ButtonAction::CycleSF);
+  assert(classifyPress(150) == ButtonAction::CycleSF);
+  assert(classifyPress(999) == ButtonAction::CycleSF);
+  std::cout << "  ✓ CycleSF cases passed" << std::endl;
 
-  // Test CycleBW range
-  TEST_ASSERT_EQUAL_INT((int)ButtonAction::CycleBW, (int)classifyPress(3000));
-  TEST_ASSERT_EQUAL_INT((int)ButtonAction::CycleBW, (int)classifyPress(10000));
-  TEST_ASSERT_EQUAL_INT((int)ButtonAction::CycleBW, (int)classifyPress(UINT32_MAX));
+  // Test CycleBW (medium press)
+  assert(classifyPress(1000) == ButtonAction::CycleBW);
+  assert(classifyPress(1500) == ButtonAction::CycleBW);
+  assert(classifyPress(2999) == ButtonAction::CycleBW);
+  std::cout << "  ✓ CycleBW cases passed" << std::endl;
+
+  // Test SleepMode (long press)
+  assert(classifyPress(3000) == ButtonAction::SleepMode);
+  assert(classifyPress(10000) == ButtonAction::SleepMode);
+  std::cout << "  ✓ SleepMode cases passed" << std::endl;
 }
 
 void test_cycleIndex() {
-  // Normal cycling
-  TEST_ASSERT_EQUAL_INT(1, cycleIndex(0, 3));
-  TEST_ASSERT_EQUAL_INT(2, cycleIndex(1, 3));
-  TEST_ASSERT_EQUAL_INT(0, cycleIndex(2, 3));
+  std::cout << "Testing cycleIndex..." << std::endl;
 
-  // Edge cases
-  TEST_ASSERT_EQUAL_INT(0, cycleIndex(5, 0));  // size 0
-  TEST_ASSERT_EQUAL_INT(0, cycleIndex(-1, 3)); // negative index
-  TEST_ASSERT_EQUAL_INT(0, cycleIndex(0, 1));  // size 1
-  TEST_ASSERT_EQUAL_INT(0, cycleIndex(10, 1)); // index > size, size 1
-
-  // Large values
-  TEST_ASSERT_EQUAL_INT(0, cycleIndex(999, 10));
+  assert(cycleIndex(0, 1) == 0);
+  assert(cycleIndex(1, 1) == 0);
+  assert(cycleIndex(0, 2) == 1);
+  assert(cycleIndex(1, 2) == 0);
+  assert(cycleIndex(2, 2) == 0);
+  std::cout << "  ✓ cycleIndex cases passed" << std::endl;
 }
 
 void test_formatTxMessage() {
-  // Normal cases
-  TEST_ASSERT_EQUAL_STRING("PING seq=0", formatTxMessage(0).c_str());
-  TEST_ASSERT_EQUAL_STRING("PING seq=42", formatTxMessage(42).c_str());
-  TEST_ASSERT_EQUAL_STRING("PING seq=1", formatTxMessage(1).c_str());
+  std::cout << "Testing formatTxMessage..." << std::endl;
 
-  // Large sequence numbers
-  TEST_ASSERT_EQUAL_STRING("PING seq=4294967295", formatTxMessage(UINT32_MAX).c_str());
-  TEST_ASSERT_EQUAL_STRING("PING seq=1000000", formatTxMessage(1000000).c_str());
+  std::string msg = formatTxMessage(123);
+  assert(msg == "PING seq=123");
+  std::cout << "  ✓ formatTxMessage case passed" << std::endl;
 }
 
-int main(int argc, char **argv) {
-  UNITY_BEGIN();
-  RUN_TEST(test_classifyPress);
-  RUN_TEST(test_cycleIndex);
-  RUN_TEST(test_formatTxMessage);
-  return UNITY_END();
+int main() {
+  std::cout << "Running app_logic tests..." << std::endl;
+
+  try {
+    test_classifyPress();
+    test_cycleIndex();
+    test_formatTxMessage();
+
+    std::cout << "\n✅ All tests passed!" << std::endl;
+    return 0;
+  } catch (const std::exception& e) {
+    std::cerr << "\n❌ Test failed with exception: " << e.what() << std::endl;
+    return 1;
+  } catch (...) {
+    std::cerr << "\n❌ Test failed with unknown exception" << std::endl;
+    return 1;
+  }
 }

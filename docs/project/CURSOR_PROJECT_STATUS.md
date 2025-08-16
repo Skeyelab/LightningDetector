@@ -15,11 +15,11 @@
 - **Real-time Configuration**: Runtime adjustment of LoRa parameters (SF, BW, TX power)
 
 ### 🔧 Current Features
-- **Dual Mode Operation**: Can switch between Sender/Receiver at runtime
-- **Dynamic LoRa Configuration**:
-  - Spreading Factor (SF7-SF12) cycling via medium button press
-  - Bandwidth (125/250/500 kHz) cycling via long button press
-  - Short button press toggles Sender/Receiver mode
+- **Fixed Role Operation**: Device role determined at build time (no runtime switching)
+- **Device-Specific Button Functions**:
+  - **Sender**: Short press cycles LoRa parameters (SF, BW, TX Power), Medium press broadcasts config
+  - **Receiver**: Short press cycles display modes, Medium press changes network/config mode
+  - **Both**: Long press enters config mode, 5 rapid clicks enters sleep mode
 - **Persistent Settings Display**: OLED always shows current LoRa configuration
 - **Non-blocking Operation**: Responsive button detection without blocking delays
 
