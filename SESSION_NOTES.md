@@ -15,6 +15,32 @@
 
 ### Session log
 
+#### 2025-01-15 18:30 UTC
+- Context: Implemented ERI-14 Linear issue to remove RX/TX switching from button functionality
+- Changes:
+  - Removed RX/TX mode switching from button short press functionality
+  - Eliminated `savePersistedRole()` and `oledRole()` functions
+  - Updated `loadPersistedSettingsAndRole()` to `loadPersistedSettings()` (no role loading)
+  - Reworked button functionality to be device-specific:
+    * Sender: Short press cycles LoRa parameters (SF, BW, TX Power), Medium press broadcasts config
+    * Receiver: Short press cycles display modes, Medium press changes network mode
+    * Both: Long press enters config mode, 5 rapid clicks enters sleep mode
+  - Updated `ButtonAction` enum to remove `ToggleMode` and add device-specific actions
+  - Implemented multi-click detection for sleep mode functionality
+  - Updated integration tests to reflect new button behavior
+  - Device role now fixed at build time via `ROLE_SENDER`/`ROLE_RECEIVER` build flags
+- Commands run:
+  - `g++ -std=c++17 verify_button_logic.cpp -o verify_button_logic && ./verify_button_logic`
+- Files touched:
+  - `src/app_logic.h`, `src/app_logic.cpp` (updated button action classification)
+  - `src/main.cpp` (completely reworked button handling, removed role switching)
+  - `test/test_integration.cpp` (updated tests for new button functionality)
+  - `verify_button_logic.cpp` (created verification script)
+- Next steps:
+  - Test compiled firmware on actual hardware
+  - Implement sleep mode functionality with sensor/actuator monitoring
+  - Consider adding configuration mode implementations
+
 #### 2025-01-15 17:00 UTC
 - Context: GitHub Actions workflow failed with "Permission denied" error when trying to push to gh-pages branch
 - Changes:
