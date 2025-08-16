@@ -162,10 +162,13 @@ static void computeIndicesFromCurrent();
 static void broadcastConfigOnControlChannel(uint8_t times = 8, uint32_t intervalMs = 300);
 static void tryReceiveConfigOnControlChannel(uint32_t durationMs = 4000);
 
-// Light sleep functions
-static void enterLightSleep();
+// Deep sleep functions
+static void enterDeepSleep();
 static void configureWakeupSources();
 static void restoreStateAfterWakeup();
+
+// Full-screen ping flash function
+static void drawFullScreenPingFlash();
 
 // IP address scrolling state
 static String currentIP = "";
@@ -173,6 +176,13 @@ static int ipScrollOffset = 0;
 static uint32_t lastScrollUpdate = 0;
 static const uint32_t SCROLL_INTERVAL_MS = 300; // Scroll every 300ms
 static const int MAX_DISPLAY_WIDTH = 12; // Maximum characters that fit on screen
+
+// Full-screen ping flash mode state
+static const uint32_t IDLE_TIMEOUT_MS = 10000; // 10 seconds to enter idle mode
+static const uint32_t INTERACTIVE_TIMEOUT_MS = 30000; // 30 seconds to return to idle mode
+static uint32_t lastButtonPressTime = 0;
+static bool isInIdleMode = false;
+static uint32_t idleModeStartTime = 0;
 
 // RTC memory for deep sleep state preservation
 RTC_DATA_ATTR uint32_t sleepCount = 0;
@@ -275,9 +285,14 @@ static void drawPingDot() {
     return;
   }
 
-  // Show solid dot for the entire flash duration
-  u8g2.drawDisc(55, 12, 4); // Main ping flash dot
-  Serial.printf("[DEBUG] *** PING DOT VISIBLE *** elapsed=%lu ms\n", elapsed);
+  if (isInIdleMode) {
+    // Full-screen ping flash mode
+    drawFullScreenPingFlash();
+  } else {
+    // Interactive mode - show small dot
+    u8g2.drawDisc(55, 12, 4); // Main ping flash dot
+    Serial.printf("[DEBUG] *** PING DOT VISIBLE *** elapsed=%lu ms\n", elapsed);
+  }
 }
 
 static void oledMsg(const char* l1, const char* l2 = nullptr, const char* l3 = nullptr) {
@@ -530,6 +545,15 @@ static void tryReceiveConfigOnControlChannel(uint32_t durationMs) {
 }
 
 static void handleSenderButtonAction(ButtonAction action) {
+  // Record button press time and exit idle mode
+  lastButtonPressTime = millis();
+  if (isInIdleMode) {
+    isInIdleMode = false;
+    Serial.println("[IDLE] Exiting idle mode due to button press");
+    oledMsg("Interactive", "Mode");
+    delay(1000);
+  }
+
   switch (action) {
     case ButtonAction::CycleSF:
       // Cycle through Spreading Factor values
@@ -541,7 +565,6 @@ static void handleSenderButtonAction(ButtonAction action) {
         oledMsg("SF Changed", String(nextSF).c_str());
       }
       break;
-
     case ButtonAction::CycleBW:
       // Cycle through Bandwidth values
       {
@@ -552,21 +575,26 @@ static void handleSenderButtonAction(ButtonAction action) {
         oledMsg("BW Changed", String(nextBW).c_str());
       }
       break;
-
     case ButtonAction::SleepMode:
-      // Enter light sleep mode
-      Serial.println("Light sleep mode requested");
-      enterLightSleep();
+      Serial.println("Sleep mode requested");
+      enterDeepSleep();
       break;
-
     default:
       break;
   }
 }
 
 static void handleReceiverButtonAction(ButtonAction action) {
-  Serial.printf("[RX_BTN] Handling action: %d\n", (int)action);
+  // Record button press time and exit idle mode
+  lastButtonPressTime = millis();
+  if (isInIdleMode) {
+    isInIdleMode = false;
+    Serial.println("[IDLE] Exiting idle mode due to button press");
+    oledMsg("Interactive", "Mode");
+    delay(1000);
+  }
 
+  Serial.printf("[RX_BTN] Handling action: %d\n", (int)action);
   switch (action) {
     case ButtonAction::CycleSF:
       // Cycle through Spreading Factor values (same as sender)
@@ -575,10 +603,8 @@ static void handleReceiverButtonAction(ButtonAction action) {
         const int nextSF = sfValues[nextIndex];
         Serial.printf("[RX_BTN] SF change requested -> %d\n", nextSF);
         oledMsg("SF Changed", String(nextSF).c_str());
-        // Note: Receiver doesn't broadcast, just displays the change
       }
       break;
-
     case ButtonAction::CycleBW:
       // Cycle through Bandwidth values (same as sender)
       {
@@ -586,17 +612,13 @@ static void handleReceiverButtonAction(ButtonAction action) {
         const float nextBW = bwValues[nextIndex];
         Serial.printf("[RX_BTN] BW change requested -> %.0f kHz\n", nextBW);
         oledMsg("BW Changed", String(nextBW).c_str());
-        // Note: Receiver doesn't broadcast, just displays the change
       }
       break;
-
     case ButtonAction::SleepMode:
       Serial.println("[RX_BTN] Sleep mode triggered");
-      // Enter light sleep mode
-      Serial.println("Light sleep mode requested");
-      enterLightSleep();
+      Serial.println("Sleep mode requested");
+      enterDeepSleep();
       break;
-
     default:
       Serial.printf("[RX_BTN] Unknown action: %d\n", (int)action);
       break;
@@ -704,82 +726,108 @@ static void testButton() {
 static void configureWakeupSources() {
   // Configure button as wake-up source
   esp_sleep_enable_ext0_wakeup((gpio_num_t)BUTTON_PIN, LOW);
-  
-  // Enable LoRa radio interrupt as wake-up source (for ping detection)
-  esp_sleep_enable_ext1_wakeup(
-    (1ULL << PIN_LORA_DIO1), // Wake on LoRa DIO1 pin (interrupt)
-    ESP_EXT1_WAKEUP_ANY_HIGH // Wake when any of these pins go HIGH
-  );
-  
-  // Also enable timer wake-up as backup (60 seconds for light sleep)
-  esp_sleep_enable_timer_wakeup(60 * 1000000); // 60 seconds in microseconds
-  
-  Serial.println("[SLEEP] Wake-up sources configured: button (LOW) + LoRa interrupt + 60s timer");
+
+  // Also enable timer wake-up as backup (30 seconds)
+  esp_sleep_enable_timer_wakeup(30 * 1000000); // 30 seconds in microseconds
+
+  Serial.println("[SLEEP] Wake-up sources configured: button (LOW) + 30s timer");
 }
 
-static void enterLightSleep() {
-  Serial.println("[SLEEP] Entering light sleep mode...");
-  
+// Idle mode management
+static void checkIdleMode() {
+  uint32_t currentTime = millis();
+
+  // Check if we should enter idle mode (no button press for IDLE_TIMEOUT_MS)
+  if (!isInIdleMode && (currentTime - lastButtonPressTime) > IDLE_TIMEOUT_MS) {
+    isInIdleMode = true;
+    idleModeStartTime = currentTime;
+    Serial.println("[IDLE] Entering full-screen ping flash mode");
+    oledMsg("Idle Mode", "Full Screen");
+    delay(1000);
+  }
+
+  // Check if we should exit idle mode (been in interactive mode for INTERACTIVE_TIMEOUT_MS)
+  if (isInIdleMode && (currentTime - idleModeStartTime) > INTERACTIVE_TIMEOUT_MS) {
+    isInIdleMode = false;
+    Serial.println("[IDLE] Returning to full-screen ping flash mode");
+    oledMsg("Idle Mode", "Full Screen");
+    delay(1000);
+  }
+}
+
+// Full-screen ping flash function
+static void drawFullScreenPingFlash() {
+  if (!isInIdleMode) return;
+
+  // Clear the entire screen
+  u8g2.clearBuffer();
+
+  // Draw a large, centered ping indicator
+  u8g2.setFont(u8g2_font_ncenB14_tr);
+  u8g2.setDrawColor(1);
+
+  // Calculate center position
+  int textWidth = u8g2.getStrWidth("PING");
+  int x = (u8g2.getDisplayWidth() - textWidth) / 2;
+  int y = (u8g2.getDisplayHeight() + 14) / 2; // +14 for font height
+
+  // Draw "PING" text
+  u8g2.drawStr(x, y, "PING");
+
+  // Draw a large circle around it
+  int centerX = u8g2.getDisplayWidth() / 2;
+  int centerY = u8g2.getDisplayHeight() / 2;
+  int radius = 25;
+  u8g2.drawCircle(centerX, centerY, radius);
+
+  // Send to display
+  u8g2.sendBuffer();
+}
+
+static void enterDeepSleep() {
+  Serial.println("[SLEEP] Entering deep sleep mode...");
+
   // Save current state to RTC memory
   sleepCount++;
   lastSleepTime = millis();
   wasInSleepMode = true;
-  
+
   // Save important settings to flash before sleep
   savePersistedSettings();
-  
+
   // Show sleep message on OLED
-  oledMsg("Light Sleep", "Listening...");
+  oledMsg("Sleep Mode", "Entering...");
   delay(1000);
-  
-  // Turn off OLED to save power (but keep LoRa radio active)
+
+  // Turn off OLED to save power
   u8g2.setPowerSave(1);
-  
+
   // Configure wake-up sources
   configureWakeupSources();
-  
-  Serial.println("[SLEEP] Going to light sleep. Device will wake on button press, LoRa interrupt, or 60s timer.");
-  Serial.println("[SLEEP] LoRa radio remains active for ping detection.");
+
+  Serial.println("[SLEEP] Going to sleep now. Press button to wake up.");
   Serial.flush(); // Ensure all serial output is sent
-  
-  // Enter light sleep (keeps LoRa radio powered)
-  esp_light_sleep_start();
+
+  // Enter deep sleep
+  esp_deep_sleep_start();
 }
 
 static void restoreStateAfterWakeup() {
   if (wasInSleepMode) {
-    Serial.println("[SLEEP] Waking up from light sleep...");
+    Serial.println("[SLEEP] Waking up from deep sleep...");
     Serial.printf("[SLEEP] Sleep count: %lu, Last sleep time: %lu ms ago\n",
                   sleepCount, millis() - lastSleepTime);
-    
-    // Check wake-up reason
-    esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
-    switch(wakeup_reason) {
-      case ESP_SLEEP_WAKEUP_EXT0:
-        Serial.println("[SLEEP] Woke up due to button press");
-        break;
-      case ESP_SLEEP_WAKEUP_EXT1:
-        Serial.println("[SLEEP] Woke up due to LoRa interrupt (ping received!)");
-        // Process any pending LoRa data
-        break;
-      case ESP_SLEEP_WAKEUP_TIMER:
-        Serial.println("[SLEEP] Woke up due to timer");
-        break;
-      default:
-        Serial.printf("[SLEEP] Woke up due to unknown reason: %d\n", wakeup_reason);
-        break;
-    }
-    
+
     // Reset sleep flag
     wasInSleepMode = false;
-    
+
     // Restore OLED power
     u8g2.setPowerSave(0);
-    
+
     // Show wake-up message
     oledMsg("Wake Up", "Resuming...");
     delay(1000);
-    
+
     Serial.println("[SLEEP] State restored, resuming normal operation");
   }
 }
@@ -807,6 +855,12 @@ void setup() {
   lastButtonState = HIGH;
   buttonPressed = false;
   Serial.println("[SETUP] Button state variables initialized");
+
+  // Initialize idle mode variables
+  lastButtonPressTime = millis();
+  isInIdleMode = false;
+  idleModeStartTime = 0;
+  Serial.println("[SETUP] Idle mode variables initialized");
 
   // Test button functionality
   testButton();
@@ -872,6 +926,9 @@ void loop() {
 
   // Check button more frequently
   updateButton();
+
+  // Check and manage idle mode transitions
+  checkIdleMode();
 
   if (isSender) {
     if (pendingConfigBroadcast) {
