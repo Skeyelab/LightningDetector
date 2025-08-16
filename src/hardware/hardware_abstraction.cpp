@@ -91,17 +91,17 @@ namespace HardwareAbstraction {
             nvs_close(g_nvs_handle);
             g_nvs_handle = 0;
         }
-        
+
         nvs_flash_deinit();
         #endif
 
         g_i2c_initialized = false;
         g_spi_initialized = false;
         g_adc_initialized = false;
-        
+
         // Reset Timer subsystem
         Timer::reset();
-        
+
         g_initialized = false;
     }
 
@@ -111,7 +111,7 @@ namespace HardwareAbstraction {
             if (!g_initialized) {
                 return Result::ERROR_NOT_INITIALIZED;
             }
-            
+
             if (pin > 48) { // ESP32-S3 max GPIO
                 return Result::ERROR_INVALID_PARAMETER;
             }
@@ -795,7 +795,7 @@ namespace HardwareAbstraction {
                 // Check if timer should trigger
                 if (current_time - timer.last_trigger >= timer.interval_ms) {
                     timer.callback();
-                    
+
                     if (timer.repeating) {
                         timer.last_trigger = current_time;
                     } else {
@@ -888,12 +888,12 @@ namespace HardwareAbstraction {
         }
 
         uint8_t getBatteryPercent() {
-            float voltage = getBatteryVoltage();
-            
+            const float voltage = getBatteryVoltage();
+
             // Simple linear mapping for Li-Ion battery (3.0V - 4.2V)
             if (voltage < 3.0f) return 0;
             if (voltage > 4.2f) return 100;
-            
+
             return static_cast<uint8_t>((voltage - 3.0f) / 1.2f * 100.0f);
         }
     }

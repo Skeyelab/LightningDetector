@@ -8,7 +8,7 @@ description: Ensure every meaningful LLM session appends a structured log entry 
 Always record meaningful actions and session outcomes in [SESSION_NOTES.md](mdc:SESSION_NOTES.md) so future sessions can quickly resume with full context.
 
 ## When to log
-- After you perform any non-trivial action (editing code, running commands, adding deps, creating migrations), and at the end of a working session.
+- After you perform any non-trivial action (editing code, running commands, adding deps, creating migrations), and at the end of a working session.  They should be included in the branch.
 
 ## At session start
 - Read the top-level "Setup summary" and the most recent entry in `### Session log` in [SESSION_NOTES.md](mdc:SESSION_NOTES.md) to rehydrate context.

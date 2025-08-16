@@ -15,8 +15,57 @@
 
 ### Session log
 
+#### 2025-01-16 02:30 UTC
+- Context: Lightning detector project with Heltec V3 boards - implementing WiFi IP address display feature
+- Changes:
+  - Added IP address display above network location in WiFi status bar
+  - Modified `drawStatusBar()` function in `src/main.cpp` to show IP address when WiFi connected
+  - IP address appears 10 pixels above network location ("Home"/"Work") text
+  - Uses `WiFi.localIP().toString().c_str()` API as specified in Linear issue ERI-13
+  - Applied consistent 5x7 pixel font for status bar text
+  - Integrated seamlessly with existing `oledMsg()` display system
+- Commands run:
+  - Code review and analysis of display functions and WiFi management
+  - Implementation via `edit_file` tool for `src/main.cpp`
+- Files touched:
+  - `src/main.cpp` (modified `drawStatusBar()` function around line 165)
+- Migrations:
+  - N/A (no database changes)
+- Next steps:
+  - Test implementation on physical hardware with WiFi connection
+  - Verify IP display updates correctly during WiFi reconnection events
+  - Ensure no visual conflicts with other OLED display elements
+
+#### 2025-01-15 21:30 UTC
+- Context: **COMPLETED** ERI-16 Linear issue - replaced PING text with blinking dot indicator on OLED display
+- Changes:
+  - Added blinking dot state variables (dotBlinkStartMs, dotBlinkActive, DOT_FLASH_DURATION_MS) in main.cpp
+  - Implemented triggerPingDotBlink() function with overlap prevention for clean RX behavior
+  - Implemented drawPingDot() function with 1-second flash duration at coordinates (55, 12)
+  - Integrated drawPingDot() call into oledMsg() function for automatic rendering
+  - Replaced TX ping OLED display with triggerPingDotBlink() call - dot shows 1s on, 1s off (50% duty cycle)
+  - Replaced RX ping OLED display with triggerPingDotBlink() call - dot shows 1s per ping received
+  - **PRESERVED serial console logging**: TX pings log "[TX] PING seq=X OK", RX pings log "[RX] PING seq=X | RSSI X.X | SNR X.X | PKT:X"
+  - **PRESERVED original display content**: Shows normal "Mode"/"Sender"/"Receiver" text + settings info
+  - Added display refresh logic to ensure dot visibility during flash cycles
+  - Created flash_both.sh script for easy deployment to both devices
+  - Updated test file with documentation comment about display behavior change
+- Commands run:
+  - Multiple file edits for blinking dot implementation
+  - Compilation and build testing for both sender and receiver variants
+  - Successful firmware flash to both Heltec V3 devices via flash_both.sh
+- Files touched:
+  - `src/main.cpp` (added dot functions, modified TX/RX ping logic, preserved serial logging)
+  - `test/test_app_logic.cpp` (added documentation comment)
+  - `flash_both.sh` (new deployment script)
+- **RESULT**: ✅ Successfully implemented and tested on hardware
+  - Sender: Perfect 50% duty cycle dot blinking synchronized with 2-second ping interval
+  - Receiver: Clean 1-second dot flashes on ping reception without overlap
+  - All ping functionality and debugging preserved
+  - Subtle, unobtrusive visual indication as requested
+
 #### 2025-01-15 18:30 UTC
-- Context: Implemented ERI-14 Linear issue to remove RX/TX switching from button functionality
+- Context: **COMPLETED** ERI-14 Linear issue to remove RX/TX switching from button functionality
 - Changes:
   - Removed RX/TX mode switching from button short press functionality
   - Eliminated `savePersistedRole()` and `oledRole()` functions
@@ -29,22 +78,24 @@
   - Implemented multi-click detection for sleep mode functionality
   - Updated integration tests to reflect new button behavior
   - Device role now fixed at build time via `ROLE_SENDER`/`ROLE_RECEIVER` build flags
+  - Fixed missing `app_logic.h` include in `main.cpp` causing build failures
 - Commands run:
   - `g++ -std=c++17 verify_button_logic.cpp -o verify_button_logic && ./verify_button_logic`
+  - `pio run -e sender && pio run -e receiver` (verified successful builds)
 - Files touched:
   - `src/app_logic.h`, `src/app_logic.cpp` (updated button action classification)
-  - `src/main.cpp` (completely reworked button handling, removed role switching)
+  - `src/main.cpp` (completely reworked button handling, removed role switching, added missing include)
   - `test/test_integration.cpp` (updated tests for new button functionality)
-  - `verify_button_logic.cpp` (created verification script)
+  - `test/test_app_logic.cpp` (updated unit tests for new enum values)
 - Build Results:
-  - ✅ Sender firmware builds successfully
-  - ✅ Receiver firmware builds successfully
+  - ✅ Sender firmware builds successfully (384KB Flash, 11.5% usage)
+  - ✅ Receiver firmware builds successfully (848KB Flash, 25.4% usage)
   - ✅ Button logic verified with test script
-- Next steps:
-  - Test compiled firmware on actual hardware
-  - Implement sleep mode functionality with sensor/actuator monitoring
-  - Consider adding configuration mode implementations
-  - Fix test environment conflicts (logger header issues)
+- **RESULT**: ✅ Successfully implemented device-specific button functionality
+  - No accidental mode switching - role fixed at build time
+  - Intuitive, predictable button behavior tailored to device purpose
+  - Multi-click sleep mode functionality added
+  - All existing LoRa parameter cycling preserved
 
 #### 2025-01-15 17:00 UTC
 - Context: GitHub Actions workflow failed with "Permission denied" error when trying to push to gh-pages branch

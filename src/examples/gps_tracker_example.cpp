@@ -15,18 +15,18 @@ public:
         auto result = HardwareAbstraction::initialize();
         if (result != HardwareAbstraction::Result::SUCCESS) {
             #ifdef ARDUINO
-            Serial.printf("HAL initialization failed: %s\n", 
+            Serial.printf("HAL initialization failed: %s\n",
                          HardwareAbstraction::resultToString(result));
             #endif
             return false;
         }
 
         // Initialize GPS with Wireless Tracker V1.1 configuration
-        GPS::Config gps_config = GPS::getWirelessTrackerV11Config();
+        const GPS::Config gps_config = GPS::getWirelessTrackerV11Config();
         result = GPS::initializeGPS(gps_config);
         if (result != HardwareAbstraction::Result::SUCCESS) {
             #ifdef ARDUINO
-            Serial.printf("GPS initialization failed: %s\n", 
+            Serial.printf("GPS initialization failed: %s\n",
                          HardwareAbstraction::resultToString(result));
             #endif
             return false;
@@ -43,10 +43,10 @@ public:
     void update() {
         // Update GPS data
         GPS::g_gps.update();
-        
+
         const GPS::Data& data = GPS::getGPSData();
-        bool has_fix = GPS::hasGPSFix();
-        
+        const bool has_fix = GPS::hasGPSFix();
+
         uint32_t current_time = HardwareAbstraction::Timer::millis();
 
         if (has_fix) {
@@ -113,7 +113,7 @@ private:
         Serial.printf("Course: %.2f degrees\n", data.course_deg);
         Serial.printf("Satellites: %d\n", data.satellites);
         Serial.printf("HDOP: %.2f\n", data.hdop);
-        Serial.printf("Fix Type: %s\n", 
+        Serial.printf("Fix Type: %s\n",
                      data.fix_type == GPS::FixType::FIX_3D ? "3D" :
                      data.fix_type == GPS::FixType::FIX_2D ? "2D" : "NO_FIX");
         Serial.printf("Time: %02d:%02d:%02d UTC\n", data.hour, data.minute, data.second);
@@ -126,14 +126,14 @@ private:
         #ifdef ARDUINO
         Serial.println("=== Detailed GPS Information ===");
         printGPSInfo(data);
-        
+
         // Print diagnostics
         GPS::g_gps.printDiagnostics();
-        
+
         // Show data freshness
-        Serial.printf("Data age: %lu ms\n", 
+        Serial.printf("Data age: %lu ms\n",
                      HardwareAbstraction::Timer::millis() - data.timestamp);
-        Serial.printf("Data fresh: %s\n", 
+        Serial.printf("Data fresh: %s\n",
                      GPS::g_gps.isDataFresh() ? "Yes" : "No");
         Serial.println("================================\n");
         #endif
@@ -150,7 +150,7 @@ void setup() {
 
     Serial.println("Wireless Tracker GPS Example");
     Serial.println("============================");
-    
+
     if (!g_tracker.initialize()) {
         Serial.println("Failed to initialize GPS tracker!");
         while (1) {
@@ -169,7 +169,7 @@ void loop() {
 #ifndef ARDUINO
 int main() {
     printf("GPS Tracker Example (Test Mode)\n");
-    
+
     if (!g_tracker.initialize()) {
         printf("Failed to initialize GPS tracker!\n");
         return 1;
