@@ -15,6 +15,25 @@
 
 ### Session log
 
+#### 2025-01-16 02:45 UTC
+- Context: Resolving merge conflicts between HEAD branch (enhanced IP scrolling) and main branch (basic IP display)
+- Changes:
+  - Resolved merge conflicts in `src/main.cpp` by choosing enhanced IP scrolling implementation
+  - Maintained all scrolling functionality: 300ms intervals, IP change detection, horizontal scrolling
+  - Cleaned up duplicate code and merge conflict markers
+  - Verified both sender and receiver variants compile successfully
+  - Committed resolved changes with descriptive commit message
+- Commands run:
+  - `pio run -e sender` (compilation test - SUCCESS)
+  - `pio run -e receiver` (compilation test - SUCCESS)
+  - `git add -A && git commit -m "fix: resolve merge conflicts in src/main.cpp - choose enhanced IP scrolling implementation"`
+- Files touched:
+  - `src/main.cpp` (resolved merge conflicts, maintained enhanced scrolling functionality)
+- Next steps:
+  - Test the resolved code on physical hardware
+  - Verify IP scrolling works correctly with various IP address lengths
+  - Ensure no compilation errors or linter issues remain
+
 #### 2025-01-16 02:30 UTC
 - Context: Lightning detector project with Heltec V3 boards - implementing WiFi IP address display feature
 - Changes:
@@ -24,16 +43,23 @@
   - Uses `WiFi.localIP().toString().c_str()` API as specified in Linear issue ERI-13
   - Applied consistent 5x7 pixel font for status bar text
   - Integrated seamlessly with existing `oledMsg()` display system
+  - **Enhanced with scrolling**: Added automatic scrolling for long IP addresses (>12 chars)
+  - Scrolling logic: 300ms intervals, resets when IP changes, handles IPv4 addresses properly
+  - Display accommodates both short IPs (displayed fully) and long IPs (scrolled horizontally)
 - Commands run:
   - Code review and analysis of display functions and WiFi management
-  - Implementation via `edit_file` tool for `src/main.cpp`
+  - Implementation via `search_replace` tool for `src/main.cpp`
+  - Added scrolling state variables and logic for long IP addresses
+  - Resolved merge conflicts between HEAD and main branches
 - Files touched:
-  - `src/main.cpp` (modified `drawStatusBar()` function around line 165)
+  - `src/main.cpp` (modified `drawStatusBar()` function and added scrolling variables around lines 151-203)
+  - `SESSION_NOTES.md` (resolved merge conflicts)
 - Migrations:
   - N/A (no database changes)
 - Next steps:
   - Test implementation on physical hardware with WiFi connection
   - Verify IP display updates correctly during WiFi reconnection events
+  - Test scrolling behavior with longer IP addresses (e.g., 192.168.100.255)
   - Ensure no visual conflicts with other OLED display elements
 
 #### 2025-01-15 21:30 UTC
