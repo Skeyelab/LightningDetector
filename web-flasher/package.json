@@ -2,6 +2,7 @@
   "name": "sbt-pio-web-flasher",
   "version": "1.0.0",
   "description": "Web-based ESP32 firmware flasher for SBT PIO Heltec V3 OLED",
+  "type": "module",
   "main": "dist/index.js",
   "scripts": {
     "dev": "vite",
