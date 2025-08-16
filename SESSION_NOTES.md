@@ -15,6 +15,58 @@
 
 ### Session log
 
+#### 2025-01-16 07:15 UTC
+- Context: Fixed critical issue where workflow changes don't trigger CI pipeline
+- Changes:
+  - **Workflow Self-Validation Fix**: Added `.github/workflows/**` to trigger paths in `ci.yml`
+    * Ensures workflow modifications trigger CI pipeline for self-validation
+    * Fixes common issue where CI workflow changes don't run CI themselves
+    * Critical for maintaining workflow reliability and testing changes
+  - **Trigger Path Optimization**: Workflow now monitors its own files for changes
+    * Self-documenting: workflow changes trigger workflow execution
+    * Prevents silent failures when workflow logic is modified
+    * Enables iterative workflow development and testing
+- Commands run:
+  - `git add .github/workflows/ci.yml` (staged workflow fix)
+  - `git commit -m "fix(ci): include workflow files in trigger paths for self-validation"`
+  - `git push origin consolidate-github-workflows` (pushed fix to remote)
+- Files touched:
+  - `.github/workflows/ci.yml` (added workflow file monitoring to trigger paths)
+- **RESULT**: ✅ Critical workflow self-validation issue resolved
+  - **Self-Validation**: Workflow changes now trigger CI pipeline execution
+  - **Iterative Development**: Can test workflow modifications immediately
+  - **Reliability**: No more silent workflow failures due to missing triggers
+
+#### 2025-01-16 07:00 UTC
+- Context: Identified and resolved GitHub workflow duplication and conflicts
+- Changes:
+  - **Workflow Consolidation**: Removed redundant `build.yml` workflow that duplicated functionality in `ci.yml`
+    * Eliminated duplicate build jobs running simultaneously
+    * Reduced CI resource usage and execution time
+    * Consolidated all CI/CD functionality into single comprehensive workflow
+  - **CI Pipeline Optimization**: Enhanced `ci.yml` with clear documentation about consolidation
+    * Added explanatory comments about workflow purpose and structure
+    * Maintained all existing functionality (tests, builds, linting, performance monitoring)
+    * Clear separation of concerns between CI, release, and deployment workflows
+  - **Workflow Structure**: Now have clean, non-conflicting workflow setup:
+    * `ci.yml` - Full CI/CD with tests, builds, and static analysis
+    * `release.yml` - Release-specific builds for GitHub releases
+    * `deploy-web-flasher.yml` - Web deployment to GitHub Pages
+- Commands run:
+  - `git checkout -b consolidate-github-workflows` (created new branch)
+  - `rm .github/workflows/build.yml` (removed redundant workflow)
+  - Updated `ci.yml` with consolidation documentation
+- Files touched:
+  - `.github/workflows/build.yml` (deleted - redundant functionality)
+  - `.github/workflows/ci.yml` (enhanced with consolidation documentation)
+- **RESULT**: ✅ Successfully consolidated GitHub workflows
+  - **Eliminated Duplication**: No more duplicate build jobs running simultaneously
+  - **Reduced CI Time**: Single workflow execution instead of multiple overlapping workflows
+  - **Clear Separation**: Each workflow now has distinct, non-conflicting purpose
+  - **Maintained Functionality**: All CI/CD capabilities preserved in optimized structure
+  - **Pull Request Created**: [PR #37](https://github.com/Skeyelab/LightningDetector/pull/37) ready for review and merge
+  - **Critical Fix Applied**: Added .github/workflows/** to trigger paths to ensure workflow changes trigger CI pipeline
+
 #### 2025-01-16 06:00 UTC
 - Context: Successfully merged main branch changes and resolved merge conflicts
 - Changes:

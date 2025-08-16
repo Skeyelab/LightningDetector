@@ -1,4 +1,15 @@
-name: CI/CD Pipeline
+name: CI/CD Pipeline (Consolidated - Replaces build.yml)
+
+# This workflow consolidates all CI/CD functionality:
+# - Unit testing (replaces separate test workflows)
+# - Building (replaces build.yml workflow)
+# - Static analysis (replaces separate linting workflows)
+# - Performance monitoring
+#
+# The build.yml workflow has been removed to eliminate duplication
+# 
+# IMPORTANT: .github/workflows/** is included in paths to ensure workflow
+# changes trigger the CI pipeline for self-validation
 
 on:
   push:
@@ -11,6 +22,7 @@ on:
       - '**/lib_deps'
       - 'requirements.txt'
       - 'scripts/ci/run_tests.sh'
+      - '.github/workflows/**'
       - '!SESSION_NOTES.md'
       - '!README.md'
       - '!docs/**'
@@ -25,6 +37,7 @@ on:
       - '**/lib_deps'
       - 'requirements.txt'
       - 'scripts/ci/run_tests.sh'
+      - '.github/workflows/**'
       - '!SESSION_NOTES.md'
       - '!README.md'
       - '!docs/**'
@@ -250,7 +263,7 @@ jobs:
         else
           echo "clang-tidy found in cache, version: $(clang-tidy --version)"
         fi
-        
+
         # Verify installation
         clang-tidy --version
         which clang-tidy
@@ -269,7 +282,7 @@ jobs:
         # Build environments to generate compile_commands.json
         pio run -e sender-tidy --target compiledb || true
         pio run -e receiver-tidy --target compiledb || true
-        
+
         # Verify compilation database exists
         find .pio/build -name "compile_commands.json" -exec echo "Found: {}" \;
 
@@ -282,10 +295,10 @@ jobs:
     - name: Run clang-tidy Analysis
       run: |
         echo "Running clang-tidy static analysis..."
-        
+
         # Set clang-tidy cache directory
         export CLANG_TIDY_CACHE_DIR=.clang-tidy-cache
-        
+
         # Run clang-tidy with caching
         pio check -e sender-tidy --fail-on-defect=medium || echo "clang-tidy sender completed with warnings"
         pio check -e receiver-tidy --fail-on-defect=medium || echo "clang-tidy receiver completed with warnings"
@@ -298,21 +311,21 @@ jobs:
         echo "Date: $(date)" >> analysis_report.txt
         echo "Commit: ${{ github.sha }}" >> analysis_report.txt
         echo "" >> analysis_report.txt
-        
+
         echo "=== clang-tidy Version ===" >> analysis_report.txt
         clang-tidy --version >> analysis_report.txt
         echo "" >> analysis_report.txt
-        
+
         echo "=== Cache Statistics ===" >> analysis_report.txt
         echo "Clang-tidy cache size: $(du -sh .clang-tidy-cache 2>/dev/null || echo '0B')" >> analysis_report.txt
         echo "Build cache size: $(du -sh .pio/build 2>/dev/null || echo '0B')" >> analysis_report.txt
         echo "PlatformIO cache size: $(du -sh ~/.platformio 2>/dev/null || echo '0B')" >> analysis_report.txt
         echo "" >> analysis_report.txt
-        
+
         echo "=== Compilation Database Files ===" >> analysis_report.txt
         find .pio/build -name "compile_commands.json" -exec echo "Found: {}" \; >> analysis_report.txt
         echo "" >> analysis_report.txt
-        
+
         cat analysis_report.txt
 
     - name: Upload Analysis Results
@@ -350,33 +363,33 @@ jobs:
         echo "=== CI Pipeline Performance Report ===" > performance_report.md
         echo "Generated: $(date)" >> performance_report.md
         echo "" >> performance_report.md
-        
+
         echo "## Job Performance" >> performance_report.md
         echo "- **Test Job**: Unit tests with caching" >> performance_report.md
-        echo "- **Build Job**: Multi-environment builds with artifact caching" >> performance_report.md  
+        echo "- **Build Job**: Multi-environment builds with artifact caching" >> performance_report.md
         echo "- **Lint Job**: Static analysis with clang-tidy caching" >> performance_report.md
         echo "" >> performance_report.md
-        
+
         echo "## Caching Strategy" >> performance_report.md
         echo "### PlatformIO Caching" >> performance_report.md
         echo "- Core libraries and dependencies" >> performance_report.md
         echo "- Build artifacts and toolchain" >> performance_report.md
         echo "- Environment-specific library dependencies" >> performance_report.md
         echo "" >> performance_report.md
-        
+
         echo "### clang-tidy Caching" >> performance_report.md
         echo "- LLVM/Clang toolchain binaries" >> performance_report.md
         echo "- Compilation database (compile_commands.json)" >> performance_report.md
         echo "- Analysis cache and intermediate files" >> performance_report.md
         echo "- Build artifacts required for static analysis" >> performance_report.md
         echo "" >> performance_report.md
-        
+
         echo "### Expected Performance Improvements" >> performance_report.md
         echo "- **First run**: Baseline performance (cache miss)" >> performance_report.md
         echo "- **Subsequent runs**: 60-80% faster clang-tidy analysis" >> performance_report.md
         echo "- **Build time**: 40-60% faster with PlatformIO caching" >> performance_report.md
         echo "- **Overall CI time**: 50-70% reduction in total pipeline time" >> performance_report.md
-        
+
         cat performance_report.md
 
     - name: Upload Performance Report
