@@ -15,6 +15,24 @@
 
 ### Session log
 
+#### 2025-01-16 02:45 UTC
+- Context: Resolving merge conflicts between HEAD branch (enhanced IP scrolling) and main branch (basic IP display)
+- Changes:
+  - Resolved merge conflicts in `SESSION_NOTES.md` and `src/main.cpp`
+  - Chose enhanced IP scrolling implementation from HEAD branch for better user experience
+  - Maintained all scrolling functionality: 300ms intervals, IP change detection, horizontal scrolling
+  - Cleaned up duplicate code and merge conflict markers
+  - Committed resolved changes with descriptive commit message
+- Commands run:
+  - `git add -A && git commit -m "fix: resolve merge conflicts in SESSION_NOTES.md and src/main.cpp - choose enhanced IP scrolling implementation"`
+- Files touched:
+  - `src/main.cpp` (resolved merge conflicts, maintained enhanced scrolling)
+  - `SESSION_NOTES.md` (resolved merge conflicts, updated session log)
+- Next steps:
+  - Test the resolved code on physical hardware
+  - Verify IP scrolling works correctly with various IP address lengths
+  - Ensure no compilation errors or linter issues remain
+
 #### 2025-01-16 02:30 UTC
 - Context: Lightning detector project with Heltec V3 boards - implementing WiFi IP address display feature
 - Changes:
@@ -31,8 +49,10 @@
   - Code review and analysis of display functions and WiFi management
   - Implementation via `search_replace` tool for `src/main.cpp`
   - Added scrolling state variables and logic for long IP addresses
+  - Resolved merge conflicts between HEAD and main branches
 - Files touched:
   - `src/main.cpp` (modified `drawStatusBar()` function and added scrolling variables around lines 151-203)
+  - `SESSION_NOTES.md` (resolved merge conflicts)
 - Migrations:
   - N/A (no database changes)
 - Next steps:

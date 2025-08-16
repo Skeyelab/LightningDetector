@@ -201,6 +201,7 @@ static void drawStatusBar() {
         scrolledIP[MAX_DISPLAY_WIDTH] = '\0';
         u8g2.drawStr(xPos, yPos - 10, scrolledIP);
       }
+
       // Display network location
       const char* location = getCurrentNetworkLocation();
       u8g2.drawStr(xPos, yPos, location);
