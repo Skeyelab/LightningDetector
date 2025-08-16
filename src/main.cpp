@@ -111,6 +111,11 @@ static uint32_t lastPacketTime = 0;
 static uint32_t packetCount = 0;
 static uint32_t errorCount = 0;
 
+// Blinking dot state for ping indication
+static uint32_t dotBlinkStartMs = 0;
+static bool dotBlinkActive = false;
+static const uint32_t DOT_BLINK_DURATION_MS = 400; // 200ms on + 200ms off
+
 // Available values for cycling
 // Old arrays removed - using new arrays defined above
 
@@ -181,6 +186,34 @@ static void drawStatusBar() {
 #endif
 }
 
+// Trigger ping dot blink
+static void triggerPingDotBlink() {
+  dotBlinkStartMs = millis();
+  dotBlinkActive = true;
+}
+
+// Draw blinking dot in upper right corner if active
+static void drawPingDot() {
+  if (!dotBlinkActive) return;
+  
+  uint32_t now = millis();
+  uint32_t elapsed = now - dotBlinkStartMs;
+  
+  // Stop blinking after duration
+  if (elapsed >= DOT_BLINK_DURATION_MS) {
+    dotBlinkActive = false;
+    return;
+  }
+  
+  // Blink pattern: on for first 200ms, off for next 200ms
+  bool shouldShow = (elapsed % 400) < 200;
+  
+  if (shouldShow) {
+    // Draw filled circle at coordinates (58, 8) - upper right corner
+    u8g2.drawDisc(58, 8, 2); // x, y, radius
+  }
+}
+
 static void oledMsg(const char* l1, const char* l2 = nullptr, const char* l3 = nullptr) {
   u8g2.clearBuffer();
   u8g2.setFont(u8g2_font_6x10_tr);
@@ -214,6 +247,9 @@ static void oledMsg(const char* l1, const char* l2 = nullptr, const char* l3 = n
 
   // Status bar at the bottom - WiFi and OTA status
   drawStatusBar();
+
+  // Draw blinking dot if ping activity
+  drawPingDot();
 
   u8g2.sendBuffer();
 }
@@ -680,10 +716,8 @@ void loop() {
         int st = radio.transmit(msg);
         if (st == RADIOLIB_ERR_NONE) {
           Serial.printf("[TX] %s OK\n", msg);
-          // Show ping on two lines
-          unsigned long usedSeq = (unsigned long)(seq - 1);
-          char seqLine[20]; snprintf(seqLine, sizeof(seqLine), "seq=%lu", usedSeq);
-          oledMsg("PING", seqLine);
+          // Trigger blinking dot instead of showing PING text
+          triggerPingDotBlink();
         } else {
           char e[24]; snprintf(e, sizeof(e), "err %d", st);
           Serial.printf("[TX] %s FAIL %s\n", msg, e);
@@ -779,10 +813,8 @@ void loop() {
         } else {
           char l2[20]; snprintf(l2, sizeof(l2), "RSSI %.1f", rssi);
           if (rx.startsWith("PING ")) {
-            // Extract seq part from message "PING seq=NNN"
-            const char* seqPtr = strstr(rx.c_str(), "seq=");
-            const char* seqStr = seqPtr ? seqPtr : rx.c_str();
-            oledMsg("PING", seqStr);
+            // Trigger blinking dot instead of showing PING text
+            triggerPingDotBlink();
           } else {
             Serial.printf("[RX] %s | %s | SNR %.1f | PKT:%lu\n", rx.c_str(), l2, snr, packetCount);
             oledMsg("RX", rx.c_str(), l2);

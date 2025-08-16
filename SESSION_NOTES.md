@@ -15,6 +15,27 @@
 
 ### Session log
 
+#### 2025-01-15 21:30 UTC
+- Context: Implemented ERI-16 Linear issue - replaced PING text with blinking dot indicator on OLED display
+- Changes:
+  - Added blinking dot state variables (dotBlinkStartMs, dotBlinkActive, DOT_BLINK_DURATION_MS) in main.cpp
+  - Implemented triggerPingDotBlink() function to start dot animation
+  - Implemented drawPingDot() function with 200ms on/off blinking pattern at coordinates (58, 8)
+  - Integrated drawPingDot() call into oledMsg() function
+  - Replaced TX ping OLED display (lines ~720) with triggerPingDotBlink() call
+  - Replaced RX ping OLED display (lines ~817) with triggerPingDotBlink() call
+  - Updated test file with documentation comment about display behavior change
+- Commands run:
+  - Multiple file edits for blinking dot implementation
+  - Basic compilation test with g++ for app_logic.cpp
+- Files touched:
+  - `src/main.cpp` (added dot functions, modified TX/RX ping logic)
+  - `test/test_app_logic.cpp` (added documentation comment)
+- Next steps:
+  - Test implementation on actual Heltec V3 hardware
+  - Verify dot positioning and timing on real OLED display
+  - Confirm ping functionality still works for debugging/logging
+
 #### 2025-01-15 17:00 UTC
 - Context: GitHub Actions workflow failed with "Permission denied" error when trying to push to gh-pages branch
 - Changes:
