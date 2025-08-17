@@ -55,6 +55,17 @@ void resetMockState() {
     mockState.connectionAttempts = 0;
 }
 
+// Unity test setup and teardown functions
+void setUp(void) {
+    // Initialize before each test
+    resetMockState();
+}
+
+void tearDown(void) {
+    // Clean up after each test
+    resetMockState();
+}
+
 // Test helper: Simulate auto-fallback logic
 bool simulateAutoFallback(int maxNetworks) {
     resetMockState();

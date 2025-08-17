@@ -31,6 +31,15 @@ public:
 
 #define Serial MockSerial
 
+// Unity test setup and teardown functions
+void setUp(void) {
+    // Initialize before each test
+}
+
+void tearDown(void) {
+    // Clean up after each test
+}
+
 // Include WiFi config definitions
 #include "wifi_config.h"
 

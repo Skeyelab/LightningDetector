@@ -19,10 +19,10 @@ run_isolated_test() {
     local test_dir=$2
     local test_file=$3
     local dependencies=$4
-    
+
     echo -e "\n${YELLOW}Running ${test_name} tests...${NC}"
     echo "----------------------------------------"
-    
+
     # Compile the test
     echo "Compiling..."
     if g++ -std=c++17 -D UNIT_TEST -D ARDUINO_MOCK -I src -I test/mocks -I .pio/libdeps/native/Unity/src $dependencies -o test_isolated/${test_dir}/${test_file} test_isolated/${test_dir}/${test_file}.cpp 2>/dev/null; then

@@ -1,7 +1,16 @@
-// Simplified tests for the error handling system (header-only testing)
+// Unit tests for error handling system
 #include <unity.h>
 #include "../src/system/error_handler.h"
 #include <cstring>
+
+// Unity test setup and teardown functions
+void setUp(void) {
+    // Initialize before each test
+}
+
+void tearDown(void) {
+    // Clean up after each test
+}
 
 // Test error enums and constants
 void test_error_enums() {
