@@ -1,4 +1,5 @@
 #include "web_server.h"
+#include "config/role_config.h"
 
 #if defined(ROLE_RECEIVER) || defined(ENABLE_WEB_INTERFACE)
 
@@ -97,6 +98,9 @@ void WebServerManager::handleStatus() {
     doc["free_heap"] = ESP.getFreeHeap();
     doc["core_temperature"] = (int)temperatureRead();
 
+    // Add role information
+    doc["role"] = RoleConfig::isSender() ? "sender" : "receiver";
+
 #if defined(ENABLE_WIFI_OTA)
     doc["wifi_connected"] = (WiFi.status() == WL_CONNECTED);
     if (WiFi.status() == WL_CONNECTED) {
@@ -114,6 +118,8 @@ void WebServerManager::handleStatus() {
 void WebServerManager::handleConfigGet() {
     DynamicJsonDocument doc(1024);
     configManager_.toJson(doc);
+    // Add current role
+    doc["role"] = RoleConfig::isSender() ? "sender" : "receiver";
 
     String json;
     serializeJson(doc, json);
@@ -125,6 +131,20 @@ void WebServerManager::handleConfigPost() {
     if (!readJsonBody(server_, doc)) {
         server_.send(400, "application/json", "{\"error\":\"Invalid JSON\"}");
         return;
+    }
+
+    // Handle role change if provided
+    if (doc.containsKey("role")) {
+        String roleStr = doc["role"].as<String>();
+        roleStr.toLowerCase();
+        if (roleStr == "sender") {
+            RoleConfig::setRole(RoleConfig::Role::Sender);
+        } else if (roleStr == "receiver") {
+            RoleConfig::setRole(RoleConfig::Role::Receiver);
+        } else {
+            server_.send(400, "application/json", "{\"error\":\"Invalid role\"}");
+            return;
+        }
     }
 
     if (!configManager_.updateFromJson(doc)) {
