@@ -12,10 +12,6 @@ void tearDown(void) {
     // Clean up after each test
 }
 
-// Mock Arduino functions for testing
-unsigned long mockMillis = 0;
-unsigned long millis() { return mockMillis; }
-
 // Mock delay function
 void delay(int ms) {
     (void)ms; // Suppress unused parameter warning
