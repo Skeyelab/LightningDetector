@@ -20,21 +20,21 @@ run_comprehensive_test() {
     local test_file=$2
     local dependencies=$3
     local include_paths=$4
-    
+
     echo -e "\n${YELLOW}Running ${test_name} tests...${NC}"
     echo "----------------------------------------"
-    
+
     # Create temporary test directory
     local temp_test_dir="temp_test_${test_name// /_}"
     mkdir -p "$temp_test_dir"
-    
+
     # Copy test file to temp directory
     cp "$test_file" "$temp_test_dir/"
-    
+
     # Compile the test
     echo "Compiling..."
     local compile_cmd="g++ -std=c++17 -D UNIT_TEST -D ARDUINO_MOCK $include_paths $dependencies -o $temp_test_dir/test_runner $temp_test_dir/$(basename $test_file)"
-    
+
     if eval "$compile_cmd" 2>/dev/null; then
         echo "Running..."
         if ./$temp_test_dir/test_runner; then

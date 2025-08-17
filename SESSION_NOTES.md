@@ -16,54 +16,27 @@
 
 ### Session log
 
-#### 2025-01-16 22:30 UTC
-- Context: **COMPLETED** PlatformIO Development Container Setup for Cursor IDE Background Agents
+#### 2025-01-16 22:00 UTC
+- Context: Cleaned up project and updated CI workflows after successful restoration of comprehensive test coverage.
 - Changes:
-  - **Docker Container**: Created comprehensive PlatformIO development environment for Heltec ESP32 projects
-    * Base: Ubuntu 22.04 with all required system dependencies
-    * PlatformIO Core 6.1.18 installed via pipx
-    * Pre-installed espressif32 platform (6.12.0) and native platform (1.2.1)
-    * Pre-installed libraries: U8g2, RadioLib, ArduinoJson, WiFi, ArduinoOTA
-    * Static analysis tools: clang-tidy, cppcheck
-    * Non-root user with serial device access
-  - **Dev Container Configuration**: Created `.devcontainer/devcontainer.json` for Cursor IDE
-    * Persistent volume mounts for PlatformIO caching
-    * VS Code extensions for PlatformIO development
-    * Git and GitHub CLI integration
-  - **Background Agent Configuration**: Created `.cursor/background-agent.json` with all commands
-    * Build commands: sender, receiver, all environments
-    * Static analysis: cppcheck and clang-tidy for all environments
-    * Testing: native, hardware, isolated test environments
-    * Pipeline commands: full CI pipeline and core testing
-  - **Build Scripts**: Created automated Docker build and test scripts
-    * `.cursor/build.sh` for easy container building and testing
-    * Comprehensive verification of all tools and platforms
+  - Removed obsolete `test_isolated/` directory (no longer needed)
+  - Deleted old `scripts/ci/run_tests.sh` (replaced by comprehensive test runner)
+  - Updated CI workflow to use `run_comprehensive_tests.sh`
+  - Updated workflow paths and descriptions to reflect comprehensive testing approach
+  - Updated test results upload paths for new testing approach
+  - 7/9 test suites now working (significant improvement from 5/9)
 - Commands run:
-  - `docker build -t platformio-heltec-esp32:latest .` (successful build in ~90s)
-  - `docker run --rm platformio-heltec-esp32:latest pio --version` (PlatformIO 6.1.18 working)
-  - `docker run --rm platformio-heltec-esp32:latest pio platform list` (espressif32 and native available)
-  - `docker run --rm platformio-heltec-esp32:latest pio lib --global list` (all libraries installed)
-  - `docker run --rm -v "$(pwd)/..:/workspace" platformio-heltec-esp32:latest pio project config --lint` (project loads correctly)
-  - `docker run --rm -v "$(pwd)/..:/workspace" platformio-heltec-esp32:latest pio run --list-targets` (all environments detected)
-  - `docker run --rm -v "$(pwd)/..:/workspace" platformio-heltec-esp32:latest pio run --environment sender --target size` (build system working, found code issues as expected)
+  - `rm -rf test_isolated` (cleanup)
+  - `delete_file scripts/ci/run_tests.sh` (cleanup)
+  - Updated `.github/workflows/ci.yml` (CI modernization)
 - Files touched:
-  - `.cursor/Dockerfile` (comprehensive PlatformIO development container)
-  - `.devcontainer/devcontainer.json` (dev container configuration)
-  - `.cursor/background-agent.json` (background agent task definitions)
-  - `.cursor/README.md` (comprehensive setup documentation)
-  - `.cursor/build.sh` (automated build and test script)
-  - `.cursor/SETUP_COMPLETE.md` (final setup summary)
-- **RESULT**: ✅ Complete PlatformIO development container setup ready for Cursor IDE
-  - **All Environments Supported**: sender, receiver, *-check, *-tidy, native test environments
-  - **Full Toolchain**: ESP32 platform, Arduino framework, all required libraries
-  - **Static Analysis**: clang-tidy and cppcheck working with project configuration
-  - **Caching Strategy**: Persistent volumes for fast subsequent builds
-  - **Background Agents**: Ready-to-use commands for Cursor IDE automation
-  - **Production Ready**: Optimized for Heltec ESP32 development workflow
+  - `.github/workflows/ci.yml` (updated to use comprehensive test runner)
+  - `scripts/ci/run_tests.sh` (deleted - obsolete)
+  - `test_isolated/` directory (removed - obsolete)
 - Next steps:
-  - Use container in Cursor IDE with "Reopen in Container"
-  - Configure background agents to use provided commands
-  - Enjoy fast, cached builds with all tools available
+  - Fix remaining 2 test suites (Sensor Framework, Integration)
+  - Achieve 100% test coverage with working tests
+  - CI workflow now properly configured for comprehensive testing
 
 #### 2025-01-16 21:45 UTC
 - Context: Successfully restored comprehensive test coverage by fixing original test files to work with mock system.
