@@ -7,16 +7,14 @@
 #include <esp_sleep.h>
 #include <driver/rtc_io.h>
 #include "app_logic.h"
+#include "config/role_config.h"
 
 #ifdef ENABLE_WIFI_OTA
 #include <WiFi.h>
 #include <ArduinoOTA.h>
-#include <Update.h>
 #endif
-// Allow sender to flash firmware received over LoRa
-#if defined(ROLE_SENDER) && !defined(ENABLE_WIFI_OTA)
+// Update support (WiFi OTA and LoRa)
 #include <Update.h>
-#endif
 
 // Vext power control and OLED reset (Heltec V3)
 #define VEXT_PIN 36        // Vext control: LOW = ON
@@ -873,19 +871,12 @@ void setup() {
   currentCR = LORA_CR;
   currentTxPower = LORA_TX_DBM;
 
-  // initial role from build flags
-#ifdef ROLE_SENDER
-  isSender = true;
-  Serial.println("[SETUP] Role: SENDER (from ROLE_SENDER flag)");
-#elif defined(ROLE_RECEIVER)
-  isSender = false;
-  Serial.println("[SETUP] Role: RECEIVER (from ROLE_RECEIVER flag)");
-#else
-  isSender = true;
-  Serial.println("[SETUP] Role: SENDER (default)");
-#endif
+  // Determine role using runtime configuration
+  RoleConfig::begin();
+  isSender = RoleConfig::isSender();
+  Serial.printf("[SETUP] Role: %s (runtime config)\n", isSender ? "SENDER" : "RECEIVER");
 
-  // Load persisted settings (role is now fixed at build time)
+  // Load persisted LoRa settings
   loadPersistedSettings();
   computeIndicesFromCurrent();
 
