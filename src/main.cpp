@@ -898,13 +898,19 @@ void setup() {
   // Initialize WiFi and OTA for receivers
 #ifdef ENABLE_WIFI_OTA
   if (!isSender) {
+    Serial.println("[MAIN] Initializing WiFi for receiver...");
     initWiFi();
+    Serial.printf("[MAIN] WiFi connection status: %s\n", WiFi.status() == WL_CONNECTED ? "CONNECTED" : "DISCONNECTED");
+    Serial.printf("[MAIN] wifiConnected variable: %s\n", wifiConnected ? "TRUE" : "FALSE");
     if (wifiConnected) {
       initOTA();
       oledMsg("WiFi + OTA", "Ready");
+      // Start web interface server only when WiFi is connected
+      Serial.println("[MAIN] Starting web server...");
+      webServerManager.begin();
+    } else {
+      Serial.println("[MAIN] WiFi not connected, skipping web server start");
     }
-    // Start web interface server regardless of WiFi connection status
-    webServerManager.begin();
   }
 #endif
 
@@ -927,10 +933,17 @@ void loop() {
   static uint32_t lastRxMs = 0;
   uint32_t now = millis();
 
-  // Handle web server requests if receiver role
-  if (!isSender) {
+  // Handle web server requests if receiver role and WiFi connected
+#ifdef ENABLE_WIFI_OTA
+  if (!isSender && WiFi.status() == WL_CONNECTED) {
+    static uint32_t lastWebDebug = 0;
+    if (millis() - lastWebDebug > 10000) { // Debug every 10 seconds
+      Serial.printf("[MAIN] Calling webServerManager.loop(), WiFi status: %s\n", WiFi.status() == WL_CONNECTED ? "CONNECTED" : "DISCONNECTED");
+      lastWebDebug = millis();
+    }
     webServerManager.loop();
   }
+#endif
 
   // Check button more frequently
   updateButton();

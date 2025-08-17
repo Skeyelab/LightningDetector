@@ -17,9 +17,41 @@ static String getContentType(const String &path) {
 WebServerManager webServerManager;
 
 bool WebServerManager::begin() {
+    Serial.println("[WEB] Starting web server...");
+
+    // Try to mount SPIFFS
     if (!SPIFFS.begin(true)) {
-        Serial.println("[WEB] Failed to mount SPIFFS");
+        Serial.println("[WEB] Failed to mount SPIFFS, trying to format...");
+        if (!SPIFFS.format()) {
+            Serial.println("[WEB] SPIFFS format failed, web server cannot start");
+            return false;
+        }
+        if (!SPIFFS.begin(true)) {
+            Serial.println("[WEB] SPIFFS mount failed after format, web server cannot start");
+            return false;
+        }
+    }
+    Serial.println("[WEB] SPIFFS mounted successfully");
+
+    // List files in SPIFFS for debugging
+    File root = SPIFFS.open("/");
+    if (!root) {
+        Serial.println("[WEB] Failed to open SPIFFS root directory");
         return false;
+    }
+
+    File file = root.openNextFile();
+    Serial.println("[WEB] Files in SPIFFS:");
+    int fileCount = 0;
+    while (file) {
+        Serial.printf("  %s (%d bytes)\n", file.name(), file.size());
+        file = root.openNextFile();
+        fileCount++;
+    }
+    root.close();
+
+    if (fileCount == 0) {
+        Serial.println("[WEB] WARNING: No files found in SPIFFS!");
     }
 
     // Load configuration (ensure defaults)
@@ -43,6 +75,11 @@ void WebServerManager::registerRoutes() {
     server_.on("/", HTTP_GET, [this]() {
         server_.sendHeader("Location", "/index.html", true);
         server_.send(302, "text/plain", "");
+    });
+
+    // Simple test endpoint
+    server_.on("/test", HTTP_GET, [this]() {
+        server_.send(200, "text/plain", "Web server is working!");
     });
 
     server_.on("/api/v1/status", HTTP_GET, [this]() { handleStatus(); });
@@ -118,16 +155,22 @@ void WebServerManager::handleWifiPost() {
 
 void WebServerManager::handleNotFound() {
     String path = server_.uri();
+    Serial.printf("[WEB] 404 - Requested: %s\n", path.c_str());
+
     if (path.endsWith("/")) path += "index.html";
 
+    Serial.printf("[WEB] Looking for file: %s\n", path.c_str());
     if (SPIFFS.exists(path)) {
+        Serial.printf("[WEB] File found: %s\n", path.c_str());
         File file = SPIFFS.open(path, "r");
         if (file) {
+            Serial.printf("[WEB] Serving file: %s (%d bytes)\n", path.c_str(), file.size());
             server_.streamFile(file, getContentType(path));
             file.close();
             return;
         }
     }
+    Serial.printf("[WEB] File not found: %s\n", path.c_str());
     server_.send(404, "text/plain", "Not Found");
 }
 
