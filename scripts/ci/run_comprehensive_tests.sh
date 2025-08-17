@@ -63,8 +63,9 @@ passed_tests=0
 failed_tests=0
 
 # Common include paths and dependencies
-COMMON_INCLUDES="-I src -I test/mocks -I .pio/libdeps/native/Unity/src"
-COMMON_DEPS="test/mocks/Arduino.cpp test/mocks/esp_mocks.cpp .pio/libdeps/native/Unity/src/unity.c"
+UNITY_STUB_DIR="test/mocks/unity_stub"
+COMMON_INCLUDES="-I src -I test/mocks -I $UNITY_STUB_DIR"
+COMMON_DEPS="test/mocks/Arduino.cpp test/mocks/esp_mocks.cpp $UNITY_STUB_DIR/unity.c"
 
 echo -e "\n${YELLOW}Running Comprehensive Tests (Individual Compilation)${NC}"
 echo "=========================================="
