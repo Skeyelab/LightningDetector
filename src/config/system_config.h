@@ -29,6 +29,12 @@ namespace SystemConfig {
         // Future actuator pins
         constexpr uint8_t LED_DATA = 2;         // WS2812 LED strip data
         constexpr uint8_t BUZZER = 3;           // Buzzer/speaker output
+
+        // GPS pins
+        constexpr uint8_t GPS_TX = 43;          // UART1 TX for GPS
+        constexpr uint8_t GPS_RX = 44;          // UART1 RX for GPS
+        constexpr uint8_t GPS_ENABLE = 3;       // GPS power control pin
+        constexpr uint8_t GPS_PPS = 255;        // PPS pin (not connected)
     }
 
     // LoRa configuration
@@ -102,5 +108,10 @@ namespace SystemConfig {
         constexpr uint16_t COUNT = 16;          // Number of LEDs in ring
         constexpr uint8_t BRIGHTNESS = 128;     // Default brightness (0-255)
         constexpr uint32_t ANIMATION_SPEED_MS = 50;
+    }
+
+    // GPS configuration
+    namespace GPS {
+        constexpr uint32_t UPDATE_INTERVAL_MS = 1000; // 1 Hz
     }
 }
