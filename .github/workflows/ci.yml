@@ -1,13 +1,13 @@
 name: CI/CD Pipeline (Consolidated - Replaces build.yml)
 
 # This workflow consolidates all CI/CD functionality:
-# - Unit testing (replaces separate test workflows)
+# - Comprehensive unit testing with full coverage (replaces separate test workflows)
 # - Building (replaces build.yml workflow)
 # - Static analysis (replaces separate linting workflows)
 # - Performance monitoring
 #
 # The build.yml workflow has been removed to eliminate duplication
-# 
+#
 # IMPORTANT: .github/workflows/** is included in paths to ensure workflow
 # changes trigger the CI pipeline for self-validation
 
@@ -21,7 +21,7 @@ on:
       - '**/platformio.ini'
       - '**/lib_deps'
       - 'requirements.txt'
-      - 'scripts/ci/run_tests.sh'
+      - 'scripts/ci/run_comprehensive_tests.sh'
       - '.github/workflows/**'
       - '!SESSION_NOTES.md'
       - '!README.md'
@@ -36,7 +36,7 @@ on:
       - '**/platformio.ini'
       - '**/lib_deps'
       - 'requirements.txt'
-      - 'scripts/ci/run_tests.sh'
+      - 'scripts/ci/run_comprehensive_tests.sh'
       - '.github/workflows/**'
       - '!SESSION_NOTES.md'
       - '!README.md'
@@ -82,18 +82,18 @@ jobs:
         python -m pip install --upgrade pip
         pip install platformio
 
-    - name: Run Comprehensive Unit Tests
+    - name: Run Comprehensive Unit Tests (Full Coverage)
       run: |
-        chmod +x scripts/ci/run_tests.sh
-        ./scripts/ci/run_tests.sh
+        chmod +x scripts/ci/run_comprehensive_tests.sh
+        ./scripts/ci/run_comprehensive_tests.sh
 
     - name: Upload Test Results
       uses: actions/upload-artifact@v4
       if: always()
       with:
-        name: test-results
+        name: comprehensive-test-results
         path: |
-          .pio/build/native/
+          temp_test_*/
           test_output.log
         retention-days: 5
 

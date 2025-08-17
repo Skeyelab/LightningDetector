@@ -5,6 +5,15 @@
 #include <string>
 #include "../src/app_logic.h"
 
+// Unity test setup and teardown functions
+void setUp(void) {
+    // Initialize before each test
+}
+
+void tearDown(void) {
+    // Clean up after each test
+}
+
 struct ButtonTest {
   std::string name;
   uint32_t duration;

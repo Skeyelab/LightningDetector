@@ -1,3 +1,4 @@
+// Unit tests for modular architecture components
 #include <unity.h>
 #include "../src/config/system_config.h"
 #include "../src/system/error_handler.h"
@@ -6,6 +7,16 @@
 #include "../src/actuators/actuator_interface.h"
 #include "../src/communication/communication_interface.h"
 #include "../src/system/state_machine.h"
+#include <cstring>
+
+// Unity test setup and teardown functions
+void setUp(void) {
+    // Initialize before each test
+}
+
+void tearDown(void) {
+    // Clean up after each test
+}
 
 // Test configuration constants and pin definitions
 void test_system_config_pins() {

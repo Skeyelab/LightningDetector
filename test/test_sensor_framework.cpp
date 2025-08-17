@@ -3,9 +3,14 @@
 #include "../src/sensors/sensor_interface.h"
 #include <cstring>
 
-// Mock Arduino functions for testing
-unsigned long mockMillis = 0;
-unsigned long millis() { return mockMillis; }
+// Unity test setup and teardown functions
+void setUp(void) {
+    // Initialize before each test
+}
+
+void tearDown(void) {
+    // Clean up after each test
+}
 
 // Mock delay function
 void delay(int ms) {
