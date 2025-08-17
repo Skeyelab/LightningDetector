@@ -7,6 +7,7 @@
 #include <esp_sleep.h>
 #include <driver/rtc_io.h>
 #include "app_logic.h"
+#include "hardware/hardware_abstraction.h"
 
 #ifdef ENABLE_WIFI_OTA
 #include <WiFi.h>
@@ -257,6 +258,21 @@ static void drawStatusBar() {
     }
   }
 #endif
+
+  // --- Battery Level ---
+  {
+    uint8_t batt = HardwareAbstraction::Power::getBatteryPercent();
+    char battStr[8];
+    snprintf(battStr, sizeof(battStr), "%u%%", batt);
+
+    // Right-align battery text within 64px width screen
+    int textWidth = strlen(battStr) * 6; // 6px per char (5x7 font +1 spacing)
+    int drawX = 62 - textWidth;          // leave 2px margin
+    if (drawX < xPos) {
+      drawX = xPos; // Avoid overlap with previous status items
+    }
+    u8g2.drawStr(drawX, yPos, battStr);
+  }
 }
 
 // Trigger ping dot flash
@@ -836,6 +852,11 @@ void setup() {
   Serial.begin(115200);
   delay(500);
   Serial.println("\n=== LtngDet LoRa + OLED (Heltec V3) ===");
+
+  // Initialize common hardware abstraction (ADC, timers, etc.)
+  if (HardwareAbstraction::initialize() != HardwareAbstraction::Result::SUCCESS) {
+    Serial.println("[ERROR] HardwareAbstraction init failed");
+  }
 
   // Check if we're waking up from deep sleep
   restoreStateAfterWakeup();

@@ -68,6 +68,11 @@ namespace HardwareAbstraction {
             return Result::ERROR_INIT_FAILED;
         }
 
+        // Initialize ADC (for battery monitoring and analog sensors)
+        if (ADC::initialize() != Result::SUCCESS) {
+            return Result::ERROR_INIT_FAILED;
+        }
+
         g_initialized = true;
         return Result::SUCCESS;
         #else
@@ -876,12 +881,13 @@ namespace HardwareAbstraction {
 
         float getBatteryVoltage() {
             #ifdef ARDUINO
-            // Heltec V3 has battery voltage divider on ADC pin
-            // This is a simplified implementation - actual pin may vary
-            uint16_t raw_value;
-            if (ADC::read(37, raw_value) == Result::SUCCESS) {
-                // Assuming 2:1 voltage divider for battery monitoring
-                return (raw_value / 4095.0f) * 3.3f * 2.0f;
+            // Heltec V3 has battery voltage divider on GPIO1 (ADC1_CH0)
+            constexpr uint8_t kBatteryAdcPin = 1;          // GPIO1 -> ADC1_CH0
+            constexpr float kAdcMultiplier   = 4.9f;       // (R1+R2)/R2 for onboard divider
+
+            float voltageOnPin = 0.0f;
+            if (ADC::readVoltage(kBatteryAdcPin, voltageOnPin) == Result::SUCCESS) {
+                return voltageOnPin * kAdcMultiplier;      // Scale back to actual battery voltage
             }
             #endif
             return 0.0f;
