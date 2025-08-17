@@ -1,6 +1,24 @@
 #include <iostream>
 #include <cassert>
 #include "../src/app_logic.h"
+#include "../src/sensors/gps_sensor.h"
+
+// Stub GPS namespace functions for unit testing
+namespace GPS {
+    static Data stubData = {};
+    static bool stubHasFix = false;
+
+    bool hasGPSFix() { return stubHasFix; }
+    const Data& getGPSData() { return stubData; }
+}
+
+// Helper to set stub GPS data
+static void setStubGps(double lat, double lon, float alt) {
+    GPS::stubData.latitude = lat;
+    GPS::stubData.longitude = lon;
+    GPS::stubData.altitude = alt;
+    GPS::stubHasFix = true;
+}
 
 void test_classifyPress() {
   std::cout << "Testing classifyPress..." << std::endl;
@@ -43,9 +61,17 @@ void test_cycleIndex() {
 void test_formatTxMessage() {
   std::cout << "Testing formatTxMessage..." << std::endl;
 
-  std::string msg = formatTxMessage(123);
-  assert(msg == "PING seq=123");
-  std::cout << "  ✓ formatTxMessage case passed" << std::endl;
+  // Case 1: No GPS fix
+  GPS::stubHasFix = false;
+  std::string msgNoFix = formatTxMessage(123);
+  assert(msgNoFix == "PING seq=123 gps=NO_FIX");
+  std::cout << "  ✓ NO_FIX case passed" << std::endl;
+
+  // Case 2: With GPS fix
+  setStubGps(37.123456, -122.654321, 45.2f);
+  std::string msgFix = formatTxMessage(124);
+  assert(msgFix.find("PING seq=124 lat=37.123456 lon=-122.654321 alt=45.2") == 0);
+  std::cout << "  ✓ GPS fix case passed" << std::endl;
 }
 
 int main() {

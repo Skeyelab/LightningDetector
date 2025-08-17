@@ -7,6 +7,7 @@
 #include <esp_sleep.h>
 #include <driver/rtc_io.h>
 #include "app_logic.h"
+#include "sensors/gps_sensor.h"
 
 #ifdef ENABLE_WIFI_OTA
 #include <WiFi.h>
@@ -85,6 +86,8 @@ SX1262 radio = new Module(PIN_LORA_NSS, PIN_LORA_DIO1, PIN_LORA_RST, PIN_LORA_BU
 static Preferences prefs;
 
 static bool isSender = true;
+static bool gpsInitialized = false;
+static uint32_t lastGpsUpdate = 0;
 static uint32_t seq = 0;
 static uint32_t lastButtonMs = 0;
 static int lastButtonState = HIGH;
@@ -894,6 +897,15 @@ void setup() {
 
   initRadioOrHalt();
 
+  // Initialize GPS sensor
+  auto gpsRes = GPS::initializeGPS(GPS::getWirelessTrackerV11Config());
+  if (gpsRes == HardwareAbstraction::Result::SUCCESS) {
+    gpsInitialized = true;
+    Serial.println("[GPS] Initialized successfully");
+  } else {
+    Serial.printf("[GPS] Init failed (code %d)\n", static_cast<int>(gpsRes));
+  }
+
   // Initialize WiFi and OTA for receivers
 #ifdef ENABLE_WIFI_OTA
   if (!isSender) {
@@ -923,6 +935,12 @@ void loop() {
   static uint32_t lastTxMs = 0;
   static uint32_t lastRxMs = 0;
   uint32_t now = millis();
+
+  // Periodically update GPS data
+  if (gpsInitialized && (now - lastGpsUpdate >= 1000)) {
+    GPS::g_gps.update();
+    lastGpsUpdate = now;
+  }
 
   // Check button more frequently
   updateButton();
@@ -973,18 +991,17 @@ void loop() {
     } else {
       // Non-blocking TX every 2 seconds
       if (now - lastTxMs >= 2000) {
-        char msg[48];
-        snprintf(msg, sizeof(msg), "PING seq=%lu", (unsigned long)seq++);
-        int st = radio.transmit(msg);
+        std::string msgStr = formatTxMessage(seq++);
+        int st = radio.transmit(msgStr.c_str());
         if (st == RADIOLIB_ERR_NONE) {
-          Serial.printf("[TX] %s OK\n", msg);
+          Serial.printf("[TX] %s OK\n", msgStr.c_str());
           Serial.printf("[DEBUG] TX seq counter at: %lu\n", (unsigned long)(seq-1));
           // Trigger blinking dot instead of showing PING text
           triggerPingDotBlink();
         } else {
           char e[24]; snprintf(e, sizeof(e), "err %d", st);
-          Serial.printf("[TX] %s FAIL %s\n", msg, e);
-          oledMsg("TX FAIL", msg, e);
+          Serial.printf("[TX] %s FAIL %s\n", msgStr.c_str(), e);
+          oledMsg("TX FAIL", msgStr.c_str(), e);
         }
         lastTxMs = now;
       }
@@ -1076,14 +1093,22 @@ void loop() {
         } else {
           char l2[20]; snprintf(l2, sizeof(l2), "RSSI %.1f", rssi);
           if (rx.startsWith("PING ")) {
-            // Extract and log the sequence number for verification
-            const char* seqPtr = strstr(rx.c_str(), "seq=");
-            if (seqPtr) {
-              unsigned long rxSeq = strtoul(seqPtr + 4, nullptr, 10);
-              Serial.printf("[DEBUG] RX parsed seq: %lu\n", rxSeq);
+            // Parse sequence number and optional GPS data
+            unsigned long rxSeq = 0;
+            double lat = 0.0, lon = 0.0;
+            float alt = 0.0f;
+            int parsedGps = sscanf(rx.c_str(), "PING seq=%lu lat=%lf lon=%lf alt=%f", &rxSeq, &lat, &lon, &alt);
+            if (parsedGps == 4) {
+              Serial.printf("[RX] PING seq=%lu lat=%.6f lon=%.6f alt=%.1f | %s | SNR %.1f | PKT:%lu\n", rxSeq, lat, lon, alt, l2, snr, packetCount);
+            } else if (strstr(rx.c_str(), "gps=NO_FIX") != nullptr && sscanf(rx.c_str(), "PING seq=%lu", &rxSeq) == 1) {
+              Serial.printf("[RX] PING seq=%lu gps=NO_FIX | %s | SNR %.1f | PKT:%lu\n", rxSeq, l2, snr, packetCount);
+            } else {
+              const char* seqPtr = strstr(rx.c_str(), "seq=");
+              if (seqPtr) {
+                rxSeq = strtoul(seqPtr + 4, nullptr, 10);
+              }
+              Serial.printf("[RX] %s | %s | SNR %.1f | PKT:%lu\n", rx.c_str(), l2, snr, packetCount);
             }
-            // Log ping reception to serial console
-            Serial.printf("[RX] %s | %s | SNR %.1f | PKT:%lu\n", rx.c_str(), l2, snr, packetCount);
             // Trigger blinking dot instead of showing PING text
             triggerPingDotBlink();
           } else {
