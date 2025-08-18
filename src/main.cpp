@@ -6,9 +6,12 @@
 #include <Preferences.h>
 #include <esp_sleep.h>
 #include <driver/rtc_io.h>
+#include <nvs_flash.h>
+#include <esp_err.h>
 #include "app_logic.h"
 #include "config/device_config.h"
 #include "config/system_config.h"
+#include "hardware/hardware_abstraction.h"
 
 #ifdef ENABLE_WIFI_OTA
 #include <WiFi.h>
@@ -85,7 +88,7 @@ static uint32_t firmwareVersion = 0x010000; // Version 1.0.0
 #endif
 
 SX1262 radio = new Module(PIN_LORA_NSS, PIN_LORA_DIO1, PIN_LORA_RST, PIN_LORA_BUSY);
-static Preferences prefs;
+// Preferences will be created locally when needed, after NVS is ready
 
 static bool isSender = true;
 static uint32_t seq = 0;
@@ -170,8 +173,12 @@ static void enterDeepSleep();
 static void configureWakeupSources();
 static void restoreStateAfterWakeup();
 
-// Full-screen ping flash function
+// Display functions
 static void drawFullScreenPingFlash();
+static void drawStatusBar();
+static void drawPingDot();
+
+
 
 // IP address scrolling state
 static String currentIP = "";
@@ -186,6 +193,40 @@ static const uint32_t INTERACTIVE_TIMEOUT_MS = 30000; // 30 seconds to return to
 static uint32_t lastButtonPressTime = 0;
 static bool isInIdleMode = false;
 static uint32_t idleModeStartTime = 0;
+
+// Full-screen ping flash function implementation
+static void drawFullScreenPingFlash() {
+  // Check if device has OLED display
+  if (!DeviceConfig::DeviceManager::getCurrentCapabilities().hasOLED) {
+    return;
+  }
+
+  if (!isInIdleMode) return;
+
+  // Clear the entire screen
+  u8g2.clearBuffer();
+
+  // Draw a large, centered ping indicator
+  u8g2.setFont(u8g2_font_ncenB14_tr);
+  u8g2.setDrawColor(1);
+
+  // Calculate center position
+  int textWidth = u8g2.getStrWidth("PING");
+  int x = (u8g2.getDisplayWidth() - textWidth) / 2;
+  int y = (u8g2.getDisplayHeight() + 14) / 2; // +14 for font height
+
+  // Draw "PING" text
+  u8g2.drawStr(x, y, "PING");
+
+  // Draw a large circle around it
+  int centerX = u8g2.getDisplayWidth() / 2;
+  int centerY = u8g2.getDisplayHeight() / 2;
+  int radius = 25;
+  u8g2.drawCircle(centerX, centerY, radius);
+
+  // Send to display
+  u8g2.sendBuffer();
+}
 
 // RTC memory for deep sleep state preservation
 RTC_DATA_ATTR uint32_t sleepCount = 0;
@@ -281,6 +322,11 @@ static void triggerPingDotBlink() {
 
 // Draw ping flash dot if active
 static void drawPingDot() {
+  // Check if device has OLED display
+  if (!DeviceConfig::DeviceManager::getCurrentCapabilities().hasOLED) {
+    return;
+  }
+
   if (!dotBlinkActive) return;
 
   uint32_t now = millis();
@@ -384,32 +430,60 @@ static void computeIndicesFromCurrent() {
 }
 
 static void savePersistedSettings() {
-  prefs.begin("LtngDet", false);
-  prefs.putFloat("freq", currentFreq);
-  prefs.putFloat("bw", currentBW);
-  prefs.putInt("sf", currentSF);
-  prefs.putInt("cr", currentCR);
-  prefs.putInt("tx", currentTxPower);
-  prefs.end();
+  // Ensure NVS is initialized before using Preferences
+  esp_err_t ret = nvs_flash_init();
+  if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+    ESP_ERROR_CHECK(nvs_flash_erase());
+    ret = nvs_flash_init();
+  }
+  if (ret != ESP_OK) {
+    Serial.printf("Preferences: NVS init failed: %s\n", esp_err_to_name(ret));
+    // Continue anyway, but preferences may not work
+    return;
+  }
+
+  Preferences* prefs = new Preferences();
+  prefs->begin("LtngDet", false);
+  prefs->putFloat("freq", currentFreq);
+  prefs->putFloat("bw", currentBW);
+  prefs->putInt("sf", currentSF);
+  prefs->putInt("cr", currentCR);
+  prefs->putInt("tx", currentTxPower);
+  prefs->end();
+  delete prefs; // Clean up the local Preferences object
 }
 
 // Role persistence removed - device role is now fixed at build time
 
 static void loadPersistedSettings() {
-  prefs.begin("LtngDet", true);
-  bool haveFreq = prefs.isKey("freq");
-  bool haveBW = prefs.isKey("bw");
-  bool haveSF = prefs.isKey("sf");
-  bool haveCR = prefs.isKey("cr");
-  bool haveTX = prefs.isKey("tx");
+  // Ensure NVS is initialized before using Preferences
+  esp_err_t ret = nvs_flash_init();
+  if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+    ESP_ERROR_CHECK(nvs_flash_erase());
+    ret = nvs_flash_init();
+  }
+  if (ret != ESP_OK) {
+    Serial.printf("Preferences: NVS init failed: %s\n", esp_err_to_name(ret));
+    // Continue anyway, but preferences may not work
+    return;
+  }
 
-  if (haveFreq) currentFreq = prefs.getFloat("freq", currentFreq);
-  if (haveBW) currentBW = prefs.getFloat("bw", currentBW);
-  if (haveSF) currentSF = prefs.getInt("sf", currentSF);
-  if (haveCR) currentCR = prefs.getInt("cr", currentCR);
-  if (haveTX) currentTxPower = prefs.getInt("tx", currentTxPower);
+  Preferences* prefs = new Preferences();
+  prefs->begin("LtngDet", true);
+  bool haveFreq = prefs->isKey("freq");
+  bool haveBW = prefs->isKey("bw");
+  bool haveSF = prefs->isKey("sf");
+  bool haveCR = prefs->isKey("cr");
+  bool haveTX = prefs->isKey("tx");
+
+  if (haveFreq) currentFreq = prefs->getFloat("freq", currentFreq);
+  if (haveBW) currentBW = prefs->getFloat("bw", currentBW);
+  if (haveSF) currentSF = prefs->getInt("sf", currentSF);
+  if (haveCR) currentCR = prefs->getInt("cr", currentCR);
+  if (haveTX) currentTxPower = prefs->getInt("tx", currentTxPower);
   // Role is no longer loaded from preferences - fixed at build time
-  prefs.end();
+  prefs->end();
+  delete prefs; // Clean up the local Preferences object
 }
 
 static void initDisplay() {
@@ -782,35 +856,6 @@ static void checkIdleMode() {
   }
 }
 
-// Full-screen ping flash function
-static void drawFullScreenPingFlash() {
-  if (!isInIdleMode) return;
-
-  // Clear the entire screen
-  u8g2.clearBuffer();
-
-  // Draw a large, centered ping indicator
-  u8g2.setFont(u8g2_font_ncenB14_tr);
-  u8g2.setDrawColor(1);
-
-  // Calculate center position
-  int textWidth = u8g2.getStrWidth("PING");
-  int x = (u8g2.getDisplayWidth() - textWidth) / 2;
-  int y = (u8g2.getDisplayHeight() + 14) / 2; // +14 for font height
-
-  // Draw "PING" text
-  u8g2.drawStr(x, y, "PING");
-
-  // Draw a large circle around it
-  int centerX = u8g2.getDisplayWidth() / 2;
-  int centerY = u8g2.getDisplayHeight() / 2;
-  int radius = 25;
-  u8g2.drawCircle(centerX, centerY, radius);
-
-  // Send to display
-  u8g2.sendBuffer();
-}
-
 static void enterDeepSleep() {
   Serial.println("[SLEEP] Entering deep sleep mode...");
 
@@ -863,6 +908,14 @@ void setup() {
   Serial.begin(115200);
   delay(500);
 
+  // Initialize hardware abstraction layer first (includes NVS)
+  if (HardwareAbstraction::initialize() != HardwareAbstraction::Result::SUCCESS) {
+    Serial.println("[SETUP] Hardware abstraction initialization failed!");
+    // Continue anyway, but some features may not work
+  } else {
+    Serial.println("[SETUP] Hardware abstraction initialized successfully");
+  }
+
   // Initialize NVS first
   esp_err_t ret = nvs_flash_init();
   if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
@@ -880,6 +933,9 @@ void setup() {
   SystemConfig::Pins::initializePins();
   DeviceConfig::DeviceType device = DeviceConfig::DeviceManager::detectDevice();
   const char* deviceName = DeviceConfig::DeviceManager::getDeviceName(device);
+
+  // Initialize Preferences object after NVS is ready
+  // Preferences* prefs = new Preferences(); // This line is removed
 
   Serial.printf("\n=== LtngDet LoRa + OLED (%s) ===\n", deviceName);
   Serial.printf("[SETUP] Detected device: %s\n", deviceName);
@@ -955,7 +1011,9 @@ void setup() {
       oledMsg("WiFi + OTA", "Ready");
       // Start web interface server only when WiFi is connected
       Serial.println("[MAIN] Starting web server...");
+#ifdef ENABLE_WEB_SERVER
       webServerManager.begin();
+#endif
     } else {
       Serial.println("[MAIN] WiFi not connected, skipping web server start");
     }
@@ -992,7 +1050,9 @@ void loop() {
       Serial.printf("[MAIN] Calling webServerManager.loop(), WiFi status: %s\n", WiFi.status() == WL_CONNECTED ? "CONNECTED" : "DISCONNECTED");
       lastWebDebug = millis();
     }
+#ifdef ENABLE_WEB_SERVER
     webServerManager.loop();
+#endif
   }
 #endif
 

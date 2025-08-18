@@ -16,6 +16,21 @@
 
 ### Session log
 
+#### 2025-01-17 07:45 UTC
+- Context: Fixed NVS preferences error that was appearing in serial monitor on first boot
+- Changes:
+  - 🐛 **Fixed WiFi Preferences Error**: Modified `src/wifi_manager.cpp` to handle NVS namespace creation properly
+    * Added proper error checking for `wifiPrefs.begin()` calls
+    * Handle case where "WiFiConfig" namespace doesn't exist yet (normal on first boot)
+    * Added proper cleanup with `wifiPrefs.end()` calls
+    * Improved error logging and success confirmation messages
+- Commands run:
+  - None (code analysis and editing only)
+- Files touched:
+  - `src/wifi_manager.cpp`
+- Next steps:
+  - Test the fix to verify no more NVS preferences errors appear
+
 #### 2025-01-17 02:15 UTC
 - Context: **CREATED COMPREHENSIVE PIN MAPPING FOR BOTH DEVICES** - Developed complete pin mapping documentation for both Heltec V3 and Wireless Tracker based on official datasheets and corrected pin assignments.
 - Changes:

@@ -1,6 +1,8 @@
 #include "wifi_config.h"
 #include <WiFi.h>
 #include <Preferences.h>
+#include <nvs_flash.h>
+#include <esp_err.h>
 
 // Global variables
 NetworkSelectionMode currentNetworkMode = NetworkSelectionMode::AUTO;
@@ -9,7 +11,26 @@ static Preferences wifiPrefs;
 
 // Initialize WiFi preferences
 void initWiFiPreferences() {
-  wifiPrefs.begin("WiFiConfig", false);
+  // Check if NVS is initialized
+  esp_err_t ret = nvs_flash_init();
+  if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+    ESP_ERROR_CHECK(nvs_flash_erase());
+    ret = nvs_flash_init();
+  }
+  if (ret != ESP_OK) {
+    Serial.printf("WiFi Manager: NVS init failed: %s\n", esp_err_to_name(ret));
+    // Continue anyway, but preferences may not work
+    return;
+  }
+
+  // Try to open WiFi preferences namespace
+  if (!wifiPrefs.begin("WiFiConfig", false)) {
+    Serial.println("WiFi Manager: WiFiConfig namespace not found, creating new one");
+    // This is normal on first boot - the namespace will be created when we first save
+    currentNetworkMode = NetworkSelectionMode::AUTO;
+    currentConnectedNetworkIndex = -1;
+    return;
+  }
 
   // Load saved network mode
   int savedMode = wifiPrefs.getInt("networkMode", (int)NetworkSelectionMode::AUTO);
@@ -18,14 +39,26 @@ void initWiFiPreferences() {
   // Load last connected network index
   currentConnectedNetworkIndex = wifiPrefs.getInt("lastNetwork", -1);
 
+  // Close preferences after reading
+  wifiPrefs.end();
+
   Serial.printf("WiFi Manager: Loaded mode %d, last network %d\n",
                 (int)currentNetworkMode, currentConnectedNetworkIndex);
 }
 
 // Save current network mode to preferences
 void saveNetworkMode() {
+  if (!wifiPrefs.begin("WiFiConfig", false)) {
+    Serial.println("WiFi Manager: Failed to open preferences for saving");
+    return;
+  }
+
   wifiPrefs.putInt("networkMode", (int)currentNetworkMode);
   wifiPrefs.putInt("lastNetwork", currentConnectedNetworkIndex);
+  wifiPrefs.end();
+
+  Serial.printf("WiFi Manager: Saved mode %d, network %d\n",
+                (int)currentNetworkMode, currentConnectedNetworkIndex);
 }
 
 // Get current network location string
