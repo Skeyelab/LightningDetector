@@ -16,35 +16,52 @@
 
 ### Session log
 
-#### 2025-01-17 00:15 UTC
-- Context: **FIXED WIFI SUPPORT FOR WIRELESS TRACKER** - Corrected documentation and configuration to show Wireless Tracker V1.1 has WiFi support (same board as Heltec V3).
+#### 2025-01-17 00:45 UTC
+- Context: **UPDATED WIRELESS TRACKER WITH ACTUAL DATASHEET SPECIFICATIONS** - Completely revised device configuration to match real Wireless Tracker V1.1 hardware specifications from Heltec datasheet.
 - Changes:
-  - 🔧 **Device Configuration Fixed**: Updated `src/config/device_config.h` to show Wireless Tracker has WiFi (`hasWiFi = true`)
-  - 📚 **Documentation Corrected**: Fixed `docs/development/MULTI_DEVICE_SUPPORT.md` to show WiFi support for both devices
-  - ⚙️ **PlatformIO Configuration**: Added WiFi OTA support to Wireless Tracker environments
-    * Added `ENABLE_WIFI_OTA=1` flag to both wireless-tracker-sender and wireless-tracker-receiver
-    * Added WiFi libraries (`WiFi`, `ArduinoOTA`, `Update`) to Wireless Tracker environments
-    * Added SPIFFS filesystem support for Wireless Tracker receiver
-  - 🧹 **Code Comments Updated**: Fixed incorrect comments in `src/config/device_config.cpp` about WiFi capabilities
-  - ✅ **Hardware Reality**: Both devices use same board (`heltec_wifi_lora_32_V3`) so both have WiFi
+  - 🔄 **Display Technology Changed**: Updated from OLED to TFT-LCD (0.96-inch 80x160 RGB)
+    * Added TFT pin support: SDIN, SCLK, RS, RESET, CS, LED Control
+    * Updated device capabilities to distinguish OLED vs TFT displays
+  - 📍 **GPS Configuration Updated**: Corrected to UC6580 multi-system GNSS
+    * GPS pins: TX=33, RX=34, RST=35, PPS=36 (not 17,18,19 as previously assumed)
+    * Supports GPS, GLONASS, BDS, Galileo, NAVIC, QZSS
+  - 📡 **LoRa Pin Configuration**: Updated SX1262 pin assignments to match datasheet
+    * Added proper SPI pins: MISO=11, MOSI=10, SCK=9
+    * Maintained existing NSS, DIO1, RST, BUSY pins
+  - ⚙️ **System Pins Corrected**: Fixed Vext control and battery reading pins
+    * Vext control moved to GPIO3 (not GPIO36)
+    * Battery voltage reading on GPIO1
+  - 🏗️ **Struct Architecture**: Expanded PinConfig and DeviceCapabilities structures
+    * Added TFT display support alongside OLED
+    * Added additional LoRa SPI pins
+    * Added GPS reset pin support
+  - 🔧 **Build System**: Both environments now compile successfully
+    * Heltec V3: 297,650 bytes text, 105,404 bytes data
+    * Wireless Tracker: 297,642 bytes text, 105,404 bytes data
 - Commands run:
+  - `pio run --environment wireless-tracker --target size` (✅ SUCCESS)
+  - `pio run --environment heltec-v3 --target size` (✅ SUCCESS)
   - `git add .` (staged all changes)
-  - `git commit -m "fix: correct WiFi support for Wireless Tracker V1.1"` (committed changes)
-  - `git push --set-upstream origin adding-new-board` (pushed to remote)
+  - `git commit -m "feat: update Wireless Tracker configuration with actual datasheet specifications"`
+  - `git push` (pushed to remote)
 - Files touched:
-  - `src/config/device_config.h` (fixed WiFi capability)
-  - `docs/development/MULTI_DEVICE_SUPPORT.md` (corrected WiFi support)
-  - `platformio.ini` (added WiFi support to Wireless Tracker environments)
-  - `src/config/device_config.cpp` (fixed comments)
-- **RESULT**: 🎯 **WiFi support correctly configured for Wireless Tracker V1.1**
-  - **Both devices now properly show WiFi support** in documentation and code
-  - **Wireless Tracker environments** now include WiFi OTA capabilities
-  - **Hardware reality matches code** - both devices use same ESP32-S3 board with WiFi
-  - **All build environments** now properly support WiFi features
+  - `src/config/device_config.h` (major restructure with actual pin assignments)
+  - `src/config/device_features.h` (added TFT support)
+  - `src/config/system_config.h` (expanded pin definitions)
+  - `docs/development/MULTI_DEVICE_SUPPORT.md` (updated with correct specifications)
+- **RESULT**: 🎯 **Wireless Tracker configuration now matches actual hardware**
+  - **Accurate pin assignments** based on Heltec datasheet
+  - **Correct display technology** (TFT-LCD, not OLED)
+  - **Proper GPS configuration** for UC6580 multi-system GNSS
+  - **Complete LoRa SPI support** for SX1262
+  - **Both build environments working** with updated configurations
 - Next steps:
-  - Test WiFi functionality on actual Wireless Tracker hardware
-  - Verify OTA updates work on both device types
-  - Consider adding WiFi-specific pin configurations if needed
+  - Test on actual Wireless Tracker hardware when available
+  - Implement TFT-LCD display driver (different from OLED)
+  - Add UC6580 GPS driver for multi-system GNSS support
+  - Consider adding frequency band selection (LF vs HF variants)
+
+#### 2025-01-17 00:15 UTC
 
 #### 2025-01-16 23:45 UTC
 - Context: **IMPLEMENTED MULTI-DEVICE SUPPORT** - Added support for both Heltec WiFi LoRa 32 V3 and new Heltec Wireless Tracker V1.1 hardware.
