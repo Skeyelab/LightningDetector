@@ -16,47 +16,61 @@ namespace DeviceConfig {
 
     // Device capabilities
     struct DeviceCapabilities {
-        bool hasOLED;
-        bool hasLoRa;
-        bool hasWiFi;
-        bool hasGPS;
-        bool hasBattery;
-        bool hasVext;
-        uint8_t oledWidth;
-        uint8_t oledHeight;
-        uint32_t flashSize;
-        uint32_t sramSize;
+        bool hasOLED;         // SSD1306 OLED display (Heltec V3)
+        bool hasTFT;          // TFT-LCD display (Wireless Tracker)
+        bool hasLoRa;         // SX1262 LoRa radio
+        bool hasWiFi;         // ESP32-S3 WiFi
+        bool hasGPS;          // GNSS module (UC6580 for Wireless Tracker)
+        bool hasBattery;      // Battery management
+        bool hasVext;         // Vext power rail
+        uint8_t oledWidth;    // OLED width (if hasOLED)
+        uint8_t oledHeight;   // OLED height (if hasOLED)
+        uint8_t tftWidth;     // TFT width (if hasTFT)
+        uint8_t tftHeight;    // TFT height (if hasTFT)
+        uint32_t flashSize;   // Flash memory size
+        uint32_t sramSize;    // SRAM size
     };
 
     // Pin configuration for each device
     struct PinConfig {
-        // OLED pins
-        uint8_t oledSda;
-        uint8_t oledScl;
-        uint8_t oledRst;
+        // Display pins
+        uint8_t oledSda;      // OLED I2C SDA (for Heltec V3)
+        uint8_t oledScl;      // OLED I2C SCL (for Heltec V3)
+        uint8_t oledRst;      // OLED Reset (for Heltec V3)
+        uint8_t tftSdin;      // TFT-LCD SDIN (for Wireless Tracker)
+        uint8_t tftSclk;      // TFT-LCD SCLK (for Wireless Tracker)
+        uint8_t tftRs;        // TFT-LCD RS (for Wireless Tracker)
+        uint8_t tftRes;       // TFT-LCD RESET (for Wireless Tracker)
+        uint8_t tftCs;        // TFT-LCD CS (for Wireless Tracker)
+        uint8_t tftLedK;      // TFT-LCD LED Control (for Wireless Tracker)
 
         // LoRa pins
-        uint8_t loraNss;
-        uint8_t loraDio1;
-        uint8_t loraRst;
-        uint8_t loraBusy;
+        uint8_t loraNss;      // LoRa NSS/CS
+        uint8_t loraDio1;     // LoRa DIO1
+        uint8_t loraRst;      // LoRa Reset
+        uint8_t loraBusy;     // LoRa Busy
+        uint8_t loraMiso;     // LoRa MISO (SPI)
+        uint8_t loraMosi;     // LoRa MOSI (SPI)
+        uint8_t loraSck;      // LoRa SCK (SPI)
 
         // System pins
-        uint8_t button;
-        uint8_t vext;
+        uint8_t button;       // User button
+        uint8_t vext;         // Vext power control
+        uint8_t vbatRead;     // Battery voltage reading
 
         // Sensor pins
-        uint8_t lightningIrq;
-        uint8_t lightningCs;
+        uint8_t lightningIrq; // Lightning sensor interrupt
+        uint8_t lightningCs;  // Lightning sensor chip select
 
         // Actuator pins
-        uint8_t ledData;
-        uint8_t buzzer;
+        uint8_t ledData;      // LED strip data
+        uint8_t buzzer;       // Buzzer output
 
         // GPS pins (if available)
-        uint8_t gpsTx;
-        uint8_t gpsRx;
-        uint8_t gpsPps;
+        uint8_t gpsTx;        // GPS UART TX
+        uint8_t gpsRx;        // GPS UART RX
+        uint8_t gpsRst;       // GPS Reset
+        uint8_t gpsPps;       // GPS PPS signal
     };
 
     // Device-specific configurations
@@ -68,6 +82,7 @@ namespace DeviceConfig {
 
             constexpr DeviceCapabilities CAPABILITIES = {
                 .hasOLED = true,
+                .hasTFT = false,
                 .hasLoRa = true,
                 .hasWiFi = true,
                 .hasGPS = false,
@@ -75,27 +90,49 @@ namespace DeviceConfig {
                 .hasVext = true,
                 .oledWidth = 128,
                 .oledHeight = 64,
+                .tftWidth = 0,
+                .tftHeight = 0,
                 .flashSize = 16 * 1024 * 1024,  // 16MB
                 .sramSize = 512 * 1024          // 512KB
             };
 
-            constexpr PinConfig PINS = {
+                        constexpr PinConfig PINS = {
+                // Display pins (order must match struct declaration)
                 .oledSda = 17,
                 .oledScl = 18,
                 .oledRst = 21,
+                .tftSdin = 255,  // Not available
+                .tftSclk = 255,  // Not available
+                .tftRs = 255,    // Not available
+                .tftRes = 255,   // Not available
+                .tftCs = 255,    // Not available
+                .tftLedK = 255,  // Not available
+                
+                // LoRa pins
                 .loraNss = 8,
                 .loraDio1 = 14,
                 .loraRst = 12,
                 .loraBusy = 13,
+                .loraMiso = 255, // Not available (using default SPI)
+                .loraMosi = 255, // Not available (using default SPI)
+                .loraSck = 255,  // Not available (using default SPI)
+                
+                // System pins
                 .button = 0,
                 .vext = 36,
+                .vbatRead = 255, // Not available
+                
+                // Sensor pins
                 .lightningIrq = 4,
                 .lightningCs = 5,
                 .ledData = 2,
                 .buzzer = 3,
-                .gpsTx = 255,  // Not available
-                .gpsRx = 255,  // Not available
-                .gpsPps = 255   // Not available
+                
+                // GPS pins (not available)
+                .gpsTx = 255,
+                .gpsRx = 255,
+                .gpsRst = 255,
+                .gpsPps = 255
             };
         };
 
@@ -104,35 +141,58 @@ namespace DeviceConfig {
             constexpr DeviceType TYPE = DeviceType::HELTEC_WIRELESS_TRACKER_V1_1;
 
             constexpr DeviceCapabilities CAPABILITIES = {
-                .hasOLED = true,
+                .hasOLED = false,  // Has TFT-LCD, not OLED
+                .hasTFT = true,    // 0.96-inch 80x160 RGB TFT-LCD
                 .hasLoRa = true,
                 .hasWiFi = true,   // Wireless Tracker has WiFi (same board as V3)
-                .hasGPS = true,     // Has built-in GPS
+                .hasGPS = true,     // Has built-in GPS (UC6580)
                 .hasBattery = true,
                 .hasVext = true,
-                .oledWidth = 128,
-                .oledHeight = 64,
+                .oledWidth = 0,    // No OLED
+                .oledHeight = 0,   // No OLED
+                .tftWidth = 80,    // TFT display dimensions
+                .tftHeight = 160,
                 .flashSize = 8 * 1024 * 1024,   // 8MB
                 .sramSize = 256 * 1024          // 256KB
             };
 
-            constexpr PinConfig PINS = {
-                .oledSda = 21,     // Different I2C pins
-                .oledScl = 22,
-                .oledRst = 23,
-                .loraNss = 8,      // Same LoRa pins
-                .loraDio1 = 14,
-                .loraRst = 12,
-                .loraBusy = 13,
-                .button = 0,
-                .vext = 36,
-                .lightningIrq = 4,
-                .lightningCs = 5,
-                .ledData = 2,
-                .buzzer = 3,
-                .gpsTx = 17,       // GPS UART TX
-                .gpsRx = 18,       // GPS UART RX
-                .gpsPps = 19       // GPS PPS signal
+                        constexpr PinConfig PINS = {
+                // Display pins (order must match struct declaration)
+                .oledSda = 255,    // Not available
+                .oledScl = 255,    // Not available
+                .oledRst = 255,    // Not available
+                .tftSdin = 42,     // TFT_SDIN
+                .tftSclk = 41,     // TFT_SCLK
+                .tftRs = 40,       // TFT_RS
+                .tftRes = 39,      // TFT_RES
+                .tftCs = 38,       // TFT_CS
+                .tftLedK = 21,     // TFT_LED_K
+                
+                // LoRa pins (SX1262)
+                .loraNss = 8,      // LoRa_NSS
+                .loraDio1 = 14,    // LoRa_DIO1
+                .loraRst = 12,     // LoRa_RST
+                .loraBusy = 13,    // LoRa_Busy
+                .loraMiso = 11,    // LoRa_MISO
+                .loraMosi = 10,    // LoRa_MOSI
+                .loraSck = 9,      // LoRa_SCK
+                
+                // System pins
+                .button = 0,       // USER_SW
+                .vext = 7,         // Vext Ctrl (GPIO3)
+                .vbatRead = 1,     // Vbat_Read
+                
+                // Sensor pins
+                .lightningIrq = 255, // Not available
+                .lightningCs = 255,  // Not available
+                .ledData = 255,      // Not available
+                .buzzer = 255,       // Not available
+                
+                // GPS pins (UC6580)
+                .gpsTx = 33,       // GNSS_TX (GPIO33)
+                .gpsRx = 34,       // GNSS_RX (GPIO34)
+                .gpsRst = 35,      // GNSS_RST (GPIO35)
+                .gpsPps = 36       // GNSS_PPS (GPIO36)
             };
         };
     };

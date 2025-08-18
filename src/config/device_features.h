@@ -17,8 +17,9 @@ namespace DeviceFeatures {
     // GPS support
     #define HAS_GPS_SUPPORT (DeviceConfig::DeviceManager::getCurrentCapabilities().hasGPS)
 
-    // OLED support
+    // Display support
     #define HAS_OLED_SUPPORT (DeviceConfig::DeviceManager::getCurrentCapabilities().hasOLED)
+    #define HAS_TFT_SUPPORT (DeviceConfig::DeviceManager::getCurrentCapabilities().hasTFT)
 
     // LoRa support
     #define HAS_LORA_SUPPORT (DeviceConfig::DeviceManager::getCurrentCapabilities().hasLoRa)
@@ -47,6 +48,7 @@ namespace DeviceFeatures {
     #define IF_HAS_WIFI(code) if (HAS_WIFI_SUPPORT) { code }
     #define IF_HAS_GPS(code) if (HAS_GPS_SUPPORT) { code }
     #define IF_HAS_OLED(code) if (HAS_OLED_SUPPORT) { code }
+    #define IF_HAS_TFT(code) if (HAS_TFT_SUPPORT) { code }
     #define IF_HAS_LORA(code) if (HAS_LORA_SUPPORT) { code }
     #define IF_HAS_BATTERY(code) if (HAS_BATTERY_SUPPORT) { code }
     #define IF_HAS_VEXT(code) if (HAS_VEXT_SUPPORT) { code }
@@ -75,6 +77,7 @@ namespace DeviceFeatures {
     inline bool hasWiFi() { return HAS_WIFI_SUPPORT; }
     inline bool hasGPS() { return HAS_GPS_SUPPORT; }
     inline bool hasOLED() { return HAS_OLED_SUPPORT; }
+    inline bool hasTFT() { return HAS_TFT_SUPPORT; }
     inline bool hasLoRa() { return HAS_LORA_SUPPORT; }
     inline bool hasBattery() { return HAS_BATTERY_SUPPORT; }
     inline bool hasVext() { return HAS_VEXT_SUPPORT; }

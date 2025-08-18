@@ -15,15 +15,24 @@ namespace SystemConfig {
         extern uint8_t OLED_RST;    // OLED reset pin
         extern uint8_t BUTTON;      // BOOT button on GPIO0 (active LOW)
 
-        // I2C pins for OLED
-        extern uint8_t I2C_SDA;
-        extern uint8_t I2C_SCL;
+        // Display pins
+        extern uint8_t I2C_SDA;    // OLED I2C SDA
+        extern uint8_t I2C_SCL;    // OLED I2C SCL
+        extern uint8_t TFT_SDIN;   // TFT-LCD SDIN
+        extern uint8_t TFT_SCLK;   // TFT-LCD SCLK
+        extern uint8_t TFT_RS;     // TFT-LCD RS
+        extern uint8_t TFT_RES;    // TFT-LCD RESET
+        extern uint8_t TFT_CS;     // TFT-LCD CS
+        extern uint8_t TFT_LED_K;  // TFT-LCD LED Control
 
         // LoRa radio pins
         extern uint8_t LORA_NSS;
         extern uint8_t LORA_DIO1;
         extern uint8_t LORA_RST;
         extern uint8_t LORA_BUSY;
+        extern uint8_t LORA_MISO;
+        extern uint8_t LORA_MOSI;
+        extern uint8_t LORA_SCK;
 
         // Future sensor pins
         extern uint8_t LIGHTNING_IRQ;    // AS3935 interrupt pin
@@ -36,7 +45,11 @@ namespace SystemConfig {
         // GPS pins (if available)
         extern uint8_t GPS_TX;
         extern uint8_t GPS_RX;
+        extern uint8_t GPS_RST;
         extern uint8_t GPS_PPS;
+
+        // System pins
+        extern uint8_t VBAT_READ;   // Battery voltage reading
 
         // Initialize pins based on detected device
         void initializePins();

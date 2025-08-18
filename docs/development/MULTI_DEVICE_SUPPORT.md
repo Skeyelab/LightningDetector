@@ -13,7 +13,9 @@ This project now supports multiple Heltec devices with automatic hardware detect
 
 ### 2. Heltec Wireless Tracker V1.1 (New Device)
 - **Board**: `heltec_wifi_lora_32_V3` (same as V3)
-- **Features**: WiFi, LoRa, OLED, GPS, Battery, Vext power rail
+- **Features**: WiFi, LoRa, TFT-LCD, GPS, Battery, Vext power rail
+- **Display**: 0.96-inch 80x160 RGB TFT-LCD (not OLED)
+- **GPS**: Built-in UC6580 multi-system GNSS (GPS, GLONASS, BDS, Galileo, NAVIC, QZSS)
 - **Flash**: 8MB
 - **SRAM**: 256KB
 - **Environment**: `wireless-tracker`, `wireless-tracker-sender`, `wireless-tracker-receiver`
@@ -24,8 +26,8 @@ This project now supports multiple Heltec devices with automatic hardware detect
 |---------|-----------|------------------|
 | WiFi | ✅ Yes | ✅ Yes |
 | LoRa | ✅ Yes | ✅ Yes |
-| OLED | ✅ Yes (128x64) | ✅ Yes (128x64) |
-| GPS | ❌ No | ✅ Yes (Built-in) |
+| Display | ✅ OLED (128x64) | ✅ TFT-LCD (80x160) |
+| GPS | ❌ No | ✅ Yes (UC6580 multi-system) |
 | Battery | ✅ Yes | ✅ Yes |
 | Vext | ✅ Yes | ✅ Yes |
 | Flash | 16MB | 8MB |
@@ -42,10 +44,18 @@ BUTTON = 0, VEXT = 36
 
 ### Wireless Tracker V1.1
 ```cpp
-OLED_SDA = 21, OLED_SCL = 22, OLED_RST = 23
+// TFT-LCD Display (0.96-inch 80x160 RGB)
+TFT_SDIN = 42, TFT_SCLK = 41, TFT_RS = 40, TFT_RES = 39, TFT_CS = 38, TFT_LED_K = 21
+
+// LoRa Radio (SX1262)
 LORA_NSS = 8, LORA_DIO1 = 14, LORA_RST = 12, LORA_BUSY = 13
-BUTTON = 0, VEXT = 36
-GPS_TX = 17, GPS_RX = 18, GPS_PPS = 19
+LORA_MISO = 11, LORA_MOSI = 10, LORA_SCK = 9
+
+// System
+BUTTON = 0, VEXT_CTRL = 3, VBAT_READ = 1
+
+// GPS (UC6580 multi-system GNSS)
+GPS_TX = 33, GPS_RX = 34, GPS_RST = 35, GPS_PPS = 36
 ```
 
 ## Building for Different Devices
@@ -149,16 +159,19 @@ enum class DeviceType {
 ```cpp
 namespace NewDevice {
     constexpr DeviceCapabilities CAPABILITIES = {
-        .hasOLED = true,
+        .hasOLED = false,  // Set based on actual hardware
+        .hasTFT = true,    // Set based on actual hardware
         .hasLoRa = true,
-        .hasWiFi = true,  // Set based on actual hardware
+        .hasWiFi = true,   // Set based on actual hardware
         .hasGPS = true,
         // ... other capabilities
     };
 
     constexpr PinConfig PINS = {
-        .oledSda = 21,
-        .oledScl = 22,
+        .oledSda = 255,    // Not available
+        .oledScl = 255,    // Not available
+        .tftSdin = 42,     // TFT-LCD SDIN
+        .tftSclk = 41,     // TFT-LCD SCLK
         // ... other pins
     };
 }
