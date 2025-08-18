@@ -167,7 +167,7 @@ namespace DeviceConfig {
                 .tftRes = 39,      // TFT_RES (GPIO39)
                 .tftCs = 38,       // TFT_CS (GPIO38)
                 .tftLedK = 21,     // TFT_LED_K (GPIO21)
-                
+
                 // LoRa pins (SX1262)
                 .loraNss = 8,      // LoRa_NSS (GPIO8)
                 .loraDio1 = 14,    // LoRa_DIO1 (GPIO14)
@@ -176,18 +176,18 @@ namespace DeviceConfig {
                 .loraMiso = 11,    // LoRa_MISO (GPIO11)
                 .loraMosi = 10,    // LoRa_MOSI (GPIO10)
                 .loraSck = 9,      // LoRa_SCK (GPIO9)
-                
+
                 // System pins
                 .button = 0,       // USER_SW (GPIO0)
                 .vext = 3,         // Vext Ctrl (GPIO3) - corrected from datasheet
                 .vbatRead = 1,     // Vbat_Read (GPIO1)
-                
+
                 // Sensor pins
                 .lightningIrq = 255, // Not available
                 .lightningCs = 255,  // Not available
                 .ledData = 255,      // Not available
                 .buzzer = 255,       // Not available
-                
+
                 // GPS pins (UC6580)
                 .gpsTx = 33,       // GNSS_TX (GPIO33)
                 .gpsRx = 34,       // GNSS_RX (GPIO34)
