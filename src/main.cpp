@@ -334,7 +334,7 @@ static void oledMsg(const char* l1, const char* l2 = nullptr, const char* l3 = n
   u8g2.sendBuffer();
 }
 
-// Role display removed - device role is now fixed at build time
+// Role display logic moved; device role is now chosen at runtime via RoleConfig
 
 static void oledSettings() {
   oledMsg("Settings", "Updated");
@@ -374,7 +374,7 @@ static void savePersistedSettings() {
   prefs.end();
 }
 
-// Role persistence removed - device role is now fixed at build time
+// Role persistence handled by RoleConfig (stored in NVS)
 
 static void loadPersistedSettings() {
   prefs.begin("LtngDet", true);
@@ -389,7 +389,7 @@ static void loadPersistedSettings() {
   if (haveSF) currentSF = prefs.getInt("sf", currentSF);
   if (haveCR) currentCR = prefs.getInt("cr", currentCR);
   if (haveTX) currentTxPower = prefs.getInt("tx", currentTxPower);
-  // Role is no longer loaded from preferences - fixed at build time
+  // Role is managed by RoleConfig; not stored here anymore
   prefs.end();
 }
 
