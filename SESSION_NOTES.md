@@ -21,7 +21,7 @@
 - Changes:
   - 🔧 **Fixed OLED Device Detection**: Removed `DeviceConfig::DeviceManager::getCurrentCapabilities().hasOLED` checks from all OLED functions
     * **initDisplay()**: Removed capability check that was preventing OLED initialization
-    * **oledMsg()**: Removed capability check that was causing fallback to serial-only output  
+    * **oledMsg()**: Removed capability check that was causing fallback to serial-only output
     * **drawStatusBar()**, **drawPingDot()**, **drawFullScreenPingFlash()**: Removed capability checks
     * **Root cause**: Device detection system incorrectly detecting Heltec V3 as device without OLED
   - 🐛 **Build Flags Fix**: Fixed sender environment to properly inherit HELTEC_V3_OLED flag from parent environment
