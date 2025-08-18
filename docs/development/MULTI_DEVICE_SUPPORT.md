@@ -58,6 +58,8 @@ BUTTON = 0, VEXT_CTRL = 3, VBAT_READ = 1
 GPS_TX = 33, GPS_RX = 34, GPS_RST = 35, GPS_PPS = 36
 ```
 
+> **📋 Complete Pin Mapping**: See [WIRELESS_TRACKER_PIN_MAPPING.md](WIRELESS_TRACKER_PIN_MAPPING.md) for detailed header pinouts and additional functions (Touch, ADC, UART, USB).
+
 ## Building for Different Devices
 
 ### Heltec V3

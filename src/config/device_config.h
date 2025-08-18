@@ -156,38 +156,38 @@ namespace DeviceConfig {
                 .sramSize = 256 * 1024          // 256KB
             };
 
-                        constexpr PinConfig PINS = {
+                                    constexpr PinConfig PINS = {
                 // Display pins (order must match struct declaration)
                 .oledSda = 255,    // Not available
                 .oledScl = 255,    // Not available
                 .oledRst = 255,    // Not available
-                .tftSdin = 42,     // TFT_SDIN
-                .tftSclk = 41,     // TFT_SCLK
-                .tftRs = 40,       // TFT_RS
-                .tftRes = 39,      // TFT_RES
-                .tftCs = 38,       // TFT_CS
-                .tftLedK = 21,     // TFT_LED_K
-
+                .tftSdin = 42,     // TFT_SDIN (GPIO42)
+                .tftSclk = 41,     // TFT_SCLK (GPIO41)
+                .tftRs = 40,       // TFT_RS (GPIO40)
+                .tftRes = 39,      // TFT_RES (GPIO39)
+                .tftCs = 38,       // TFT_CS (GPIO38)
+                .tftLedK = 21,     // TFT_LED_K (GPIO21)
+                
                 // LoRa pins (SX1262)
-                .loraNss = 8,      // LoRa_NSS
-                .loraDio1 = 14,    // LoRa_DIO1
-                .loraRst = 12,     // LoRa_RST
-                .loraBusy = 13,    // LoRa_Busy
-                .loraMiso = 11,    // LoRa_MISO
-                .loraMosi = 10,    // LoRa_MOSI
-                .loraSck = 9,      // LoRa_SCK
-
+                .loraNss = 8,      // LoRa_NSS (GPIO8)
+                .loraDio1 = 14,    // LoRa_DIO1 (GPIO14)
+                .loraRst = 12,     // LoRa_RST (GPIO12)
+                .loraBusy = 13,    // LoRa_Busy (GPIO13)
+                .loraMiso = 11,    // LoRa_MISO (GPIO11)
+                .loraMosi = 10,    // LoRa_MOSI (GPIO10)
+                .loraSck = 9,      // LoRa_SCK (GPIO9)
+                
                 // System pins
-                .button = 0,       // USER_SW
-                .vext = 7,         // Vext Ctrl (GPIO3)
-                .vbatRead = 1,     // Vbat_Read
-
+                .button = 0,       // USER_SW (GPIO0)
+                .vext = 3,         // Vext Ctrl (GPIO3) - corrected from datasheet
+                .vbatRead = 1,     // Vbat_Read (GPIO1)
+                
                 // Sensor pins
                 .lightningIrq = 255, // Not available
                 .lightningCs = 255,  // Not available
                 .ledData = 255,      // Not available
                 .buzzer = 255,       // Not available
-
+                
                 // GPS pins (UC6580)
                 .gpsTx = 33,       // GNSS_TX (GPIO33)
                 .gpsRx = 34,       // GNSS_RX (GPIO34)
