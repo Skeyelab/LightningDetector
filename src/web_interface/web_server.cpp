@@ -55,6 +55,7 @@ bool WebServerManager::begin() {
     }
 
     // Load configuration (ensure defaults)
+    Serial.println("[WEB] Loading configuration...");
     configManager_.load();
 
     registerRoutes();

@@ -17,9 +17,15 @@ namespace DeviceConfig {
         // Try to detect by checking hardware characteristics
         // This is a simplified detection - in practice, you might use chip ID, flash size, etc.
 
-        // Check if we have WiFi capabilities (Both Heltec V3 and Wireless Tracker have WiFi)
+        // Prioritize compile-time detection flags
+        #ifdef HELTEC_V3_OLED
+            return DeviceType::HELTEC_WIFI_LORA_32_V3;
+        #elif defined(WIRELESS_TRACKER)
+            return DeviceType::HELTEC_WIRELESS_TRACKER_V1_1;
+        #endif
+
+        // Fallback to runtime detection based on flash size
         #ifdef ESP32
-            // Check flash size to differentiate devices
             uint32_t flashSize = ESP.getFlashChipSize();
 
             if (flashSize >= 16 * 1024 * 1024) {  // 16MB or larger
@@ -29,14 +35,7 @@ namespace DeviceConfig {
             }
         #endif
 
-        // Fallback to compile-time detection
-        #ifdef HELTEC_V3_OLED
-            return DeviceType::HELTEC_WIFI_LORA_32_V3;
-        #elif defined(WIRELESS_TRACKER)
-            return DeviceType::HELTEC_WIRELESS_TRACKER_V1_1;
-        #else
-            return DeviceType::UNKNOWN;
-        #endif
+        return DeviceType::UNKNOWN;
     }
 
     DeviceType DeviceManager::detectDevice() {

@@ -17,7 +17,16 @@ void ConfigManager::ensureDefaults() {
 }
 
 bool ConfigManager::load() {
-    prefs_.begin("WebConfig", true);
+    Serial.println("Config Manager: Attempting to load WebConfig...");
+    if (!prefs_.begin("WebConfig", true)) {
+        Serial.println("Config Manager: WebConfig namespace not found, using defaults");
+        // This is normal on first boot - use default values
+        configDoc_.clear();
+        ensureDefaults();
+        return true;
+    }
+    Serial.println("Config Manager: WebConfig namespace opened successfully");
+
     String json = prefs_.getString("json", "{}");
     prefs_.end();
 
@@ -33,9 +42,17 @@ bool ConfigManager::save() {
     String json;
     serializeJson(configDoc_, json);
 
-    prefs_.begin("WebConfig", false);
+    if (!prefs_.begin("WebConfig", false)) {
+        Serial.println("Config Manager: Failed to open WebConfig namespace for saving");
+        return false;
+    }
+
     bool ok = prefs_.putString("json", json);
     prefs_.end();
+
+    if (ok) {
+        Serial.println("Config Manager: Web config saved successfully");
+    }
     return ok;
 }
 

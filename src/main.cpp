@@ -196,10 +196,6 @@ static uint32_t idleModeStartTime = 0;
 
 // Full-screen ping flash function implementation
 static void drawFullScreenPingFlash() {
-  // Check if device has OLED display
-  if (!DeviceConfig::DeviceManager::getCurrentCapabilities().hasOLED) {
-    return;
-  }
 
   if (!isInIdleMode) return;
 
@@ -235,10 +231,6 @@ RTC_DATA_ATTR bool wasInSleepMode = false;
 
 // Draw status bar at the bottom of the screen
 static void drawStatusBar() {
-  // Check if device has OLED display
-  if (!DeviceConfig::DeviceManager::getCurrentCapabilities().hasOLED) {
-    return;
-  }
 
   u8g2.setFont(u8g2_font_5x7_tr); // Smaller font for status bar
 
@@ -322,10 +314,6 @@ static void triggerPingDotBlink() {
 
 // Draw ping flash dot if active
 static void drawPingDot() {
-  // Check if device has OLED display
-  if (!DeviceConfig::DeviceManager::getCurrentCapabilities().hasOLED) {
-    return;
-  }
 
   if (!dotBlinkActive) return;
 
@@ -350,15 +338,10 @@ static void drawPingDot() {
 }
 
 static void oledMsg(const char* l1, const char* l2 = nullptr, const char* l3 = nullptr) {
-  // Check if device has OLED display
-  if (!DeviceConfig::DeviceManager::getCurrentCapabilities().hasOLED) {
-    // Fallback to Serial output for non-OLED devices
-    Serial.printf("[OLED] %s", l1);
-    if (l2) Serial.printf(" - %s", l2);
-    if (l3) Serial.printf(" - %s", l3);
-    Serial.println();
-    return;
-  }
+  Serial.printf("[OLED] DISPLAY UPDATE: %s", l1);
+  if (l2) Serial.printf(" - %s", l2);
+  if (l3) Serial.printf(" - %s", l3);
+  Serial.println();
 
   u8g2.clearBuffer();
   u8g2.setFont(u8g2_font_6x10_tr);
@@ -397,6 +380,7 @@ static void oledMsg(const char* l1, const char* l2 = nullptr, const char* l3 = n
   drawPingDot();
 
   u8g2.sendBuffer();
+  Serial.println("[OLED] Buffer sent to physical display");
 }
 
 // Role display removed - device role is now fixed at build time
@@ -443,7 +427,12 @@ static void savePersistedSettings() {
   }
 
   Preferences* prefs = new Preferences();
-  prefs->begin("LtngDet", false);
+  if (!prefs->begin("LtngDet", false)) {
+    Serial.println("Preferences: Failed to create/open LtngDet namespace for saving");
+    delete prefs;
+    return;
+  }
+
   prefs->putFloat("freq", currentFreq);
   prefs->putFloat("bw", currentBW);
   prefs->putInt("sf", currentSF);
@@ -451,6 +440,8 @@ static void savePersistedSettings() {
   prefs->putInt("tx", currentTxPower);
   prefs->end();
   delete prefs; // Clean up the local Preferences object
+
+  Serial.println("Preferences: LoRa settings saved successfully");
 }
 
 // Role persistence removed - device role is now fixed at build time
@@ -469,7 +460,21 @@ static void loadPersistedSettings() {
   }
 
   Preferences* prefs = new Preferences();
-  prefs->begin("LtngDet", true);
+  if (!prefs->begin("LtngDet", false)) {
+    Serial.println("Preferences: LtngDet namespace not found, using defaults");
+    // This is normal on first boot - use default values
+    delete prefs;
+    return;
+  }
+
+  // Check if namespace actually has data
+  if (!prefs->isKey("freq")) {
+    Serial.println("Preferences: LtngDet namespace empty, using defaults");
+    prefs->end();
+    delete prefs;
+    return;
+  }
+
   bool haveFreq = prefs->isKey("freq");
   bool haveBW = prefs->isKey("bw");
   bool haveSF = prefs->isKey("sf");
@@ -487,11 +492,7 @@ static void loadPersistedSettings() {
 }
 
 static void initDisplay() {
-  // Check if device has OLED display
-  if (!DeviceConfig::DeviceManager::getCurrentCapabilities().hasOLED) {
-    Serial.println("Device does not have OLED display - skipping OLED init");
-    return;
-  }
+  Serial.println("[OLED] Initializing display...");
 
   // Power OLED via Vext and reset it
   pinMode(VEXT_PIN, OUTPUT);
@@ -511,16 +512,25 @@ static void initDisplay() {
   delay(100);
 
   u8g2.setI2CAddress(0x3C << 1);
+  Serial.println("[OLED] Trying I2C address 0x3C...");
   if (!u8g2.begin()) {
+    Serial.println("[OLED] 0x3C failed, trying 0x3D...");
     u8g2.setI2CAddress(0x3D << 1);
     if (!u8g2.begin()) {
       // give up
+      Serial.println("[OLED] Both addresses failed - OLED init failed!");
       while (true) {
         Serial.println("OLED init failed");
         delay(1000);
       }
+    } else {
+      Serial.println("[OLED] Successfully initialized on address 0x3D");
     }
+  } else {
+    Serial.println("[OLED] Successfully initialized on address 0x3C");
   }
+
+  // Ensure power save is off and contrast is high
   u8g2.setPowerSave(0);
   u8g2.setContrast(255);
 
