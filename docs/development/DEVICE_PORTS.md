@@ -16,7 +16,7 @@ This document lists the USB port mappings for the connected devices on this deve
 # Build and upload sender firmware
 pio run --environment sender --target upload
 
-# Build and upload receiver firmware  
+# Build and upload receiver firmware
 pio run --environment receiver --target upload
 
 # Build only (check size)
