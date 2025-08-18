@@ -194,6 +194,11 @@ RTC_DATA_ATTR bool wasInSleepMode = false;
 
 // Draw status bar at the bottom of the screen
 static void drawStatusBar() {
+  // Check if device has OLED display
+  if (!DeviceConfig::DeviceManager::getCurrentCapabilities().hasOLED) {
+    return;
+  }
+
   u8g2.setFont(u8g2_font_5x7_tr); // Smaller font for status bar
 
   const int yPos = 120; // Bottom of screen
@@ -299,6 +304,16 @@ static void drawPingDot() {
 }
 
 static void oledMsg(const char* l1, const char* l2 = nullptr, const char* l3 = nullptr) {
+  // Check if device has OLED display
+  if (!DeviceConfig::DeviceManager::getCurrentCapabilities().hasOLED) {
+    // Fallback to Serial output for non-OLED devices
+    Serial.printf("[OLED] %s", l1);
+    if (l2) Serial.printf(" - %s", l2);
+    if (l3) Serial.printf(" - %s", l3);
+    Serial.println();
+    return;
+  }
+
   u8g2.clearBuffer();
   u8g2.setFont(u8g2_font_6x10_tr);
 
