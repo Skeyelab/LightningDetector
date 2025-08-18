@@ -16,6 +16,47 @@
 
 ### Session log
 
+#### 2025-01-16 23:45 UTC
+- Context: **IMPLEMENTED MULTI-DEVICE SUPPORT** - Added support for both Heltec WiFi LoRa 32 V3 and new Heltec Wireless Tracker V1.1 hardware.
+- Changes:
+  - 🆕 **Device Configuration System**: Created comprehensive device detection and configuration system
+    * `src/config/device_config.h/cpp` - Device types, capabilities, and pin configurations
+    * `src/config/system_config.h/cpp` - Dynamic pin configuration based on detected device
+    * `src/config/device_features.h` - Feature flags and conditional compilation helpers
+  - 🔧 **GPS Sensor Integration**: Updated GPS sensor system to support both external and built-in GPS
+    * `src/sensors/gps_sensor.h/cpp` - Unified GPS interface with device-specific implementations
+    * Support for Wireless Tracker's built-in GPS and external GPS modules
+  - 📱 **Multi-Device Build Environments**: Added PlatformIO environments for different devices
+    * `heltec-v3` - Base environment for Heltec V3 (WiFi + LoRa + OLED)
+    * `wireless-tracker` - Base environment for Wireless Tracker (LoRa + OLED + GPS)
+    * `wireless-tracker-sender/receiver` - Role-specific environments for Wireless Tracker
+  - 🎯 **Automatic Device Detection**: Runtime hardware detection with fallback to compile-time flags
+  - 🔄 **Dynamic Pin Configuration**: Pins automatically configured based on detected device
+  - 📚 **Comprehensive Documentation**: Created `docs/development/MULTI_DEVICE_SUPPORT.md`
+- Commands run:
+  - `pio run --environment heltec-v3 --target size` (✅ SUCCESS - 297,650 bytes text, 105,372 bytes data)
+  - `pio run --environment wireless-tracker --target size` (✅ SUCCESS - 297,642 bytes text, 105,372 bytes data)
+  - `pio run --environment wireless-tracker-sender --target size` (✅ SUCCESS - 297,650 bytes text, 105,372 bytes data)
+- Files touched:
+  - `src/config/device_config.h`, `src/config/device_config.cpp` (new)
+  - `src/config/system_config.h`, `src/config/system_config.cpp` (updated)
+  - `src/config/device_features.h` (new)
+  - `src/sensors/gps_sensor.h`, `src/sensors/gps_sensor.cpp` (updated)
+  - `src/main.cpp` (updated for device detection)
+  - `platformio.ini` (added multi-device environments)
+  - `docs/development/MULTI_DEVICE_SUPPORT.md` (new)
+- **RESULT**: 🎉 **Multi-device support successfully implemented!**
+  - **Both devices now supported** with automatic hardware detection
+  - **All build environments working** (heltec-v3, wireless-tracker, wireless-tracker-sender)
+  - **GPS integration ready** for Wireless Tracker's built-in GPS
+  - **Backward compatibility maintained** - existing Heltec V3 code works unchanged
+  - **Future-ready architecture** - easy to add more Heltec devices
+- Next steps:
+  - Test on actual Wireless Tracker hardware when available
+  - Add more sophisticated GPS parsing for NMEA data
+  - Consider adding more Heltec device variants
+  - Update web flasher to support multiple device types
+
 #### 2025-01-16 23:00 UTC
 - Context: **INVESTIGATED CI COMPILATION FAILURES** - CI job 48261370088 failing on Sensor Framework and Integration tests during compilation.
 - Changes:

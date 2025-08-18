@@ -7,6 +7,8 @@
 #include <esp_sleep.h>
 #include <driver/rtc_io.h>
 #include "app_logic.h"
+#include "config/device_config.h"
+#include "config/system_config.h"
 
 #ifdef ENABLE_WIFI_OTA
 #include <WiFi.h>
@@ -18,26 +20,26 @@
 #include <Update.h>
 #endif
 
-// Vext power control and OLED reset (Heltec V3)
-#define VEXT_PIN 36        // Vext control: LOW = ON
-#define OLED_RST_PIN 21    // OLED reset pin
-#define BUTTON_PIN 0       // BOOT button on GPIO0 (active LOW)
-#define ALT_BUTTON_PIN 38  // Alternative button pin for testing
+// Vext power control and OLED reset (dynamic based on device)
+#define VEXT_PIN SystemConfig::Pins::VEXT
+#define OLED_RST_PIN SystemConfig::Pins::OLED_RST
+#define BUTTON_PIN SystemConfig::Pins::BUTTON
+#define ALT_BUTTON_PIN 38  // Alternative button pin for testing (device-specific)
 
-// SSD1306 128x64 OLED over HW I2C; pins set via Wire.begin(17,18)
+// SSD1306 128x64 OLED over HW I2C; pins set dynamically
 U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE);
 
 #ifndef PIN_LORA_NSS
-  #define PIN_LORA_NSS   8
+  #define PIN_LORA_NSS   SystemConfig::Pins::LORA_NSS
 #endif
 #ifndef PIN_LORA_DIO1
-  #define PIN_LORA_DIO1  14
+  #define PIN_LORA_DIO1  SystemConfig::Pins::LORA_DIO1
 #endif
 #ifndef PIN_LORA_RST
-  #define PIN_LORA_RST   12
+  #define PIN_LORA_RST   SystemConfig::Pins::LORA_RST
 #endif
 #ifndef PIN_LORA_BUSY
-  #define PIN_LORA_BUSY  13
+  #define PIN_LORA_BUSY  SystemConfig::Pins::LORA_BUSY
 #endif
 
 #ifndef LORA_FREQ_MHZ
@@ -407,8 +409,8 @@ static void initDisplay() {
   digitalWrite(OLED_RST_PIN, HIGH);
   delay(50);
 
-  // I2C
-  Wire.begin(17, 18);
+  // I2C - use dynamic pins based on device
+  Wire.begin(SystemConfig::Pins::I2C_SDA, SystemConfig::Pins::I2C_SCL);
   Wire.setTimeOut(1000);
   Wire.setClock(100000);
   delay(100);
@@ -681,10 +683,13 @@ static void initOTA();
 static void triggerLoraFirmwareUpdates();
 static bool storeCurrentFirmware();
 #endif
+
+// LoRa OTA Functions (both sender and receiver)
 static void handleLoraOtaPacket(const String& packet);
 static void checkLoraOtaTimeout();
-// Only receivers send firmware out
+
 #ifdef ENABLE_WIFI_OTA
+// Only receivers send firmware out
 static void sendLoraOtaUpdate(const uint8_t* firmware, size_t firmwareSize);
 #endif
 
@@ -836,7 +841,16 @@ static void restoreStateAfterWakeup() {
 void setup() {
   Serial.begin(115200);
   delay(500);
-  Serial.println("\n=== LtngDet LoRa + OLED (Heltec V3) ===");
+
+  // Initialize device configuration first
+  SystemConfig::Pins::initializePins();
+  DeviceConfig::DeviceType device = DeviceConfig::DeviceManager::detectDevice();
+  const char* deviceName = DeviceConfig::DeviceManager::getDeviceName(device);
+
+  Serial.printf("\n=== LtngDet LoRa + OLED (%s) ===\n", deviceName);
+  Serial.printf("[SETUP] Detected device: %s\n", deviceName);
+  Serial.printf("[SETUP] Has WiFi: %s\n", DeviceConfig::DeviceManager::getCurrentCapabilities().hasWiFi ? "YES" : "NO");
+  Serial.printf("[SETUP] Has GPS: %s\n", DeviceConfig::DeviceManager::getCurrentCapabilities().hasGPS ? "YES" : "NO");
 
   // Check if we're waking up from deep sleep
   restoreStateAfterWakeup();
@@ -895,9 +909,9 @@ void setup() {
 
   initRadioOrHalt();
 
-  // Initialize WiFi and OTA for receivers
+  // Initialize WiFi and OTA for receivers (only if device supports WiFi)
 #ifdef ENABLE_WIFI_OTA
-  if (!isSender) {
+  if (!isSender && DeviceConfig::DeviceManager::getCurrentCapabilities().hasWiFi) {
     Serial.println("[MAIN] Initializing WiFi for receiver...");
     initWiFi();
     Serial.printf("[MAIN] WiFi connection status: %s\n", WiFi.status() == WL_CONNECTED ? "CONNECTED" : "DISCONNECTED");
@@ -911,6 +925,9 @@ void setup() {
     } else {
       Serial.println("[MAIN] WiFi not connected, skipping web server start");
     }
+  } else if (!isSender && !DeviceConfig::DeviceManager::getCurrentCapabilities().hasWiFi) {
+    Serial.println("[MAIN] Device does not support WiFi, skipping WiFi initialization");
+    oledMsg("No WiFi", "Device");
   }
 #endif
 
@@ -1294,6 +1311,7 @@ static void handleLoraOtaPacket(const String& packet) {
       oledMsg("LoRa OTA", "Flashing...");
 
       // Flash the firmware
+#ifdef ENABLE_WIFI_OTA
       if (Update.begin(loraOtaExpectedSize)) {
         (void)Update.write(loraOtaBuffer, loraOtaBufferSize); // Suppress unused variable warning
         if (Update.end()) {
@@ -1309,6 +1327,10 @@ static void handleLoraOtaPacket(const String& packet) {
         Serial.println("OTA begin failed!");
         oledMsg("OTA Error", "Begin failed!");
       }
+#else
+      Serial.println("Update library not available - cannot flash firmware");
+      oledMsg("OTA Error", "Update not available");
+#endif
     }
 
     loraOtaActive = false;

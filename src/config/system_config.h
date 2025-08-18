@@ -1,34 +1,45 @@
 #pragma once
 
 #include <stdint.h>
+#include <cstddef>
+#include "device_config.h"
 
 // System-wide configuration management
 // Centralized configuration for all modules
 
 namespace SystemConfig {
-    // Hardware pin definitions
+    // Hardware pin definitions - now dynamically configured based on device
     namespace Pins {
-        constexpr uint8_t VEXT = 36;        // Vext control: LOW = ON
-        constexpr uint8_t OLED_RST = 21;    // OLED reset pin
-        constexpr uint8_t BUTTON = 0;       // BOOT button on GPIO0 (active LOW)
+        // These will be set dynamically based on detected device
+        extern uint8_t VEXT;        // Vext control: LOW = ON
+        extern uint8_t OLED_RST;    // OLED reset pin
+        extern uint8_t BUTTON;      // BOOT button on GPIO0 (active LOW)
 
         // I2C pins for OLED
-        constexpr uint8_t I2C_SDA = 17;
-        constexpr uint8_t I2C_SCL = 18;
+        extern uint8_t I2C_SDA;
+        extern uint8_t I2C_SCL;
 
         // LoRa radio pins
-        constexpr uint8_t LORA_NSS = 8;
-        constexpr uint8_t LORA_DIO1 = 14;
-        constexpr uint8_t LORA_RST = 12;
-        constexpr uint8_t LORA_BUSY = 13;
+        extern uint8_t LORA_NSS;
+        extern uint8_t LORA_DIO1;
+        extern uint8_t LORA_RST;
+        extern uint8_t LORA_BUSY;
 
         // Future sensor pins
-        constexpr uint8_t LIGHTNING_IRQ = 4;    // AS3935 interrupt pin
-        constexpr uint8_t LIGHTNING_CS = 5;     // AS3935 chip select
+        extern uint8_t LIGHTNING_IRQ;    // AS3935 interrupt pin
+        extern uint8_t LIGHTNING_CS;     // AS3935 chip select
 
         // Future actuator pins
-        constexpr uint8_t LED_DATA = 2;         // WS2812 LED strip data
-        constexpr uint8_t BUZZER = 3;           // Buzzer/speaker output
+        extern uint8_t LED_DATA;         // WS2812 LED strip data
+        extern uint8_t BUZZER;           // Buzzer/speaker output
+
+        // GPS pins (if available)
+        extern uint8_t GPS_TX;
+        extern uint8_t GPS_RX;
+        extern uint8_t GPS_PPS;
+
+        // Initialize pins based on detected device
+        void initializePins();
     }
 
     // LoRa configuration
