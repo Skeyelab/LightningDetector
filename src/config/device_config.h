@@ -107,7 +107,7 @@ namespace DeviceConfig {
                 .tftRes = 255,   // Not available
                 .tftCs = 255,    // Not available
                 .tftLedK = 255,  // Not available
-                
+
                 // LoRa pins
                 .loraNss = 8,
                 .loraDio1 = 14,
@@ -116,18 +116,18 @@ namespace DeviceConfig {
                 .loraMiso = 255, // Not available (using default SPI)
                 .loraMosi = 255, // Not available (using default SPI)
                 .loraSck = 255,  // Not available (using default SPI)
-                
+
                 // System pins
                 .button = 0,
                 .vext = 36,
                 .vbatRead = 255, // Not available
-                
+
                 // Sensor pins
                 .lightningIrq = 4,
                 .lightningCs = 5,
                 .ledData = 2,
                 .buzzer = 3,
-                
+
                 // GPS pins (not available)
                 .gpsTx = 255,
                 .gpsRx = 255,
@@ -167,7 +167,7 @@ namespace DeviceConfig {
                 .tftRes = 39,      // TFT_RES
                 .tftCs = 38,       // TFT_CS
                 .tftLedK = 21,     // TFT_LED_K
-                
+
                 // LoRa pins (SX1262)
                 .loraNss = 8,      // LoRa_NSS
                 .loraDio1 = 14,    // LoRa_DIO1
@@ -176,18 +176,18 @@ namespace DeviceConfig {
                 .loraMiso = 11,    // LoRa_MISO
                 .loraMosi = 10,    // LoRa_MOSI
                 .loraSck = 9,      // LoRa_SCK
-                
+
                 // System pins
                 .button = 0,       // USER_SW
                 .vext = 7,         // Vext Ctrl (GPIO3)
                 .vbatRead = 1,     // Vbat_Read
-                
+
                 // Sensor pins
                 .lightningIrq = 255, // Not available
                 .lightningCs = 255,  // Not available
                 .ledData = 255,      // Not available
                 .buzzer = 255,       // Not available
-                
+
                 // GPS pins (UC6580)
                 .gpsTx = 33,       // GNSS_TX (GPIO33)
                 .gpsRx = 34,       // GNSS_RX (GPIO34)
