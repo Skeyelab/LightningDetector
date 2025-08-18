@@ -62,26 +62,33 @@ cd LightningDetector
 
 ### Build Options
 
-#### Sender (Lightning Detection Node)
+#### Unified Firmware  (single binary for Sender **or** Receiver)
 ```bash
-# Build lightning detection transmitter
-pio run -e sender
+# Build
+pio run -e unified
 
-# Upload to device
-pio run -e sender -t upload
+# Upload (USB serial bootloader)
+pio run -e unified -t upload
 
 # Monitor serial output
 pio device monitor
 ```
 
-#### Receiver (Base Station)
-```bash
-# Build base station with WiFi/OTA
-pio run -e receiver
+After flashing, the board boots as **Sender** by default.  Change the role at runtime:
 
-# Upload to device
-pio run -e receiver -t upload
+*Web UI*
+1. Connect to the device’s IP or `esp32.local`
+2. Scroll to **Device Role** → click **Toggle Role** (sender ↔ receiver)
+3. Reboot to apply
+
+*HTTP API*
+```bash
+curl -X POST http://<ip>/api/v1/config \
+     -H 'Content-Type: application/json' \
+     -d '{"role":"receiver"}'
 ```
+
+The choice is stored in NVS, so future boots keep the selected role.
 
 ## 🌐 Web Flasher
 
