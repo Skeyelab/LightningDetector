@@ -16,8 +16,33 @@
 
 ### Session log
 
+#### 2025-01-17 01:15 UTC
+- Context: **CONFIGURED DEVICE-SPECIFIC UPLOAD PORTS** - Set up automatic port assignment for both connected devices to streamline development workflow.
+- Changes:
+  - ⚙️ **PlatformIO Port Configuration**: Added automatic upload port assignment for each device type
+    * Heltec V3 environments: `/dev/cu.usbserial-0001`
+    * Wireless Tracker environments: `/dev/cu.usbmodem401101`
+  - 📚 **Documentation**: Created `docs/development/DEVICE_PORTS.md` with quick reference commands
+  - 🔧 **Build Verification**: Both environments compile successfully with correct port assignments
+- Commands run:
+  - `pio run --environment wireless-tracker --target size` (✅ SUCCESS - 297,642 bytes)
+  - `pio run --environment heltec-v3 --target size` (✅ SUCCESS - 297,650 bytes)
+  - `git add .` (staged all changes)
+  - `git commit -m "feat: configure device-specific upload ports for development"`
+  - `git push` (pushed to remote)
+- Files touched:
+  - `platformio.ini` (added upload_port for each environment)
+  - `docs/development/DEVICE_PORTS.md` (new - port reference guide)
+- **RESULT**: 🎯 **Streamlined development workflow with automatic port assignment**
+  - **No more manual port selection** - each environment automatically targets correct device
+  - **Quick reference guide** for common development commands
+  - **Both devices ready** for simultaneous development and testing
+- Next steps:
+  - Test upload functionality to both devices
+  - Implement TFT-LCD driver for Wireless Tracker
+  - Add UC6580 GPS driver for multi-system GNSS support
+
 #### 2025-01-17 00:45 UTC
-- Context: **UPDATED WIRELESS TRACKER WITH ACTUAL DATASHEET SPECIFICATIONS** - Completely revised device configuration to match real Wireless Tracker V1.1 hardware specifications from Heltec datasheet.
 - Changes:
   - 🔄 **Display Technology Changed**: Updated from OLED to TFT-LCD (0.96-inch 80x160 RGB)
     * Added TFT pin support: SDIN, SCLK, RS, RESET, CS, LED Control
