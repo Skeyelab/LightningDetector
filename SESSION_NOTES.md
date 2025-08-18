@@ -16,6 +16,36 @@
 
 ### Session log
 
+#### 2025-01-17 00:15 UTC
+- Context: **FIXED WIFI SUPPORT FOR WIRELESS TRACKER** - Corrected documentation and configuration to show Wireless Tracker V1.1 has WiFi support (same board as Heltec V3).
+- Changes:
+  - 🔧 **Device Configuration Fixed**: Updated `src/config/device_config.h` to show Wireless Tracker has WiFi (`hasWiFi = true`)
+  - 📚 **Documentation Corrected**: Fixed `docs/development/MULTI_DEVICE_SUPPORT.md` to show WiFi support for both devices
+  - ⚙️ **PlatformIO Configuration**: Added WiFi OTA support to Wireless Tracker environments
+    * Added `ENABLE_WIFI_OTA=1` flag to both wireless-tracker-sender and wireless-tracker-receiver
+    * Added WiFi libraries (`WiFi`, `ArduinoOTA`, `Update`) to Wireless Tracker environments
+    * Added SPIFFS filesystem support for Wireless Tracker receiver
+  - 🧹 **Code Comments Updated**: Fixed incorrect comments in `src/config/device_config.cpp` about WiFi capabilities
+  - ✅ **Hardware Reality**: Both devices use same board (`heltec_wifi_lora_32_V3`) so both have WiFi
+- Commands run:
+  - `git add .` (staged all changes)
+  - `git commit -m "fix: correct WiFi support for Wireless Tracker V1.1"` (committed changes)
+  - `git push --set-upstream origin adding-new-board` (pushed to remote)
+- Files touched:
+  - `src/config/device_config.h` (fixed WiFi capability)
+  - `docs/development/MULTI_DEVICE_SUPPORT.md` (corrected WiFi support)
+  - `platformio.ini` (added WiFi support to Wireless Tracker environments)
+  - `src/config/device_config.cpp` (fixed comments)
+- **RESULT**: 🎯 **WiFi support correctly configured for Wireless Tracker V1.1**
+  - **Both devices now properly show WiFi support** in documentation and code
+  - **Wireless Tracker environments** now include WiFi OTA capabilities
+  - **Hardware reality matches code** - both devices use same ESP32-S3 board with WiFi
+  - **All build environments** now properly support WiFi features
+- Next steps:
+  - Test WiFi functionality on actual Wireless Tracker hardware
+  - Verify OTA updates work on both device types
+  - Consider adding WiFi-specific pin configurations if needed
+
 #### 2025-01-16 23:45 UTC
 - Context: **IMPLEMENTED MULTI-DEVICE SUPPORT** - Added support for both Heltec WiFi LoRa 32 V3 and new Heltec Wireless Tracker V1.1 hardware.
 - Changes:
