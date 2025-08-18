@@ -398,6 +398,12 @@ static void loadPersistedSettings() {
 }
 
 static void initDisplay() {
+  // Check if device has OLED display
+  if (!DeviceConfig::DeviceManager::getCurrentCapabilities().hasOLED) {
+    Serial.println("Device does not have OLED display - skipping OLED init");
+    return;
+  }
+
   // Power OLED via Vext and reset it
   pinMode(VEXT_PIN, OUTPUT);
   digitalWrite(VEXT_PIN, LOW);   // enable Vext
@@ -841,6 +847,19 @@ static void restoreStateAfterWakeup() {
 void setup() {
   Serial.begin(115200);
   delay(500);
+
+  // Initialize NVS first
+  esp_err_t ret = nvs_flash_init();
+  if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+    ESP_ERROR_CHECK(nvs_flash_erase());
+    ret = nvs_flash_init();
+  }
+  if (ret != ESP_OK) {
+    Serial.printf("[SETUP] NVS init failed: %s\n", esp_err_to_name(ret));
+    // Continue anyway, but some features may not work
+  } else {
+    Serial.println("[SETUP] NVS initialized successfully");
+  }
 
   // Initialize device configuration first
   SystemConfig::Pins::initializePins();

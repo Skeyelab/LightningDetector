@@ -98,41 +98,41 @@ namespace DeviceConfig {
 
                         constexpr PinConfig PINS = {
                 // Display pins (order must match struct declaration)
-                .oledSda = 17,
-                .oledScl = 18,
-                .oledRst = 21,
-                .tftSdin = 255,  // Not available
-                .tftSclk = 255,  // Not available
-                .tftRs = 255,    // Not available
-                .tftRes = 255,   // Not available
-                .tftCs = 255,    // Not available
-                .tftLedK = 255,  // Not available
+                .oledSda = 4,       // OLED_SDA (GPIO4) - corrected from datasheet
+                .oledScl = 15,      // OLED_SCL (GPIO15) - corrected from datasheet
+                .oledRst = 21,      // OLED_RST (GPIO21)
+                .tftSdin = 255,     // Not available
+                .tftSclk = 255,     // Not available
+                .tftRs = 255,       // Not available
+                .tftRes = 255,      // Not available
+                .tftCs = 255,       // Not available
+                .tftLedK = 255,     // Not available
 
-                // LoRa pins
-                .loraNss = 8,
-                .loraDio1 = 14,
-                .loraRst = 12,
-                .loraBusy = 13,
-                .loraMiso = 255, // Not available (using default SPI)
-                .loraMosi = 255, // Not available (using default SPI)
-                .loraSck = 255,  // Not available (using default SPI)
+                // LoRa pins (SX1262)
+                .loraNss = 8,       // LoRa_NSS (GPIO8)
+                .loraDio1 = 14,     // LoRa_DIO1 (GPIO14)
+                .loraRst = 12,      // LoRa_RST (GPIO12)
+                .loraBusy = 13,     // LoRa_Busy (GPIO13)
+                .loraMiso = 11,     // LoRa_MISO (GPIO11) - corrected from datasheet
+                .loraMosi = 10,     // LoRa_MOSI (GPIO10) - corrected from datasheet
+                .loraSck = 9,       // LoRa_SCK (GPIO9) - corrected from datasheet
 
                 // System pins
-                .button = 0,
-                .vext = 36,
-                .vbatRead = 255, // Not available
+                .button = 0,        // USER_SW (GPIO0)
+                .vext = 36,         // Vext Ctrl (GPIO36)
+                .vbatRead = 1,      // Vbat_Read (GPIO1) - corrected from datasheet
 
                 // Sensor pins
-                .lightningIrq = 4,
-                .lightningCs = 5,
-                .ledData = 2,
-                .buzzer = 3,
+                .lightningIrq = 4,  // Lightning IRQ (GPIO4)
+                .lightningCs = 5,   // Lightning CS (GPIO5)
+                .ledData = 2,       // LED Data (GPIO2)
+                .buzzer = 3,        // Buzzer (GPIO3)
 
                 // GPS pins (not available)
-                .gpsTx = 255,
-                .gpsRx = 255,
-                .gpsRst = 255,
-                .gpsPps = 255
+                .gpsTx = 255,       // Not available
+                .gpsRx = 255,       // Not available
+                .gpsRst = 255,      // Not available
+                .gpsPps = 255       // Not available
             };
         };
 

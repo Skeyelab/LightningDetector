@@ -37,10 +37,18 @@ This project now supports multiple Heltec devices with automatic hardware detect
 
 ### Heltec V3
 ```cpp
-OLED_SDA = 17, OLED_SCL = 18, OLED_RST = 21
+// OLED Display (SSD1306 128x64)
+OLED_SDA = 4, OLED_SCL = 15, OLED_RST = 21
+
+// LoRa Radio (SX1262)
 LORA_NSS = 8, LORA_DIO1 = 14, LORA_RST = 12, LORA_BUSY = 13
-BUTTON = 0, VEXT = 36
+LORA_MISO = 11, LORA_MOSI = 10, LORA_SCK = 9
+
+// System
+BUTTON = 0, VEXT_CTRL = 36, VBAT_READ = 1
 ```
+
+> **📋 Complete Pin Mapping**: See [HELTEC_V3_PIN_MAPPING.md](HELTEC_V3_PIN_MAPPING.md) for detailed header pinouts and additional functions (Touch, ADC, UART, USB).
 
 ### Wireless Tracker V1.1
 ```cpp
