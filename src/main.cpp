@@ -110,6 +110,49 @@ static const int sfValues[] = {7, 8, 9, 10, 11, 12};
 static const float bwValues[] = {62.5f, 125.0f, 250.0f, 500.0f};
 static const int txPowerValues[] = {2, 3, 5, 8, 10, 12, 15, 17, 20, 22};
 
+// Forward declaration so it can be used by preset helper
+static void computeIndicesFromCurrent();
+
+// ---- LoRa Preset Definitions ----
+enum LoRaPreset : int {
+    PRESET_LONG_RANGE_FAST = 0,
+    PRESET_LONG_RANGE_SLOW,
+    PRESET_LONG_RANGE_MODERATE,
+    PRESET_MEDIUM_RANGE_SLOW,
+    PRESET_MEDIUM_RANGE_FAST,
+    PRESET_SHORT_RANGE_SLOW,
+    PRESET_SHORT_RANGE_FAST,
+    PRESET_SHORT_RANGE_TURBO,
+    PRESET_COUNT
+};
+
+struct LoRaPresetConfig {
+    const char *name;
+    float bw;
+    int sf;
+};
+
+static const LoRaPresetConfig loRaPresets[PRESET_COUNT] = {
+    {"Long Range - Fast",     125.0f, 10},
+    {"Long Range - Slow",     125.0f, 12},
+    {"Long Range - Moderate", 125.0f, 11},
+    {"Medium Range - Slow",   125.0f, 10},
+    {"Medium Range - Fast",   250.0f, 9},
+    {"Short Range - Slow",    125.0f, 8},
+    {"Short Range - Fast",    250.0f, 7},
+    {"Short Range - Turbo",   500.0f, 7}
+};
+
+static int currentPreset = -1; // -1 indicates custom parameters
+
+static void applyLoRaPreset(int presetIndex) {
+    if (presetIndex < 0 || presetIndex >= PRESET_COUNT) return;
+    currentPreset = presetIndex;
+    currentBW = loRaPresets[presetIndex].bw;
+    currentSF = loRaPresets[presetIndex].sf;
+    computeIndicesFromCurrent();
+}
+
 // Current indices for parameter cycling
 static size_t currentSfIndex = 2;  // Default to SF9
 static size_t currentBwIndex = 1;  // Default to 125kHz
@@ -373,6 +416,7 @@ static void savePersistedSettings() {
   prefs.putInt("sf", currentSF);
   prefs.putInt("cr", currentCR);
   prefs.putInt("tx", currentTxPower);
+  prefs.putInt("preset", currentPreset);  // NEW: persist preset selection
   prefs.end();
 }
 
@@ -380,18 +424,25 @@ static void savePersistedSettings() {
 
 static void loadPersistedSettings() {
   prefs.begin("LtngDet", true);
+  bool havePreset = prefs.isKey("preset");
   bool haveFreq = prefs.isKey("freq");
   bool haveBW = prefs.isKey("bw");
   bool haveSF = prefs.isKey("sf");
   bool haveCR = prefs.isKey("cr");
   bool haveTX = prefs.isKey("tx");
 
+  if (havePreset) {
+    int pr = prefs.getInt("preset", -1);
+    if (pr >= 0) {
+      applyLoRaPreset(pr);
+    }
+  } else {
+    if (haveBW) currentBW = prefs.getFloat("bw", currentBW);
+    if (haveSF) currentSF = prefs.getInt("sf", currentSF);
+  }
   if (haveFreq) currentFreq = prefs.getFloat("freq", currentFreq);
-  if (haveBW) currentBW = prefs.getFloat("bw", currentBW);
-  if (haveSF) currentSF = prefs.getInt("sf", currentSF);
   if (haveCR) currentCR = prefs.getInt("cr", currentCR);
   if (haveTX) currentTxPower = prefs.getInt("tx", currentTxPower);
-  // Role is no longer loaded from preferences - fixed at build time
   prefs.end();
 }
 

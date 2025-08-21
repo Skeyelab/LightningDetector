@@ -14,6 +14,9 @@ void ConfigManager::ensureDefaults() {
     if (!configDoc_.containsKey("led_brightness")) {
         configDoc_["led_brightness"] = 128;
     }
+    if (!configDoc_.containsKey("lora_preset")) {
+        configDoc_["lora_preset"] = 0; // Default preset
+    }
 }
 
 bool ConfigManager::load() {

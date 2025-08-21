@@ -1,4 +1,5 @@
 #include "web_server.h"
+#include "lora_config_handler.h"
 
 #if defined(ROLE_RECEIVER) || defined(ENABLE_WEB_INTERFACE)
 
@@ -131,6 +132,11 @@ void WebServerManager::handleConfigPost() {
         server_.send(500, "application/json", "{\"error\":\"Failed to save config\"}");
         return;
     }
+
+    // Forward new configuration to LoRa layer (TX unit)
+    String cfgJson;
+    serializeJson(doc, cfgJson);
+    LoRaConfigHandler::sendConfig(cfgJson);
 
     server_.send(200, "application/json", "{\"status\":\"ok\"}");
 }
