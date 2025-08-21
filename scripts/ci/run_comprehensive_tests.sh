@@ -141,6 +141,22 @@ else
     failed_tests=$((failed_tests + 1))
 fi
 
+# LoRa Presets test - Unity compatible
+total_tests=$((total_tests + 1))
+if run_comprehensive_test "LoRa Presets" "test/test_lora_presets_unity.cpp" "$COMMON_DEPS" "$COMMON_INCLUDES"; then
+    passed_tests=$((passed_tests + 1))
+else
+    failed_tests=$((failed_tests + 1))
+fi
+
+# Web Preset Integration test - Unity compatible
+total_tests=$((total_tests + 1))
+if run_comprehensive_test "Web Integration" "test/test_web_integration_unity.cpp" "$COMMON_DEPS" "$COMMON_INCLUDES"; then
+    passed_tests=$((passed_tests + 1))
+else
+    failed_tests=$((failed_tests + 1))
+fi
+
 # Summary
 echo -e "\n=========================================="
 echo "Comprehensive Test Summary"

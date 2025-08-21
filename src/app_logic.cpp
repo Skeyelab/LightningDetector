@@ -3,7 +3,7 @@
 
 ButtonAction classifyPress(uint32_t pressDurationMs) {
   if (pressDurationMs < 100) return ButtonAction::Ignore;
-  if (pressDurationMs < 3000) return ButtonAction::CyclePreset;  // Up to 3s: cycle presets
+  if (pressDurationMs < 6000) return ButtonAction::CyclePreset;  // Up to 6s: cycle presets
   return ButtonAction::SleepMode;                                // Long press: sleep mode
 }
 
