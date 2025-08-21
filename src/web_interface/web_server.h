@@ -28,8 +28,10 @@ private:
     void handleStatus();
     void handleConfigGet();
     void handleConfigPost();
+    void handlePresetPost();
     void handleWifiGet();
     void handleWifiPost();
+    void handleStaticFile(const String& path);
     void handleNotFound();
 
     static bool readJsonBody(WebServer &server, DynamicJsonDocument &doc);

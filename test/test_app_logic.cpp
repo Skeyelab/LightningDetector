@@ -11,20 +11,15 @@ void test_classifyPress() {
   assert(classifyPress(99) == ButtonAction::Ignore);
   std::cout << "  ✓ Ignore cases passed" << std::endl;
 
-  // Test CycleSF (short press)
-  assert(classifyPress(100) == ButtonAction::CycleSF);
-  assert(classifyPress(150) == ButtonAction::CycleSF);
-  assert(classifyPress(999) == ButtonAction::CycleSF);
-  std::cout << "  ✓ CycleSF cases passed" << std::endl;
+  // Test CyclePreset (up to 6 seconds)
+  assert(classifyPress(100) == ButtonAction::CyclePreset);
+  assert(classifyPress(1000) == ButtonAction::CyclePreset);
+  assert(classifyPress(3000) == ButtonAction::CyclePreset);
+  assert(classifyPress(5999) == ButtonAction::CyclePreset);
+  std::cout << "  ✓ CyclePreset cases passed" << std::endl;
 
-  // Test CycleBW (medium press)
-  assert(classifyPress(1000) == ButtonAction::CycleBW);
-  assert(classifyPress(1500) == ButtonAction::CycleBW);
-  assert(classifyPress(2999) == ButtonAction::CycleBW);
-  std::cout << "  ✓ CycleBW cases passed" << std::endl;
-
-  // Test SleepMode (long press)
-  assert(classifyPress(3000) == ButtonAction::SleepMode);
+  // Test SleepMode (6+ seconds)
+  assert(classifyPress(6000) == ButtonAction::SleepMode);
   assert(classifyPress(10000) == ButtonAction::SleepMode);
   std::cout << "  ✓ SleepMode cases passed" << std::endl;
 }
