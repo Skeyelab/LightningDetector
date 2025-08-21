@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <cstring>
 #include <map>
+#include <string>
 
 // Mock Preferences class
 class Preferences {
