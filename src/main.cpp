@@ -112,6 +112,7 @@ static const int txPowerValues[] = {2, 3, 5, 8, 10, 12, 15, 17, 20, 22};
 
 // Forward declaration so it can be used by preset helper
 static void computeIndicesFromCurrent();
+static void updateRadioSettings();
 
 // ---- LoRa Preset Definitions ----
 enum LoRaPreset : int {
@@ -151,6 +152,7 @@ static void applyLoRaPreset(int presetIndex) {
     currentBW = loRaPresets[presetIndex].bw;
     currentSF = loRaPresets[presetIndex].sf;
     computeIndicesFromCurrent();
+    updateRadioSettings();
 }
 
 // Current indices for parameter cycling
@@ -607,24 +609,15 @@ static void handleSenderButtonAction(ButtonAction action) {
   }
 
   switch (action) {
-    case ButtonAction::CycleSF:
-      // Cycle through Spreading Factor values
+    case ButtonAction::CyclePreset:
+      // Cycle through LoRa presets
       {
-        const int nextIndex = (currentSfIndex + 1) % (sizeof(sfValues) / sizeof(sfValues[0]));
-        const int nextSF = sfValues[nextIndex];
-        startConfigBroadcast(currentFreq, currentBW, nextSF, currentCR, currentTxPower);
-        Serial.printf("SF change requested -> %d (broadcasting to receiver)\n", nextSF);
-        oledMsg("SF Changed", String(nextSF).c_str());
-      }
-      break;
-    case ButtonAction::CycleBW:
-      // Cycle through Bandwidth values
-      {
-        const int nextIndex = (currentBwIndex + 1) % (sizeof(bwValues) / sizeof(bwValues[0]));
-        const float nextBW = bwValues[nextIndex];
-        startConfigBroadcast(currentFreq, nextBW, currentSF, currentCR, currentTxPower);
-        Serial.printf("BW change requested -> %.0f kHz (broadcasting to receiver)\n", nextBW);
-        oledMsg("BW Changed", String(nextBW).c_str());
+        int nextPreset = (currentPreset + 1) % PRESET_COUNT;
+        applyLoRaPreset(nextPreset);
+        savePersistedSettings();
+        startConfigBroadcast(currentFreq, currentBW, currentSF, currentCR, currentTxPower);
+        Serial.printf("Preset change requested -> %s (index %d)\n", loRaPresets[nextPreset].name, nextPreset);
+        oledMsg("Preset", loRaPresets[nextPreset].name);
       }
       break;
     case ButtonAction::SleepMode:
@@ -648,22 +641,13 @@ static void handleReceiverButtonAction(ButtonAction action) {
 
   Serial.printf("[RX_BTN] Handling action: %d\n", (int)action);
   switch (action) {
-    case ButtonAction::CycleSF:
-      // Cycle through Spreading Factor values (same as sender)
+    case ButtonAction::CyclePreset:
       {
-        const int nextIndex = (currentSfIndex + 1) % (sizeof(sfValues) / sizeof(sfValues[0]));
-        const int nextSF = sfValues[nextIndex];
-        Serial.printf("[RX_BTN] SF change requested -> %d\n", nextSF);
-        oledMsg("SF Changed", String(nextSF).c_str());
-      }
-      break;
-    case ButtonAction::CycleBW:
-      // Cycle through Bandwidth values (same as sender)
-      {
-        const int nextIndex = (currentBwIndex + 1) % (sizeof(bwValues) / sizeof(bwValues[0]));
-        const float nextBW = bwValues[nextIndex];
-        Serial.printf("[RX_BTN] BW change requested -> %.0f kHz\n", nextBW);
-        oledMsg("BW Changed", String(nextBW).c_str());
+        int nextPreset = (currentPreset + 1) % PRESET_COUNT;
+        applyLoRaPreset(nextPreset);
+        savePersistedSettings();
+        Serial.printf("[RX_BTN] Preset change -> %s (index %d)\n", loRaPresets[nextPreset].name, nextPreset);
+        oledMsg("Preset", loRaPresets[nextPreset].name);
       }
       break;
     case ButtonAction::SleepMode:

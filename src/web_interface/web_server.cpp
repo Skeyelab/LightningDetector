@@ -138,6 +138,9 @@ void WebServerManager::handleConfigPost() {
     serializeJson(doc, cfgJson);
     LoRaConfigHandler::sendConfig(cfgJson);
 
+    // Apply preset locally if provided
+    // The preset will be applied on main loop via preference reload
+
     server_.send(200, "application/json", "{\"status\":\"ok\"}");
 }
 
