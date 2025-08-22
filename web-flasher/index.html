@@ -541,7 +541,7 @@
 
         async function setAdcMultiplier() {
             const multiplier = parseFloat(document.getElementById('adcMultiplier').value);
-            
+
             try {
                 const response = await fetch('/api/adc_multiplier', {
                     method: 'POST',
@@ -550,7 +550,7 @@
                     },
                     body: JSON.stringify({ adc_multiplier: multiplier })
                 });
-                
+
                 const data = await response.json();
                 if (data.status === 'success') {
                     showMessage('ADC multiplier updated successfully!', 'success');
@@ -567,10 +567,10 @@
         // Event Listeners
         document.addEventListener('DOMContentLoaded', function() {
             // ... existing event listeners ...
-            
+
             // ADC Multiplier calibration
             document.getElementById('setAdcMultiplier').addEventListener('click', setAdcMultiplier);
-            
+
             // Load current ADC multiplier
             getCurrentAdcMultiplier();
         });

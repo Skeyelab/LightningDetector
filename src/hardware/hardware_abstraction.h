@@ -115,7 +115,7 @@ namespace HardwareAbstraction {
         Result wakeup();
         float getBatteryVoltage();
         uint8_t getBatteryPercent();
-        
+
         // ADC multiplier calibration for battery voltage
         void setAdcMultiplier(float multiplier);
         float getAdcMultiplier();

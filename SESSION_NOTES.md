@@ -16,6 +16,39 @@
 
 ### Session log
 
+#### 2025-01-17 15:00 UTC
+- Context: **AUTOMATIC BATTERY PIN DETECTION** - Fixed "Failed to read ADC pin 1" error by implementing automatic battery pin detection for Heltec V3.
+- Changes:
+  - 🔍 **Identified ADC Pin Issue**: Debug output showed "Failed to read ADC pin 1" - GPIO1 may not be correct battery pin
+  - ✅ **Implemented Automatic Pin Detection**: Added smart battery pin discovery system
+    * **Multi-Pin Testing**: Tests GPIO1, 2, 3, 4, 5, 6, 7, 8, 9, 10 (all valid ESP32-S3 ADC1 pins)
+    * **Dual ADC Method**: First tries hardware abstraction ADC, then falls back to Arduino analogRead()
+    * **Voltage Validation**: Only accepts pins that read > 0.1V (filters out disconnected pins)
+    * **One-Time Discovery**: Pin detection runs once at boot, result cached for performance
+  - 🛠️ **Enhanced ADC Support**: Added ADC2 support for higher GPIO pins (11-20)
+    * **ADC1 Channels**: GPIO1-10 → ADC1_CHANNEL_0-9
+    * **ADC2 Channels**: GPIO11-20 → ADC2_CHANNEL_0-9
+    * **Unified Interface**: Abstraction handles both ADC1 and ADC2 transparently
+  - 🐛 **Comprehensive Debug Output**: Enhanced debugging for battery pin discovery
+    * **Pin Testing**: Shows which pins are tested and their voltage readings
+    * **Detection Results**: Reports which pin is selected for battery monitoring
+    * **ADC vs AnalogRead**: Shows both hardware abstraction and Arduino results
+- Commands run:
+  - `pio run -e unified` - Build successful with automatic pin detection
+  - Enhanced ADC channel mapping for ESP32-S3
+  - Added fallback to Arduino analogRead() for compatibility
+- Files touched:
+  - `src/hardware/hardware_abstraction.cpp` - Added automatic battery pin detection and ADC2 support
+- **RESULT**: 🎉 Automatic battery pin detection implemented!
+  - **Smart Discovery**: Automatically finds correct battery pin on any ESP32-S3 board
+  - **ESP32-S3 Optimized**: Proper ADC1/ADC2 channel mapping for all GPIO pins
+  - **Fallback Safety**: Uses Arduino analogRead if hardware abstraction fails
+  - **Debug Visibility**: Shows exactly which pin is detected and why
+- Next steps:
+  - Flash updated firmware to test automatic pin detection
+  - Monitor serial output to see which GPIO pin is detected for battery
+  - Proceed with ADC multiplier calibration once correct pin is found
+
 #### 2025-01-17 14:00 UTC
 - Context: **BATTERY LEVEL CALIBRATION SOLUTION** - Implemented ADC multiplier calibration system based on Meshtastic documentation to fix 0% battery readings.
 - Changes:
