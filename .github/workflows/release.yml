@@ -182,18 +182,18 @@ jobs:
 
           ### Files Included
           - **🌟 Unified Firmware**: `unified_firmware.bin` - **RECOMMENDED** - Single firmware with runtime role switching via web interface
-          - **Legacy Sender Firmware**: `sender_firmware.bin` - For backward compatibility 
+          - **Legacy Sender Firmware**: `sender_firmware.bin` - For backward compatibility
           - **Legacy Receiver Firmware**: `receiver_firmware.bin` - For backward compatibility
 
           ### Flashing Instructions
-          
+
           #### 🌟 Recommended: Unified Firmware
-          1. Download `unified_firmware.bin` 
+          1. Download `unified_firmware.bin`
           2. Flash using ESP32 web flasher or esptool (offset: 0x10000)
           3. Connect to device WiFi network or configure WiFi
           4. Access web interface to set device role (TX/RX mode)
           5. Configure LoRa parameters as needed
-          
+
           #### Legacy Firmware (Compatibility)
           1. Download `sender_firmware.bin` or `receiver_firmware.bin` based on desired role
           2. Flash using ESP32 web flasher or esptool (offset: 0x10000)
