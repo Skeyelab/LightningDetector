@@ -16,6 +16,42 @@
 
 ### Session log
 
+#### 2025-01-17 01:15 UTC
+- Context: **CREATED UNIFIED FIRMWARE FLASHING SCRIPTS** - Developed new flashing scripts to support the unified firmware architecture for both single and dual device deployments.
+- Changes:
+  - 🔧 **Created `flash_unified.sh`**: New script for single device unified firmware deployment
+    * Uses `pio run -e unified` environment for unified firmware
+    * Automatically uploads SPIFFS data (web interface files)
+    * Includes port validation and helpful usage instructions
+    * Supports runtime role switching between Sender/Receiver
+  - ✅ **Updated `flash_both.sh`**: Modified existing script to use unified firmware instead of legacy sender/receiver builds
+    * Both devices now run unified firmware with runtime role switching
+    * Smart port detection with automatic device discovery
+    * Flexible port specification via command line arguments
+    * Both devices get SPIFFS web interface uploads
+  - 🎯 **Unified Architecture Support**: Both scripts now support the modern unified firmware approach
+    * Runtime role switching without reflashing
+    * WiFi and OTA update support built-in
+    * Web interface accessible on both devices
+    * Consistent firmware across all devices
+- Commands run:
+  - `chmod +x scripts/dev/flash_unified.sh` (made new script executable)
+  - Updated `flash_both.sh` to use unified environment
+- Files touched:
+  - `scripts/dev/flash_unified.sh` (created new unified firmware flashing script)
+  - `scripts/dev/flash_both.sh` (updated to use unified firmware environment)
+- **RESULT**: 🎉 Complete unified firmware flashing support!
+  - **Single device deployment** via `flash_unified.sh` with unified firmware + SPIFFS
+  - **Dual device deployment** via `flash_both.sh` with unified firmware on both devices
+  - **Runtime flexibility** - devices can switch between Sender/Receiver roles without reflashing
+  - **Web interface ready** - both devices get full web interface via SPIFFS
+  - **Future-proof architecture** - ready for unified firmware as primary deployment method
+- Next steps:
+  - Test both flashing scripts with actual hardware
+  - Verify unified firmware role switching works correctly
+  - Consider deprecating legacy sender/receiver specific builds
+  - Update documentation to reflect unified firmware as primary deployment method
+
 #### 2025-01-17 00:30 UTC
 - Context: **UPDATED BUILD AND TEST VERIFICATION POLICY** - Completely revised policy to reflect unified firmware architecture and comprehensive testing framework.
 - Changes:

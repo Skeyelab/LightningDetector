@@ -373,14 +373,14 @@ static void oledMsg(const char* l1, const char* l2 = nullptr, const char* l3 = n
     return;
   }
   lastOledUpdate = now;
-  
+
   // Add I2C mutex protection
   static bool oledBusy = false;
   if (oledBusy) {
     return; // Skip if already in use
   }
   oledBusy = true;
-  
+
   u8g2.clearBuffer();
   u8g2.setFont(u8g2_font_6x10_tr);
 
@@ -418,7 +418,7 @@ static void oledMsg(const char* l1, const char* l2 = nullptr, const char* l3 = n
   drawPingDot();
 
   u8g2.sendBuffer();
-  
+
   // Release I2C mutex
   oledBusy = false;
 }

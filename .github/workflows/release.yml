@@ -25,7 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        environment: [sender, receiver]
+        environment: [unified, sender, receiver]  # Primary unified + legacy compatibility builds
 
     steps:
     - name: Checkout code
@@ -129,13 +129,19 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v5
 
-    - name: Download Sender Artifacts
+    - name: Download Unified Artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: unified-release-artifacts
+        path: unified_artifacts/
+
+    - name: Download Sender Artifacts (Legacy)
       uses: actions/download-artifact@v4
       with:
         name: sender-release-artifacts
         path: sender_artifacts/
 
-    - name: Download Receiver Artifacts
+    - name: Download Receiver Artifacts (Legacy)
       uses: actions/download-artifact@v4
       with:
         name: receiver-release-artifacts
@@ -146,10 +152,11 @@ jobs:
         # Create combined release directory
         mkdir -p release_artifacts
 
-        # Copy sender artifacts
-        cp sender_artifacts/* release_artifacts/
+        # Copy unified artifacts (primary)
+        cp unified_artifacts/* release_artifacts/
 
-        # Copy receiver artifacts
+        # Copy legacy artifacts for compatibility
+        cp sender_artifacts/* release_artifacts/
         cp receiver_artifacts/* release_artifacts/
 
         # List all files for debugging
@@ -164,21 +171,33 @@ jobs:
         body: |
           ## SBT PIO Heltec V3 OLED Firmware Release
 
-          This release contains firmware binaries for both sender and receiver roles.
+          This release contains unified firmware that supports both sender and receiver roles with runtime configuration.
 
           ### What's New
+          - **🆕 Unified Firmware**: One binary supports both TX and RX modes with web configuration
           - Firmware version: ${{ github.ref_name }}
           - Built for Heltec WiFi LoRa 32 V3 board
           - Compatible with ESP32 web flasher tools
+          - WiFi and web interface available in both modes
 
           ### Files Included
-          - **Sender Firmware**: `sender_firmware.bin` - For devices that send LoRa messages
-          - **Receiver Firmware**: `receiver_firmware.bin` - For devices that receive LoRa messages and support OTA updates
+          - **🌟 Unified Firmware**: `unified_firmware.bin` - **RECOMMENDED** - Single firmware with runtime role switching via web interface
+          - **Legacy Sender Firmware**: `sender_firmware.bin` - For backward compatibility 
+          - **Legacy Receiver Firmware**: `receiver_firmware.bin` - For backward compatibility
 
           ### Flashing Instructions
-          1. Download the appropriate firmware for your device role
-          2. Use ESP32 web flasher or esptool to flash the binary
-          3. Set flash offset to 0x10000
+          
+          #### 🌟 Recommended: Unified Firmware
+          1. Download `unified_firmware.bin` 
+          2. Flash using ESP32 web flasher or esptool (offset: 0x10000)
+          3. Connect to device WiFi network or configure WiFi
+          4. Access web interface to set device role (TX/RX mode)
+          5. Configure LoRa parameters as needed
+          
+          #### Legacy Firmware (Compatibility)
+          1. Download `sender_firmware.bin` or `receiver_firmware.bin` based on desired role
+          2. Flash using ESP32 web flasher or esptool (offset: 0x10000)
+          3. Role is fixed at compile time (cannot be changed)
 
           ### Web Flasher
           **🌐 Use our centralized web flasher**: [https://skeyelab.github.io/LightningDetector/](https://skeyelab.github.io/LightningDetector/)
@@ -195,6 +214,8 @@ jobs:
           - Commit: ${{ github.sha }}
 
         files: |
+          release_artifacts/unified_firmware.bin
+          release_artifacts/unified_manifest.json
           release_artifacts/sender_firmware.bin
           release_artifacts/sender_manifest.json
           release_artifacts/receiver_firmware.bin
