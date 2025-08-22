@@ -267,64 +267,62 @@ static void drawStatusBar() {
   int xPos = 2;
 
 #ifdef ENABLE_WIFI_OTA
-  if (!isSender) {
-    // WiFi status
-    if (wifiConnected) {
-      // Get IP address and handle scrolling if needed
-      String ipAddress = WiFi.localIP().toString();
+  // WiFi status for both sender and receiver roles
+  if (wifiConnected) {
+    // Get IP address and handle scrolling if needed
+    String ipAddress = WiFi.localIP().toString();
 
-      // Reset scroll if IP changed
-      if (currentIP != ipAddress) {
-        currentIP = ipAddress;
-        ipScrollOffset = 0;
-        lastScrollUpdate = millis();
-      }
+    // Reset scroll if IP changed
+    if (currentIP != ipAddress) {
+      currentIP = ipAddress;
+      ipScrollOffset = 0;
+      lastScrollUpdate = millis();
+    }
 
-      // Display IP address with scrolling if too long
-      const char* ipStr = ipAddress.c_str();
-      int ipLength = strlen(ipStr);
+    // Display IP address with scrolling if too long
+    const char* ipStr = ipAddress.c_str();
+    int ipLength = strlen(ipStr);
 
-      if (ipLength <= MAX_DISPLAY_WIDTH) {
-        // IP fits, display normally
-        u8g2.drawStr(xPos, yPos - 10, ipStr);
-      } else {
-        // IP is too long, implement scrolling
-        uint32_t now = millis();
-        if (now - lastScrollUpdate >= SCROLL_INTERVAL_MS) {
-          ipScrollOffset++;
-          // Reset scroll when we've shown the entire string
-          if (ipScrollOffset > ipLength - MAX_DISPLAY_WIDTH) {
-            ipScrollOffset = 0;
-          }
-          lastScrollUpdate = now;
-        }
-
-        // Create substring for scrolling display
-        char scrolledIP[MAX_DISPLAY_WIDTH + 1];
-        strncpy(scrolledIP, ipStr + ipScrollOffset, MAX_DISPLAY_WIDTH);
-        scrolledIP[MAX_DISPLAY_WIDTH] = '\0';
-        u8g2.drawStr(xPos, yPos - 10, scrolledIP);
-      }
-
-      // Display network location
-      const char* location = getCurrentNetworkLocation();
-      u8g2.drawStr(xPos, yPos, location);
-      xPos += (strlen(location) * 6); // Approximate character width
+    if (ipLength <= MAX_DISPLAY_WIDTH) {
+      // IP fits, display normally
+      u8g2.drawStr(xPos, yPos - 10, ipStr);
     } else {
-      u8g2.drawStr(xPos, yPos, "NoWiFi");
-      xPos += 20;
+      // IP is too long, implement scrolling
+      uint32_t now = millis();
+      if (now - lastScrollUpdate >= SCROLL_INTERVAL_MS) {
+        ipScrollOffset++;
+        // Reset scroll when we've shown the entire string
+        if (ipScrollOffset > ipLength - MAX_DISPLAY_WIDTH) {
+          ipScrollOffset = 0;
+        }
+        lastScrollUpdate = now;
+      }
+
+      // Create substring for scrolling display
+      char scrolledIP[MAX_DISPLAY_WIDTH + 1];
+      strncpy(scrolledIP, ipStr + ipScrollOffset, MAX_DISPLAY_WIDTH);
+      scrolledIP[MAX_DISPLAY_WIDTH] = '\0';
+      u8g2.drawStr(xPos, yPos - 10, scrolledIP);
     }
 
-    // OTA status
-    if (otaActive) {
-      u8g2.drawStr(xPos, yPos, "OTA");
-      xPos += 20;
-    }
+    // Display network location
+    const char* location = getCurrentNetworkLocation();
+    u8g2.drawStr(xPos, yPos, location);
+    xPos += (strlen(location) * 6); // Approximate character width
+  } else {
+    u8g2.drawStr(xPos, yPos, "NoWiFi");
+    xPos += 20;
+  }
 
-    // LoRa OTA status
-    if (loraOtaActive) {
-      u8g2.drawStr(xPos, yPos, "LoRaOTA");
-    }
+  // OTA status for both roles
+  if (otaActive) {
+    u8g2.drawStr(xPos, yPos, "OTA");
+    xPos += 20;
+  }
+
+  // LoRa OTA status for both roles
+  if (loraOtaActive) {
+    u8g2.drawStr(xPos, yPos, "LoRaOTA");
   }
 #endif
 }

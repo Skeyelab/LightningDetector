@@ -16,6 +16,34 @@
 
 ### Session log
 
+#### 2025-01-17 12:00 UTC
+- Context: **UNIFIED WIFI DISPLAY FOR BOTH ROLES** - Updated display functionality so both TX and RX roles show similar WiFi connection information including IP address and network location.
+- Changes:
+  - 🔍 **Identified Display Inconsistency**: Only RX role was showing WiFi information in status bar, TX role showed blank status bar
+  - ✅ **Unified Status Bar Display**: Modified `drawStatusBar()` function to show WiFi info for both roles
+    * **Both Roles Now Display**: IP address (with scrolling for long IPs), network location, "NoWiFi" when disconnected
+    * **OTA Status**: Both roles show "OTA" when OTA update active, "LoRaOTA" when LoRa OTA active
+    * **Removed Role Restriction**: Eliminated `if (!isSender)` condition that limited WiFi display to receivers only
+  - 🎯 **Enhanced User Experience**: Both device roles now provide consistent network status information
+    * **IP Address**: Shows current IP with scrolling animation for long addresses
+    * **Network Location**: Displays "Home", "Work", or custom location names
+    * **Connection Status**: Clear "NoWiFi" indication when not connected
+    * **OTA Status**: Visual indicators for both WiFi OTA and LoRa OTA operations
+- Commands run:
+  - `./scripts/ci/run_comprehensive_tests.sh` - All 125+ tests passed
+  - `pio run -e sender` - Build successful, flash usage: 531KB (15.9%)
+  - `pio run -e receiver` - Build successful, flash usage: 950KB (28.4%)
+- Files touched:
+  - `src/main.cpp` - Updated `drawStatusBar()` function to show WiFi info for both roles
+- **RESULT**: 🎉 Both TX and RX roles now have unified WiFi display functionality!
+  - **Consistent Experience**: Both device types show identical WiFi status information
+  - **Better Monitoring**: Users can now see IP and connection status on both devices
+  - **No Functionality Loss**: All existing features preserved, only added WiFi display to TX role
+  - **Build Verification**: All tests pass, both firmware variants build successfully
+- Next steps:
+  - Test WiFi display functionality on actual hardware
+  - Monitor user feedback on unified display experience
+
 #### 2025-01-17 04:00 UTC
 - Context: **CORRECTED BUTTON BEHAVIOR DOCUMENTATION** - Fixed inaccurate button control documentation that was misleading users about device configuration.
 - Changes:
