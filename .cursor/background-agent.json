@@ -1,0 +1,127 @@
+{
+  "name": "PlatformIO Heltec ESP32 Background Agent",
+  "description": "Automated building, testing, and analysis for Heltec ESP32 projects",
+  "version": "1.0.0",
+  "container": {
+    "image": "platformio-heltec-esp32:latest",
+    "workingDirectory": "/workspace"
+  },
+  "tasks": {
+    "build": {
+      "sender": {
+        "command": "platformio run -e sender",
+        "description": "Build sender firmware for Heltec WiFi LoRa 32 V3",
+        "group": "build"
+      },
+      "receiver": {
+        "command": "platformio run -e receiver",
+        "description": "Build receiver firmware with WiFi OTA support",
+        "group": "build"
+      },
+      "all": {
+        "command": "platformio run -e sender -e receiver",
+        "description": "Build both sender and receiver firmware",
+        "group": "build"
+      }
+    },
+    "static-analysis": {
+      "cppcheck": {
+        "command": "platformio check -e sender-check -e receiver-check",
+        "description": "Run cppcheck static analysis on sender and receiver code",
+        "group": "analysis"
+      },
+      "clang-tidy": {
+        "command": "platformio check -e sender-tidy -e receiver-tidy",
+        "description": "Run clang-tidy analysis with project configuration",
+        "group": "analysis"
+      },
+      "all-checks": {
+        "command": "platformio check -e sender-check -e receiver-check -e sender-tidy -e receiver-tidy",
+        "description": "Run all static analysis tools",
+        "group": "analysis"
+      }
+    },
+    "testing": {
+      "native": {
+        "command": "platformio test -e native",
+        "description": "Run C++17 unit tests with Arduino mocks",
+        "group": "test"
+      },
+      "hardware": {
+        "command": "platformio test -e native-hardware-test",
+        "description": "Run hardware abstraction layer tests",
+        "group": "test"
+      },
+      "isolated": {
+        "command": "platformio test -e native-hardware-isolated",
+        "description": "Run isolated hardware tests",
+        "group": "test"
+      },
+      "all-tests": {
+        "command": "platformio test -e native -e native-hardware-test -e native-hardware-isolated",
+        "description": "Run all test environments",
+        "group": "test"
+      }
+    },
+    "pipeline": {
+      "full": {
+        "command": "platformio run -e sender -e receiver && platformio check -e sender-check -e receiver-check -e sender-tidy -e receiver-tidy && platformio test -e native -e native-hardware-test -e native-hardware-isolated",
+        "description": "Complete build, analysis, and test pipeline",
+        "group": "pipeline"
+      },
+      "ci": {
+        "command": "platformio run -e sender -e receiver && platformio check -e sender-check -e receiver-check -e sender-tidy -e receiver-tidy && platformio test -e native",
+        "description": "CI pipeline with core tests only",
+        "group": "pipeline"
+      }
+    }
+  },
+  "environments": {
+    "sender": {
+      "board": "heltec_wifi_lora_32_V3",
+      "framework": "arduino",
+      "platform": "espressif32",
+      "description": "Sender firmware with LoRa transmission capabilities"
+    },
+    "receiver": {
+      "board": "heltec_wifi_lora_32_V3",
+      "framework": "arduino",
+      "platform": "espressif32",
+      "description": "Receiver firmware with WiFi OTA and LoRa reception"
+    },
+    "native": {
+      "platform": "native",
+      "framework": "none",
+      "description": "C++17 unit tests with Arduino mocks"
+    }
+  },
+  "libraries": {
+    "required": [
+      "olikraus/U8g2@^2.36.0",
+      "jgromes/RadioLib@^6.5.0",
+      "ArduinoJson@^6.21.4",
+      "WiFi",
+      "ArduinoOTA",
+      "Update"
+    ]
+  },
+  "tools": {
+    "static-analysis": [
+      "cppcheck",
+      "clang-tidy"
+    ],
+    "compilation": [
+      "gcc",
+      "g++",
+      "clang",
+      "cmake"
+    ]
+  },
+  "caching": {
+    "volumes": [
+      "platformio-cache:/home/platformio/.platformio",
+      "platformio-cache:/root/.platformio"
+    ],
+    "description": "Persistent cache for PlatformIO toolchains, platforms, and libraries"
+  }
+}

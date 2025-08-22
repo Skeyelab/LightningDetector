@@ -1,7 +1,16 @@
-// Simplified tests for the state machine system (header-only testing)
+// Unit tests for state machine functionality
 #include <unity.h>
 #include "../src/system/state_machine.h"
 #include <cstring>
+
+// Unity test setup and teardown functions
+void setUp(void) {
+    // Initialize before each test
+}
+
+void tearDown(void) {
+    // Clean up after each test
+}
 
 // Test state machine enums and constants
 void test_state_machine_enums() {

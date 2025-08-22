@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Lightning Detector - RX Config</title>
+    <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+    <header>
+        <h1>Lightning Detector - RX Unit</h1>
+    </header>
+
+    <section id="status">
+        <h2>System Status</h2>
+        <pre id="status-json">Loading...</pre>
+    </section>
+
+    <section id="lora-config">
+        <h2>LoRa Preset Configuration</h2>
+        <label for="loraPresetSelect">Preset:</label>
+        <select id="loraPresetSelect">
+            <option value="0">Long Range - Fast (125kHz, SF10)</option>
+            <option value="1">Long Range - Slow (125kHz, SF12)</option>
+            <option value="2">Long Range - Moderate (125kHz, SF11)</option>
+            <option value="3">Medium Range - Slow (125kHz, SF10)</option>
+            <option value="4">Medium Range - Fast (250kHz, SF9)</option>
+            <option value="5">Short Range - Slow (125kHz, SF8)</option>
+            <option value="6">Short Range - Fast (250kHz, SF7)</option>
+            <option value="7">Short Range - Turbo (500kHz, SF7)</option>
+        </select>
+        <div id="preset-info" style="margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 4px; font-size: 14px;">
+            <strong>Current Preset:</strong> <span id="current-preset">Loading...</span><br>
+            <strong>Bandwidth:</strong> <span id="current-bw">-</span><br>
+            <strong>Spreading Factor:</strong> <span id="current-sf">-</span>
+        </div>
+    </section>
+
+    <section id="device-mode">
+        <h2>Device Mode Configuration</h2>
+        <div style="margin-bottom: 15px;">
+            <label for="deviceModeSelect">Device Mode:</label>
+                    <select id="deviceModeSelect">
+            <option value="sender">📡 Sender (TX) - Broadcasts LoRa messages + WiFi config</option>
+            <option value="receiver">📥 Receiver (RX) - Listens for LoRa messages + WiFi OTA</option>
+        </select>
+        </div>
+        <div id="mode-info" style="padding: 10px; background: #f8f9fa; border-radius: 4px; font-size: 14px;">
+            <strong>Current Mode:</strong> <span id="current-mode">Loading...</span><br>
+            <strong>Description:</strong> <span id="mode-description">-</span>
+        </div>
+        <div style="margin-top: 15px;">
+            <button id="saveModeBtn" style="background: #667eea; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer;">
+                Save Mode & Reboot
+            </button>
+            <span id="mode-status" style="margin-left: 10px; font-weight: bold;"></span>
+        </div>
+        <div style="margin-top: 10px; font-size: 12px; color: #666; font-style: italic;">
+            Note: Changing device mode requires a reboot to take effect. The device will automatically reboot after saving.
+        </div>
+    </section>
+
+    <script src="js/main.js"></script>
+</body>
+</html>

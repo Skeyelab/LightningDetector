@@ -1,0 +1,36 @@
+{
+  "name": "PlatformIO Heltec ESP32 Development",
+  "image": "platformio-heltec-esp32:latest",
+  "build": {
+    "dockerfile": "../.cursor/Dockerfile",
+    "context": ".."
+  },
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
+  "workspaceFolder": "/workspace",
+  "mounts": [
+    "source=platformio-cache,target=/home/platformio/.platformio,type=volume",
+    "source=platformio-cache,target=/root/.platformio,type=volume"
+  ],
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "platformio.platformio-ide",
+        "ms-vscode.cpptools",
+        "ms-vscode.cmake-tools"
+      ],
+      "settings": {
+        "platformio-ide.useBuiltinPIOCore": false,
+        "platformio-ide.useDevelopmentPIOCore": false,
+        "platformio-ide.autoRebuildAutocompleteIndex": true,
+        "platformio-ide.autoCompletionSourceCode": true
+      }
+    }
+  },
+  "remoteUser": "platformio",
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+  "postCreateCommand": "platformio --version",
+  "postStartCommand": "echo 'PlatformIO container ready for Heltec ESP32 development'"
+}
