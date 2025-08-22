@@ -16,6 +16,26 @@
         <pre id="status-json">Loading...</pre>
     </section>
 
+    <section id="lora-config">
+        <h2>LoRa Preset Configuration</h2>
+        <label for="loraPresetSelect">Preset:</label>
+        <select id="loraPresetSelect">
+            <option value="0">Long Range - Fast (125kHz, SF10)</option>
+            <option value="1">Long Range - Slow (125kHz, SF12)</option>
+            <option value="2">Long Range - Moderate (125kHz, SF11)</option>
+            <option value="3">Medium Range - Slow (125kHz, SF10)</option>
+            <option value="4">Medium Range - Fast (250kHz, SF9)</option>
+            <option value="5">Short Range - Slow (125kHz, SF8)</option>
+            <option value="6">Short Range - Fast (250kHz, SF7)</option>
+            <option value="7">Short Range - Turbo (500kHz, SF7)</option>
+        </select>
+        <div id="preset-info" style="margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 4px; font-size: 14px;">
+            <strong>Current Preset:</strong> <span id="current-preset">Loading...</span><br>
+            <strong>Bandwidth:</strong> <span id="current-bw">-</span><br>
+            <strong>Spreading Factor:</strong> <span id="current-sf">-</span>
+        </div>
+    </section>
+
     <script src="js/main.js"></script>
 </body>
 </html>

@@ -4,6 +4,7 @@
 #include <RadioLib.h>
 #include <U8g2lib.h>
 #include <Preferences.h>
+#include <ArduinoJson.h>
 #include <esp_sleep.h>
 #include <driver/rtc_io.h>
 #include "app_logic.h"
@@ -107,6 +108,76 @@ static int currentTxPower = LORA_TX_DBM;
 static const int sfValues[] = {7, 8, 9, 10, 11, 12};
 static const float bwValues[] = {62.5f, 125.0f, 250.0f, 500.0f};
 static const int txPowerValues[] = {2, 3, 5, 8, 10, 12, 15, 17, 20, 22};
+
+// Forward declaration so it can be used by preset helper
+static void computeIndicesFromCurrent();
+static void updateRadioSettings();
+static void broadcastConfigOnControlChannel(uint8_t times, uint32_t intervalMs);
+
+// ---- LoRa Preset Definitions ----
+enum LoRaPreset : int {
+    PRESET_LONG_RANGE_FAST = 0,
+    PRESET_LONG_RANGE_SLOW,
+    PRESET_LONG_RANGE_MODERATE,
+    PRESET_MEDIUM_RANGE_SLOW,
+    PRESET_MEDIUM_RANGE_FAST,
+    PRESET_SHORT_RANGE_SLOW,
+    PRESET_SHORT_RANGE_FAST,
+    PRESET_SHORT_RANGE_TURBO,
+    PRESET_COUNT
+};
+
+struct LoRaPresetConfig {
+    const char *name;      // Full descriptive name (for logs/web)
+    const char *shortName; // Abbreviated name for OLED (fits 11 chars)
+    float bw;
+    int sf;
+};
+
+static const LoRaPresetConfig loRaPresets[PRESET_COUNT] = {
+    {"Long Range - Fast",     "LR-F", 125.0f, 10},
+    {"Long Range - Slow",     "LR-S", 125.0f, 12},
+    {"Long Range - Moderate", "LR-M", 125.0f, 11},
+    {"Medium Range - Slow",   "MR-S", 125.0f, 10},
+    {"Medium Range - Fast",   "MR-F", 250.0f, 9},
+    {"Short Range - Slow",    "SR-S", 125.0f, 8},
+    {"Short Range - Fast",    "SR-F", 250.0f, 7},
+    {"Short Range - Turbo",   "SR-T", 500.0f, 7}
+};
+
+static int currentPreset = -1; // -1 indicates custom parameters
+
+static void applyLoRaPreset(int presetIndex) {
+    if (presetIndex < 0 || presetIndex >= PRESET_COUNT) return;
+    Serial.printf("[PRESET] Applying preset %d: %s (BW: %.0f, SF: %d)\n",
+                  presetIndex, loRaPresets[presetIndex].name,
+                  loRaPresets[presetIndex].bw, loRaPresets[presetIndex].sf);
+    currentPreset = presetIndex;
+    currentBW = loRaPresets[presetIndex].bw;
+    currentSF = loRaPresets[presetIndex].sf;
+    computeIndicesFromCurrent();
+    updateRadioSettings();
+    Serial.printf("[PRESET] Preset applied successfully\n");
+
+    // Broadcast the new preset to TX devices
+    if (!isSender) {
+        Serial.printf("[PRESET] Broadcasting preset %d to TX devices\n", presetIndex);
+        broadcastConfigOnControlChannel(4, 200); // 4 times, 200ms apart
+    }
+}
+
+static void applyLoRaPresetSilent(int presetIndex) {
+    if (presetIndex < 0 || presetIndex >= PRESET_COUNT) return;
+    Serial.printf("[PRESET] Silently applying preset %d: %s (BW: %.0f, SF: %d)\n",
+                  presetIndex, loRaPresets[presetIndex].name,
+                  loRaPresets[presetIndex].bw, loRaPresets[presetIndex].sf);
+    currentPreset = presetIndex;
+    currentBW = loRaPresets[presetIndex].bw;
+    currentSF = loRaPresets[presetIndex].sf;
+    computeIndicesFromCurrent();
+    updateRadioSettings();
+    Serial.printf("[PRESET] Preset applied silently (no broadcast)\n");
+}
 
 // Current indices for parameter cycling
 static size_t currentSfIndex = 2;  // Default to SF9
@@ -371,6 +442,7 @@ static void savePersistedSettings() {
   prefs.putInt("sf", currentSF);
   prefs.putInt("cr", currentCR);
   prefs.putInt("tx", currentTxPower);
+  prefs.putInt("preset", currentPreset);  // NEW: persist preset selection
   prefs.end();
 }
 
@@ -378,15 +450,23 @@ static void savePersistedSettings() {
 
 static void loadPersistedSettings() {
   prefs.begin("LtngDet", true);
+  bool havePreset = prefs.isKey("preset");
   bool haveFreq = prefs.isKey("freq");
   bool haveBW = prefs.isKey("bw");
   bool haveSF = prefs.isKey("sf");
   bool haveCR = prefs.isKey("cr");
   bool haveTX = prefs.isKey("tx");
 
+  if (havePreset) {
+    int pr = prefs.getInt("preset", -1);
+    if (pr >= 0) {
+      applyLoRaPreset(pr);
+    }
+  } else {
+    if (haveBW) currentBW = prefs.getFloat("bw", currentBW);
+    if (haveSF) currentSF = prefs.getInt("sf", currentSF);
+  }
   if (haveFreq) currentFreq = prefs.getFloat("freq", currentFreq);
-  if (haveBW) currentBW = prefs.getFloat("bw", currentBW);
-  if (haveSF) currentSF = prefs.getInt("sf", currentSF);
   if (haveCR) currentCR = prefs.getInt("cr", currentCR);
   if (haveTX) currentTxPower = prefs.getInt("tx", currentTxPower);
   // Role is managed by RoleConfig; not stored here anymore
@@ -478,8 +558,14 @@ static void broadcastConfigOnControlChannel(uint8_t times, uint32_t intervalMs) 
   radio.setCRC(true);
 
   char msg[64];
-  snprintf(msg, sizeof(msg), "CFG F=%.1f BW=%.0f SF=%d CR=%d TX=%d",
-           currentFreq, currentBW, currentSF, currentCR, currentTxPower);
+  // Include preset information in broadcast
+  if (currentPreset >= 0) {
+    snprintf(msg, sizeof(msg), "CFG F=%.1f BW=%.0f SF=%d CR=%d TX=%d P=%d",
+             currentFreq, currentBW, currentSF, currentCR, currentTxPower, currentPreset);
+  } else {
+    snprintf(msg, sizeof(msg), "CFG F=%.1f BW=%.0f SF=%d CR=%d TX=%d P=-1",
+             currentFreq, currentBW, currentSF, currentCR, currentTxPower);
+  }
 
   for (uint8_t i = 0; i < times; i++) {
     int tx = radio.transmit(msg);
@@ -508,6 +594,7 @@ static void tryReceiveConfigOnControlChannel(uint32_t durationMs) {
   radio.setCRC(true);
 
   uint32_t start = millis();
+  bool configUpdated = false;
   while (millis() - start < durationMs) {
     String rx;
     int r = radio.receive(rx);
@@ -517,23 +604,41 @@ static void tryReceiveConfigOnControlChannel(uint32_t durationMs) {
       int nsf = currentSF;
       int ncr = currentCR;
       int ntx = currentTxPower;
-      int parsed = sscanf(rx.c_str(), "CFG F=%f BW=%f SF=%d CR=%d TX=%d", &nf, &nb, &nsf, &ncr, &ntx);
-      if (parsed == 5) {
+      int npreset = -1;
+      int parsed = sscanf(rx.c_str(), "CFG F=%f BW=%f SF=%d CR=%d TX=%d P=%d", &nf, &nb, &nsf, &ncr, &ntx, &npreset);
+      if (parsed >= 5) { // At least 5 parameters, preset is optional
         currentFreq = nf;
         currentBW = nb;
         currentSF = nsf;
         currentCR = ncr;
         currentTxPower = ntx;
+
+        // Apply preset if provided
+        if (parsed == 6 && npreset >= 0 && npreset < PRESET_COUNT) {
+          currentPreset = npreset;
+          Serial.printf("[CTRL][RX] Preset %d received: %s\n", npreset, loRaPresets[npreset].name);
+          // Apply the preset settings silently (no broadcast)
+          applyLoRaPresetSilent(npreset);
+        } else if (parsed == 6 && npreset == -1) {
+          currentPreset = -1; // Custom parameters
+          Serial.printf("[CTRL][RX] Custom parameters received (no preset)\n");
+        }
+
         computeIndicesFromCurrent();
         savePersistedSettings();
-        Serial.printf("[CTRL][RX] applied %s\n", rx.c_str());
+        Serial.printf("[CTRL][RX] Applied config: %s\n", rx.c_str());
+        configUpdated = true;
         break;
       }
     }
     delay(50);
   }
 
-  // Restore operational settings (applied ones if updated)
+  // Restore operational settings - use updated values if config was received
+  if (configUpdated) {
+    Serial.printf("[CTRL] Restoring radio to updated settings: F=%.1f BW=%.0f SF=%d CR=%d TX=%d\n",
+                  currentFreq, currentBW, currentSF, currentCR, currentTxPower);
+  }
   st = radio.begin(currentFreq, currentBW, currentSF, currentCR, 0x34, currentTxPower);
   if (st != RADIOLIB_ERR_NONE) {
     Serial.printf("[CTRL] restore begin fail %d\n", st);
@@ -554,24 +659,15 @@ static void handleSenderButtonAction(ButtonAction action) {
   }
 
   switch (action) {
-    case ButtonAction::CycleSF:
-      // Cycle through Spreading Factor values
+    case ButtonAction::CyclePreset:
+      // Cycle through LoRa presets
       {
-        const int nextIndex = (currentSfIndex + 1) % (sizeof(sfValues) / sizeof(sfValues[0]));
-        const int nextSF = sfValues[nextIndex];
-        startConfigBroadcast(currentFreq, currentBW, nextSF, currentCR, currentTxPower);
-        Serial.printf("SF change requested -> %d (broadcasting to receiver)\n", nextSF);
-        oledMsg("SF Changed", String(nextSF).c_str());
-      }
-      break;
-    case ButtonAction::CycleBW:
-      // Cycle through Bandwidth values
-      {
-        const int nextIndex = (currentBwIndex + 1) % (sizeof(bwValues) / sizeof(bwValues[0]));
-        const float nextBW = bwValues[nextIndex];
-        startConfigBroadcast(currentFreq, nextBW, currentSF, currentCR, currentTxPower);
-        Serial.printf("BW change requested -> %.0f kHz (broadcasting to receiver)\n", nextBW);
-        oledMsg("BW Changed", String(nextBW).c_str());
+        int nextPreset = (currentPreset + 1) % PRESET_COUNT;
+        applyLoRaPreset(nextPreset);
+        savePersistedSettings();
+        startConfigBroadcast(currentFreq, currentBW, currentSF, currentCR, currentTxPower);
+        Serial.printf("Preset change requested -> %s (index %d)\n", loRaPresets[nextPreset].name, nextPreset);
+        oledMsg("Preset", loRaPresets[nextPreset].shortName);
       }
       break;
     case ButtonAction::SleepMode:
@@ -595,22 +691,13 @@ static void handleReceiverButtonAction(ButtonAction action) {
 
   Serial.printf("[RX_BTN] Handling action: %d\n", (int)action);
   switch (action) {
-    case ButtonAction::CycleSF:
-      // Cycle through Spreading Factor values (same as sender)
+    case ButtonAction::CyclePreset:
       {
-        const int nextIndex = (currentSfIndex + 1) % (sizeof(sfValues) / sizeof(sfValues[0]));
-        const int nextSF = sfValues[nextIndex];
-        Serial.printf("[RX_BTN] SF change requested -> %d\n", nextSF);
-        oledMsg("SF Changed", String(nextSF).c_str());
-      }
-      break;
-    case ButtonAction::CycleBW:
-      // Cycle through Bandwidth values (same as sender)
-      {
-        const int nextIndex = (currentBwIndex + 1) % (sizeof(bwValues) / sizeof(bwValues[0]));
-        const float nextBW = bwValues[nextIndex];
-        Serial.printf("[RX_BTN] BW change requested -> %.0f kHz\n", nextBW);
-        oledMsg("BW Changed", String(nextBW).c_str());
+        int nextPreset = (currentPreset + 1) % PRESET_COUNT;
+        applyLoRaPreset(nextPreset);
+        savePersistedSettings();
+        Serial.printf("[RX_BTN] Preset change -> %s (index %d)\n", loRaPresets[nextPreset].name, nextPreset);
+        oledMsg("Preset", loRaPresets[nextPreset].shortName);
       }
       break;
     case ButtonAction::SleepMode:
@@ -939,10 +1026,43 @@ void loop() {
   // Check button more frequently
   updateButton();
 
+  // Check if web interface has changed preferences
+  static uint32_t lastPrefCheck = 0;
+  if (millis() - lastPrefCheck > 1000) { // Check every second
+    lastPrefCheck = millis();
+    Preferences mainPrefs;
+    mainPrefs.begin("LtngDet", true);
+    if (mainPrefs.getBool("web_cfg", false)) {
+      Serial.println("[MAIN] Web config changed, reloading preferences...");
+      mainPrefs.end();
+
+      // Clear the flag
+      mainPrefs.begin("LtngDet", false);
+      mainPrefs.remove("web_cfg");
+      mainPrefs.end();
+
+      // Reload and apply
+      loadPersistedSettings();
+      updateRadioSettings();
+    } else {
+      mainPrefs.end();
+    }
+  }
+
   // Check and manage idle mode transitions
   checkIdleMode();
 
   if (isSender) {
+    // Check for control channel updates from receiver (every 5 seconds)
+    static uint32_t lastCtrlCheck = 0;
+    if (now - lastCtrlCheck >= 5000) {
+      lastCtrlCheck = now;
+      Serial.printf("[TX] Checking control channel for updates...\n");
+      // Quick check for control channel messages
+      tryReceiveConfigOnControlChannel(1000); // Listen for 1 second
+      Serial.printf("[TX] Control channel check complete\n");
+    }
+
     if (pendingConfigBroadcast) {
       if (now - lastTxMs >= 50 && now - cfgLastTxMs >= 300) {
         char msg[64];

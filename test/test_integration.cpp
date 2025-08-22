@@ -24,13 +24,13 @@ struct ButtonTest {
 void test_button_classification() {
   std::vector<ButtonTest> tests = {
     {"Quick tap", 50, ButtonAction::Ignore, "Should ignore accidental touches"},
-    {"Short press", 200, ButtonAction::CycleSF, "Should cycle Spreading Factor"},
-    {"Medium press", 1500, ButtonAction::CycleBW, "Should cycle Bandwidth"},
-    {"Long press", 5000, ButtonAction::SleepMode, "Should enter sleep mode"},
+    {"Short press", 200, ButtonAction::CyclePreset, "Should cycle LoRa presets"},
+    {"Medium press", 1500, ButtonAction::CyclePreset, "Should cycle LoRa presets"},
+    {"Long press", 3000, ButtonAction::CyclePreset, "Should cycle LoRa presets"},
+    {"Very long press", 7000, ButtonAction::SleepMode, "Should enter sleep mode"},
     {"Boundary short", 99, ButtonAction::Ignore, "Edge case for ignore threshold"},
-    {"Boundary primary", 100, ButtonAction::CycleSF, "Edge case for SF function threshold"},
-    {"Boundary secondary", 1000, ButtonAction::CycleBW, "Edge case for BW function threshold"},
-    {"Boundary config", 3000, ButtonAction::SleepMode, "Edge case for sleep mode threshold"}
+    {"Boundary preset", 100, ButtonAction::CyclePreset, "Edge case for preset threshold"},
+    {"Boundary sleep", 6000, ButtonAction::SleepMode, "Edge case for sleep mode threshold (6s = sleep, 6s+ = sleep)"}
   };
 
   for (const auto& test : tests) {
@@ -47,15 +47,14 @@ void test_button_action_handling() {
   // Test all button actions are handled
   ButtonAction actions[] = {
     ButtonAction::Ignore,
-    ButtonAction::CycleSF,
-    ButtonAction::CycleBW,
+    ButtonAction::CyclePreset,
     ButtonAction::SleepMode
   };
 
   for (ButtonAction action : actions) {
     // This test verifies that all button actions are recognized
     // The actual handling is done in main.cpp
-    TEST_ASSERT_TRUE((int)action >= 0 && (int)action <= 3);
+    TEST_ASSERT_TRUE((int)action >= 0 && (int)action <= 2);
   }
 }
 
@@ -83,7 +82,7 @@ void test_format_tx_message() {
 
 void test_sleep_mode_trigger() {
   // Test that long press triggers sleep mode
-  ButtonAction action = classifyPress(5000);
+  ButtonAction action = classifyPress(7000);
   TEST_ASSERT_EQUAL((int)ButtonAction::SleepMode, (int)action);
 }
 

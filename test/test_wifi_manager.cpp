@@ -40,6 +40,10 @@ void tearDown(void) {
     // Clean up after each test
 }
 
+// Include mocks before real headers
+#include "wifi_mocks.h"
+#include "preferences_mocks.h"
+
 // Include WiFi config definitions
 #include "wifi_config.h"
 

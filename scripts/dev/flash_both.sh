@@ -11,7 +11,7 @@ echo "==========================================="
 echo ""
 echo "📡 Flashing SENDER to /dev/cu.usbserial-6..."
 echo "-------------------------------------------"
-pio run -e sender --target upload --upload-port /dev/cu.usbserial-6
+pio run -e sender --target upload --upload-port /dev/cu.usbserial-7
 
 if [ $? -eq 0 ]; then
     echo "✅ Sender flash completed successfully!"
@@ -29,6 +29,18 @@ if [ $? -eq 0 ]; then
     echo "✅ Receiver flash completed successfully!"
 else
     echo "❌ Receiver flash failed!"
+    exit 1
+fi
+
+echo ""
+echo "📁 Uploading web interface files to SPIFFS..."
+echo "---------------------------------------------"
+pio run -e receiver --target uploadfs --upload-port /dev/cu.usbserial-0001
+
+if [ $? -eq 0 ]; then
+    echo "✅ SPIFFS upload completed successfully!"
+else
+    echo "❌ SPIFFS upload failed!"
     exit 1
 fi
 

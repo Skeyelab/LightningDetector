@@ -5,8 +5,7 @@
 
 enum class ButtonAction {
   Ignore,
-  CycleSF,      // Short press: cycle through Spreading Factor values
-  CycleBW,      // Medium press: cycle through Bandwidth values
+  CyclePreset,  // Short press: cycle through LoRa presets
   SleepMode     // Long press: enter sleep mode
 };
 

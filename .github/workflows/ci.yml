@@ -82,6 +82,14 @@ jobs:
         python -m pip install --upgrade pip
         pip install platformio
 
+    - name: Install Test Dependencies
+      run: |
+        # Install Unity library for native test environments
+        pio lib install "throwtheswitch/Unity@^2.6.0"
+        echo "Unity library installed for testing"
+        # Verify installation
+        ls -la .pio/libdeps/native/Unity/src/ || echo "Unity not found in native environment"
+
     - name: Run Comprehensive Unit Tests (Full Coverage)
       run: |
         chmod +x scripts/ci/run_comprehensive_tests.sh

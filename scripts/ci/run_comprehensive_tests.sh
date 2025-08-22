@@ -63,9 +63,8 @@ passed_tests=0
 failed_tests=0
 
 # Common include paths and dependencies
-UNITY_STUB_DIR="test/mocks/unity_stub"
-COMMON_INCLUDES="-I src -I test/mocks -I $UNITY_STUB_DIR"
-COMMON_DEPS="test/mocks/Arduino.cpp test/mocks/esp_mocks.cpp $UNITY_STUB_DIR/unity.c"
+COMMON_INCLUDES="-I src -I test/mocks -I .pio/libdeps/native/Unity/src"
+COMMON_DEPS="test/mocks/Arduino.cpp test/mocks/esp_mocks.cpp test/mocks/wifi_mocks.cpp test/mocks/preferences_mocks.cpp .pio/libdeps/native/Unity/src/unity.c"
 
 echo -e "\n${YELLOW}Running Comprehensive Tests (Individual Compilation)${NC}"
 echo "=========================================="
@@ -137,6 +136,22 @@ fi
 # Integration test
 total_tests=$((total_tests + 1))
 if run_comprehensive_test "Integration" "test/test_integration.cpp" "src/app_logic.cpp src/hardware/hardware_abstraction.cpp $COMMON_DEPS" "$COMMON_INCLUDES"; then
+    passed_tests=$((passed_tests + 1))
+else
+    failed_tests=$((failed_tests + 1))
+fi
+
+# LoRa Presets test - Unity compatible
+total_tests=$((total_tests + 1))
+if run_comprehensive_test "LoRa Presets" "test/test_lora_presets_unity.cpp" "$COMMON_DEPS" "$COMMON_INCLUDES"; then
+    passed_tests=$((passed_tests + 1))
+else
+    failed_tests=$((failed_tests + 1))
+fi
+
+# Web Preset Integration test - Unity compatible
+total_tests=$((total_tests + 1))
+if run_comprehensive_test "Web Integration" "test/test_web_integration_unity.cpp" "$COMMON_DEPS" "$COMMON_INCLUDES"; then
     passed_tests=$((passed_tests + 1))
 else
     failed_tests=$((failed_tests + 1))
