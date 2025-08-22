@@ -933,7 +933,7 @@ namespace HardwareAbstraction {
                     Serial.printf("GPIO%d ", testPins[i]);
                 }
                 Serial.println();
-                
+
                 for (uint8_t pin : testPins) {
                     float testVoltage = 0.0f;
                     Serial.printf("[BATTERY] Testing GPIO%d for battery voltage...\n", pin);
@@ -941,7 +941,7 @@ namespace HardwareAbstraction {
                     // Try using our ADC abstraction first
                     Result adcResult = ADC::readVoltage(pin, testVoltage);
                     Serial.printf("[BATTERY] GPIO%d ADC result: %s, voltage: %.3fV\n", pin, resultToString(adcResult), testVoltage);
-                    
+
                     if (adcResult == Result::SUCCESS && testVoltage > 0.1f) {
                         kBatteryAdcPin = pin;
                         pinTested = true;
@@ -994,7 +994,7 @@ namespace HardwareAbstraction {
             }
 
             float voltageOnPin = 0.0f;
-            
+
             // Try ADC abstraction first
             if (ADC::readVoltage(kBatteryAdcPin, voltageOnPin) == Result::SUCCESS) {
                 float batteryVoltage = voltageOnPin * kAdcMultiplier;
@@ -1006,7 +1006,7 @@ namespace HardwareAbstraction {
                 Serial.printf("[BATTERY] ADC abstraction failed for GPIO%d, trying analogRead fallback...\n", kBatteryAdcPin);
                 int analogValue = analogRead(kBatteryAdcPin);
                 voltageOnPin = (analogValue / 4095.0f) * 3.3f;
-                
+
                 if (voltageOnPin > 0.1f) {
                     float batteryVoltage = voltageOnPin * kAdcMultiplier;
                     Serial.printf("[BATTERY] analogRead fallback: GPIO%d, Raw: %d, Voltage: %.3fV, Multiplier: %.2f, Battery: %.3fV\n",
