@@ -63,12 +63,12 @@ namespace Logging {
     void fatal(Category category, const char* format, ...);
 
     // Convenience macros for easier usage
-    #define LOG_TRACE(cat, ...) Logger::trace(Logger::Category::cat, __VA_ARGS__)
-    #define LOG_DEBUG(cat, ...) Logger::debug(Logger::Category::cat, __VA_ARGS__)
-    #define LOG_INFO(cat, ...) Logger::info(Logger::Category::cat, __VA_ARGS__)
-    #define LOG_WARN(cat, ...) Logger::warn(Logger::Category::cat, __VA_ARGS__)
-    #define LOG_ERROR(cat, ...) Logger::error(Logger::Category::cat, __VA_ARGS__)
-    #define LOG_FATAL(cat, ...) Logger::fatal(Logger::Category::cat, __VA_ARGS__)
+    #define LOG_TRACE(cat, ...) Logging::trace(Logging::Category::cat, __VA_ARGS__)
+    #define LOG_DEBUG(cat, ...) Logging::debug(Logging::Category::cat, __VA_ARGS__)
+    #define LOG_INFO(cat, ...) Logging::info(Logging::Category::cat, __VA_ARGS__)
+    #define LOG_WARN(cat, ...) Logging::warn(Logging::Category::cat, __VA_ARGS__)
+    #define LOG_ERROR(cat, ...) Logging::error(Logging::Category::cat, __VA_ARGS__)
+    #define LOG_FATAL(cat, ...) Logging::fatal(Logging::Category::cat, __VA_ARGS__)
 
     // Special logging functions
     void logSystemBoot();
