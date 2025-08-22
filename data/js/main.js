@@ -16,6 +16,10 @@ async function fetchConfig() {
             document.getElementById('loraPresetSelect').value = cfg.lora_preset;
             updatePresetInfo(cfg.lora_preset);
         }
+        if (typeof cfg.role !== 'undefined') {
+            document.getElementById('deviceModeSelect').value = cfg.role;
+            updateModeInfo(cfg.role);
+        }
     } catch (err) {
         console.error('Failed to fetch config', err);
     }
@@ -38,6 +42,24 @@ function updatePresetInfo(presetIndex) {
         document.getElementById('current-preset').textContent = preset.name;
         document.getElementById('current-bw').textContent = preset.bw;
         document.getElementById('current-sf').textContent = preset.sf;
+    }
+}
+
+function updateModeInfo(mode) {
+    const modeInfo = {
+        sender: {
+            name: "Sender (TX)",
+            description: "Broadcasts LoRa messages to other devices. Includes WiFi and web interface for remote configuration."
+        },
+        receiver: {
+            name: "Receiver (RX)",
+            description: "Listens for LoRa messages and provides WiFi OTA updates + web interface."
+        }
+    };
+
+    if (modeInfo[mode]) {
+        document.getElementById('current-mode').textContent = modeInfo[mode].name;
+        document.getElementById('mode-description').textContent = modeInfo[mode].description;
     }
 }
 
@@ -76,10 +98,74 @@ async function saveConfig() {
     }
 }
 
+async function saveMode() {
+    const mode = document.getElementById('deviceModeSelect').value;
+    const statusSpan = document.getElementById('mode-status');
+
+    try {
+        const response = await fetch('/api/v1/config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ role: mode })
+        });
+
+        if (response.ok) {
+            console.log('Mode saved successfully:', mode);
+            statusSpan.textContent = 'Mode saved! Reboot required.';
+            statusSpan.style.color = 'green';
+
+            // Update the display
+            updateModeInfo(mode);
+
+            // Show confirmation dialog
+            if (confirm(`Device mode changed to ${mode}. A reboot is required for the change to take effect. Would you like to reboot now?`)) {
+                try {
+                    const rebootResponse = await fetch('/api/v1/reboot', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+
+                    if (rebootResponse.ok) {
+                        statusSpan.textContent = 'Rebooting device...';
+                        statusSpan.style.color = 'blue';
+
+                        // Wait a moment then show reconnection message
+                        setTimeout(() => {
+                            statusSpan.textContent = 'Device is rebooting. Please wait and refresh the page.';
+                            statusSpan.style.color = 'orange';
+                        }, 2000);
+                    } else {
+                        statusSpan.textContent = 'Reboot failed. Please reboot manually.';
+                        statusSpan.style.color = 'red';
+                    }
+                } catch (rebootErr) {
+                    console.error('Reboot error:', rebootErr);
+                    statusSpan.textContent = 'Reboot failed. Please reboot manually.';
+                    statusSpan.style.color = 'red';
+                }
+            }
+        } else {
+            console.error('Failed to save mode:', response.status);
+            statusSpan.textContent = 'Failed to save mode.';
+            statusSpan.style.color = 'red';
+        }
+    } catch (err) {
+        console.error('Error saving mode:', err);
+        statusSpan.textContent = 'Error saving mode: ' + err.message;
+        statusSpan.style.color = 'red';
+    }
+
+    // Clear status after 5 seconds
+    setTimeout(() => {
+        statusSpan.textContent = '';
+    }, 5000);
+}
+
 window.addEventListener('load', () => {
     fetchStatus();
     fetchConfig();
     setInterval(fetchStatus, 5000);
     setInterval(fetchConfig, 3000); // Poll for config changes every 3 seconds
     document.getElementById('loraPresetSelect').addEventListener('change', saveConfig);
+    document.getElementById('saveModeBtn').addEventListener('click', saveMode);
 });

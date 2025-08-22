@@ -1,7 +1,5 @@
 #include "web_server.h"
-#include "lora_config_handler.h"
-
-#if defined(ROLE_RECEIVER) || defined(ENABLE_WEB_INTERFACE)
+#include "config/role_config.h"
 
 static String getContentType(const String &path) {
     if (path.endsWith(".html")) return "text/html";
@@ -70,9 +68,9 @@ bool WebServerManager::begin() {
 void WebServerManager::loop() {
     server_.handleClient();
 
-    // Periodically sync web config with device preferences (every 2 seconds)
+    // Periodically sync web config with device preferences (every 5 seconds)
     static uint32_t lastSync = 0;
-    if (millis() - lastSync >= 2000) {
+    if (millis() - lastSync >= 5000) { // Reduced sync frequency for better performance
         lastSync = millis();
         configManager_.load(); // This will sync with main device preferences
     }
@@ -100,6 +98,7 @@ void WebServerManager::registerRoutes() {
     server_.on("/api/v1/config", HTTP_GET, [this]() { handleConfigGet(); });
     server_.on("/api/v1/config", HTTP_POST, [this]() { handleConfigPost(); });
     server_.on("/api/v1/preset", HTTP_POST, [this]() { handlePresetPost(); });
+    server_.on("/api/v1/reboot", HTTP_POST, [this]() { handleReboot(); });
 
     // Placeholder WiFi routes
     server_.on("/api/v1/wifi", HTTP_GET, [this]() { handleWifiGet(); });
@@ -126,6 +125,9 @@ void WebServerManager::handleStatus() {
     doc["free_heap"] = ESP.getFreeHeap();
     doc["core_temperature"] = (int)temperatureRead();
 
+    // Add role information
+    doc["role"] = RoleConfig::isSender() ? "sender" : "receiver";
+
 #if defined(ENABLE_WIFI_OTA)
     doc["wifi_connected"] = (WiFi.status() == WL_CONNECTED);
     if (WiFi.status() == WL_CONNECTED) {
@@ -146,6 +148,8 @@ void WebServerManager::handleConfigGet() {
 
     DynamicJsonDocument doc(1024);
     configManager_.toJson(doc);
+    // Add current role
+    doc["role"] = RoleConfig::isSender() ? "sender" : "receiver";
 
     // Debug output
     Serial.printf("[WEB] Config GET - returning lora_preset: %d\n", doc["lora_preset"].as<int>());
@@ -166,6 +170,20 @@ void WebServerManager::handleConfigPost() {
     Serial.printf("[WEB] Config POST received: ");
     serializeJson(doc, Serial);
     Serial.println();
+
+    // Handle role change if provided
+    if (doc.containsKey("role")) {
+        String roleStr = doc["role"].as<String>();
+        roleStr.toLowerCase();
+        if (roleStr == "sender") {
+            RoleConfig::setRole(RoleConfig::Role::Sender);
+        } else if (roleStr == "receiver") {
+            RoleConfig::setRole(RoleConfig::Role::Receiver);
+        } else {
+            server_.send(400, "application/json", "{\"error\":\"Invalid role\"}");
+            return;
+        }
+    }
 
     if (doc.containsKey("lora_preset")) {
         Serial.printf("[WEB] LoRa preset change detected: %d\n", doc["lora_preset"].as<int>());
@@ -220,6 +238,19 @@ void WebServerManager::handlePresetPost() {
     }
 }
 
+void WebServerManager::handleReboot() {
+    Serial.println("[WEB] Reboot requested via web interface");
+    
+    // Send response first
+    server_.send(200, "application/json", "{\"status\":\"rebooting\"}");
+    
+    // Small delay to ensure response is sent
+    delay(100);
+    
+    // Reboot the device
+    ESP.restart();
+}
+
 void WebServerManager::handleWifiGet() {
     DynamicJsonDocument doc(256);
 #if defined(ENABLE_WIFI_OTA)
@@ -266,5 +297,3 @@ bool WebServerManager::readJsonBody(WebServer &server, DynamicJsonDocument &doc)
     }
     return false;
 }
-
-#endif // ROLE_RECEIVER || ENABLE_WEB_INTERFACE

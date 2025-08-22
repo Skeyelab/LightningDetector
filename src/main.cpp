@@ -8,16 +8,14 @@
 #include <esp_sleep.h>
 #include <driver/rtc_io.h>
 #include "app_logic.h"
+#include "config/role_config.h"
 
 #ifdef ENABLE_WIFI_OTA
 #include <WiFi.h>
 #include <ArduinoOTA.h>
-#include <Update.h>
 #endif
-// Allow sender to flash firmware received over LoRa
-#if defined(ROLE_SENDER) && !defined(ENABLE_WIFI_OTA)
+// Update support (WiFi OTA and LoRa)
 #include <Update.h>
-#endif
 
 // Vext power control and OLED reset (Heltec V3)
 #define VEXT_PIN 36        // Vext control: LOW = ON
@@ -269,64 +267,62 @@ static void drawStatusBar() {
   int xPos = 2;
 
 #ifdef ENABLE_WIFI_OTA
-  if (!isSender) {
-    // WiFi status
-    if (wifiConnected) {
-      // Get IP address and handle scrolling if needed
-      String ipAddress = WiFi.localIP().toString();
+  // WiFi status for both sender and receiver roles
+  if (wifiConnected) {
+    // Get IP address and handle scrolling if needed
+    String ipAddress = WiFi.localIP().toString();
 
-      // Reset scroll if IP changed
-      if (currentIP != ipAddress) {
-        currentIP = ipAddress;
-        ipScrollOffset = 0;
-        lastScrollUpdate = millis();
-      }
+    // Reset scroll if IP changed
+    if (currentIP != ipAddress) {
+      currentIP = ipAddress;
+      ipScrollOffset = 0;
+      lastScrollUpdate = millis();
+    }
 
-      // Display IP address with scrolling if too long
-      const char* ipStr = ipAddress.c_str();
-      int ipLength = strlen(ipStr);
+    // Display IP address with scrolling if too long
+    const char* ipStr = ipAddress.c_str();
+    int ipLength = strlen(ipStr);
 
-      if (ipLength <= MAX_DISPLAY_WIDTH) {
-        // IP fits, display normally
-        u8g2.drawStr(xPos, yPos - 10, ipStr);
-      } else {
-        // IP is too long, implement scrolling
-        uint32_t now = millis();
-        if (now - lastScrollUpdate >= SCROLL_INTERVAL_MS) {
-          ipScrollOffset++;
-          // Reset scroll when we've shown the entire string
-          if (ipScrollOffset > ipLength - MAX_DISPLAY_WIDTH) {
-            ipScrollOffset = 0;
-          }
-          lastScrollUpdate = now;
-        }
-
-        // Create substring for scrolling display
-        char scrolledIP[MAX_DISPLAY_WIDTH + 1];
-        strncpy(scrolledIP, ipStr + ipScrollOffset, MAX_DISPLAY_WIDTH);
-        scrolledIP[MAX_DISPLAY_WIDTH] = '\0';
-        u8g2.drawStr(xPos, yPos - 10, scrolledIP);
-      }
-
-      // Display network location
-      const char* location = getCurrentNetworkLocation();
-      u8g2.drawStr(xPos, yPos, location);
-      xPos += (strlen(location) * 6); // Approximate character width
+    if (ipLength <= MAX_DISPLAY_WIDTH) {
+      // IP fits, display normally
+      u8g2.drawStr(xPos, yPos - 10, ipStr);
     } else {
-      u8g2.drawStr(xPos, yPos, "NoWiFi");
-      xPos += 20;
+      // IP is too long, implement scrolling
+      uint32_t now = millis();
+      if (now - lastScrollUpdate >= SCROLL_INTERVAL_MS) {
+        ipScrollOffset++;
+        // Reset scroll when we've shown the entire string
+        if (ipScrollOffset > ipLength - MAX_DISPLAY_WIDTH) {
+          ipScrollOffset = 0;
+        }
+        lastScrollUpdate = now;
+      }
+
+      // Create substring for scrolling display
+      char scrolledIP[MAX_DISPLAY_WIDTH + 1];
+      strncpy(scrolledIP, ipStr + ipScrollOffset, MAX_DISPLAY_WIDTH);
+      scrolledIP[MAX_DISPLAY_WIDTH] = '\0';
+      u8g2.drawStr(xPos, yPos - 10, scrolledIP);
     }
 
-    // OTA status
-    if (otaActive) {
-      u8g2.drawStr(xPos, yPos, "OTA");
-      xPos += 20;
-    }
+    // Display network location
+    const char* location = getCurrentNetworkLocation();
+    u8g2.drawStr(xPos, yPos, location);
+    xPos += (strlen(location) * 6); // Approximate character width
+  } else {
+    u8g2.drawStr(xPos, yPos, "NoWiFi");
+    xPos += 20;
+  }
 
-    // LoRa OTA status
-    if (loraOtaActive) {
-      u8g2.drawStr(xPos, yPos, "LoRaOTA");
-    }
+  // OTA status for both roles
+  if (otaActive) {
+    u8g2.drawStr(xPos, yPos, "OTA");
+    xPos += 20;
+  }
+
+  // LoRa OTA status for both roles
+  if (loraOtaActive) {
+    u8g2.drawStr(xPos, yPos, "LoRaOTA");
   }
 #endif
 }
@@ -368,6 +364,21 @@ static void drawPingDot() {
 }
 
 static void oledMsg(const char* l1, const char* l2 = nullptr, const char* l3 = nullptr) {
+  // Enhanced rate limiting to prevent I2C bus contention with faster main loop
+  static uint32_t lastOledUpdate = 0;
+  uint32_t now = millis();
+  if (now - lastOledUpdate < 200) { // Increased to 200ms to prevent I2C bus contention
+    return;
+  }
+  lastOledUpdate = now;
+
+  // Add I2C mutex protection
+  static bool oledBusy = false;
+  if (oledBusy) {
+    return; // Skip if already in use
+  }
+  oledBusy = true;
+
   u8g2.clearBuffer();
   u8g2.setFont(u8g2_font_6x10_tr);
 
@@ -405,9 +416,12 @@ static void oledMsg(const char* l1, const char* l2 = nullptr, const char* l3 = n
   drawPingDot();
 
   u8g2.sendBuffer();
+
+  // Release I2C mutex
+  oledBusy = false;
 }
 
-// Role display removed - device role is now fixed at build time
+// Role display logic moved; device role is now chosen at runtime via RoleConfig
 
 static void oledSettings() {
   oledMsg("Settings", "Updated");
@@ -448,7 +462,7 @@ static void savePersistedSettings() {
   prefs.end();
 }
 
-// Role persistence removed - device role is now fixed at build time
+// Role persistence handled by RoleConfig (stored in NVS)
 
 static void loadPersistedSettings() {
   prefs.begin("LtngDet", true);
@@ -471,6 +485,7 @@ static void loadPersistedSettings() {
   if (haveFreq) currentFreq = prefs.getFloat("freq", currentFreq);
   if (haveCR) currentCR = prefs.getInt("cr", currentCR);
   if (haveTX) currentTxPower = prefs.getInt("tx", currentTxPower);
+  // Role is managed by RoleConfig; not stored here anymore
   prefs.end();
 }
 
@@ -486,11 +501,15 @@ static void initDisplay() {
   digitalWrite(OLED_RST_PIN, HIGH);
   delay(50);
 
-  // I2C
-  Wire.begin(17, 18);
-  Wire.setTimeOut(1000);
-  Wire.setClock(100000);
-  delay(100);
+  // I2C - Check if already initialized to prevent bus contention
+  static bool i2cInitialized = false;
+  if (!i2cInitialized) {
+    Wire.begin(17, 18);
+    Wire.setTimeOut(1000);
+    Wire.setClock(100000);
+    i2cInitialized = true;
+    delay(100);
+  }
 
   u8g2.setI2CAddress(0x3C << 1);
   if (!u8g2.begin()) {
@@ -597,8 +616,15 @@ static void tryReceiveConfigOnControlChannel(uint32_t durationMs) {
   uint32_t start = millis();
   bool configUpdated = false;
   while (millis() - start < durationMs) {
+    // Handle web server during control channel listening
+    #ifdef ENABLE_WIFI_OTA
+    if (WiFi.status() == WL_CONNECTED) {
+      webServerManager.loop();
+    }
+    #endif
+
     String rx;
-    int r = radio.receive(rx);
+    int r = radio.receive(rx, 0); // Make non-blocking
     if (r == RADIOLIB_ERR_NONE && rx.startsWith("CFG ")) {
       float nf = currentFreq;
       float nb = currentBW;
@@ -632,7 +658,7 @@ static void tryReceiveConfigOnControlChannel(uint32_t durationMs) {
         break;
       }
     }
-    delay(50);
+    delay(10); // Reduced from 50ms to 10ms for better responsiveness
   }
 
   // Restore operational settings - use updated values if config was received
@@ -959,19 +985,12 @@ void setup() {
   currentCR = LORA_CR;
   currentTxPower = LORA_TX_DBM;
 
-  // initial role from build flags
-#ifdef ROLE_SENDER
-  isSender = true;
-  Serial.println("[SETUP] Role: SENDER (from ROLE_SENDER flag)");
-#elif defined(ROLE_RECEIVER)
-  isSender = false;
-  Serial.println("[SETUP] Role: RECEIVER (from ROLE_RECEIVER flag)");
-#else
-  isSender = true;
-  Serial.println("[SETUP] Role: SENDER (default)");
-#endif
+  // Determine role using runtime configuration
+  RoleConfig::begin();
+  isSender = RoleConfig::isSender();
+  Serial.printf("[SETUP] Role: %s (runtime config)\n", isSender ? "SENDER" : "RECEIVER");
 
-  // Load persisted settings (role is now fixed at build time)
+  // Load persisted LoRa settings
   loadPersistedSettings();
   computeIndicesFromCurrent();
 
@@ -981,22 +1000,20 @@ void setup() {
 
   initRadioOrHalt();
 
-  // Initialize WiFi and OTA for receivers
+  // Initialize WiFi and OTA for both sender and receiver modes
 #ifdef ENABLE_WIFI_OTA
-  if (!isSender) {
-    Serial.println("[MAIN] Initializing WiFi for receiver...");
-    initWiFi();
-    Serial.printf("[MAIN] WiFi connection status: %s\n", WiFi.status() == WL_CONNECTED ? "CONNECTED" : "DISCONNECTED");
-    Serial.printf("[MAIN] wifiConnected variable: %s\n", wifiConnected ? "TRUE" : "FALSE");
-    if (wifiConnected) {
-      initOTA();
-      oledMsg("WiFi + OTA", "Ready");
-      // Start web interface server only when WiFi is connected
-      Serial.println("[MAIN] Starting web server...");
-      webServerManager.begin();
-    } else {
-      Serial.println("[MAIN] WiFi not connected, skipping web server start");
-    }
+  Serial.println("[MAIN] Initializing WiFi...");
+  initWiFi();
+  Serial.printf("[MAIN] WiFi connection status: %s\n", WiFi.status() == WL_CONNECTED ? "CONNECTED" : "DISCONNECTED");
+  Serial.printf("[MAIN] wifiConnected variable: %s\n", wifiConnected ? "TRUE" : "FALSE");
+  if (wifiConnected) {
+    initOTA();
+    oledMsg("WiFi + OTA", "Ready");
+    // Start web interface server for both modes when WiFi is connected
+    Serial.println("[MAIN] Starting web server...");
+    webServerManager.begin();
+  } else {
+    Serial.println("[MAIN] WiFi not connected, skipping web server start");
   }
 #endif
 
@@ -1019,15 +1036,19 @@ void loop() {
   static uint32_t lastRxMs = 0;
   uint32_t now = millis();
 
-  // Handle web server requests if receiver role and WiFi connected
+  // Handle web server requests for both modes when WiFi connected
 #ifdef ENABLE_WIFI_OTA
-  if (!isSender && WiFi.status() == WL_CONNECTED) {
+  if (WiFi.status() == WL_CONNECTED) {
     static uint32_t lastWebDebug = 0;
     if (millis() - lastWebDebug > 10000) { // Debug every 10 seconds
       Serial.printf("[MAIN] Calling webServerManager.loop(), WiFi status: %s\n", WiFi.status() == WL_CONNECTED ? "CONNECTED" : "DISCONNECTED");
       lastWebDebug = millis();
     }
-    webServerManager.loop();
+
+    // Call web server multiple times per loop for better responsiveness
+    for (int i = 0; i < 3; i++) {
+      webServerManager.loop();
+    }
   }
 #endif
 
@@ -1133,7 +1154,7 @@ void loop() {
     // Non-blocking RX every 50ms
     if (now - lastRxMs >= 50) {
       String rx;
-      int st = radio.receive(rx);
+      int st = radio.receive(rx, 0); // 0 = immediate return, non-blocking
       if (st == RADIOLIB_ERR_NONE) {
         float rssi = radio.getRSSI();
         float snr  = radio.getSNR();
@@ -1280,7 +1301,7 @@ void loop() {
   lastDotState = dotBlinkActive;
 
   // Small delay to prevent overwhelming the system, but keep button responsive
-  delay(10);
+  delay(1); // Reduced from 10ms to 1ms for better web server responsiveness
 }
 
 // WiFi and OTA Functions (Receiver only)

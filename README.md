@@ -62,26 +62,33 @@ cd LightningDetector
 
 ### Build Options
 
-#### Sender (Lightning Detection Node)
+#### Unified Firmware  (single binary for Sender **or** Receiver)
 ```bash
-# Build lightning detection transmitter
-pio run -e sender
+# Build
+pio run -e unified
 
-# Upload to device
-pio run -e sender -t upload
+# Upload (USB serial bootloader)
+pio run -e unified -t upload
 
 # Monitor serial output
 pio device monitor
 ```
 
-#### Receiver (Base Station)
-```bash
-# Build base station with WiFi/OTA
-pio run -e receiver
+After flashing, the board boots as **Sender** by default.  Change the role at runtime:
 
-# Upload to device
-pio run -e receiver -t upload
+*Web UI*
+1. Connect to the device’s IP or `esp32.local`
+2. Scroll to **Device Role** → click **Toggle Role** (sender ↔ receiver)
+3. Reboot to apply
+
+*HTTP API*
+```bash
+curl -X POST http://<ip>/api/v1/config \
+     -H 'Content-Type: application/json' \
+     -d '{"role":"receiver"}'
 ```
+
+The choice is stored in NVS, so future boots keep the selected role.
 
 ## 🌐 Web Flasher
 
@@ -90,7 +97,8 @@ The project includes a web-based ESP32 firmware flasher that allows you to flash
 
 #### Features
 - **🌐 Web Interface**: Flash ESP32 devices from any modern browser
-- **📱 Device Support**: Transmitter and receiver firmware flashing
+- **🌟 Unified Firmware**: Single firmware supports both TX and RX modes
+- **📱 Legacy Support**: Transmitter and receiver firmware flashing (backward compatibility)
 - **📁 File Upload**: Support for custom firmware files
 - **🔌 Serial Port**: Direct USB connection to ESP32 devices
 - **📊 Progress Tracking**: Real-time flashing progress and status updates
@@ -98,8 +106,9 @@ The project includes a web-based ESP32 firmware flasher that allows you to flash
 #### Quick Start
 1. **Visit**: [Web Flasher](https://skeyelab.github.io/LightningDetector/)
 2. **Connect**: Plug your ESP32 device via USB
-3. **Select**: Choose device type (transmitter or receiver)
+3. **Select**: Choose **Unified Firmware** (recommended) or legacy transmitter/receiver
 4. **Flash**: Click "Connect & Flash" and follow the prompts
+5. **Configure**: After flashing unified firmware, use web interface to set device role
 
 #### Requirements
 - **Browser**: Chrome or Edge (Web Serial API support)
@@ -107,9 +116,10 @@ The project includes a web-based ESP32 firmware flasher that allows you to flash
 - **USB Cable**: Data cable (not just charging cable)
 
 #### Manual Firmware Upload
-- Upload custom `.bin` files for transmitter or receiver
+- Upload custom `.bin` files for unified, transmitter, or receiver firmware
 - Support for both pre-built and custom firmware
 - Automatic file validation and size checking
+- **Recommended**: Use unified firmware for maximum flexibility
 
 ### Configuration
 
@@ -137,10 +147,11 @@ The repository is organized for easy navigation and maintenance:
 ### Scripts (`scripts/`)
 - **`ci/`** - Continuous Integration scripts
   - `run_tests.sh` - Comprehensive test suite
-  - `run_static_analysis.sh` - Code analysis tools  
+  - `run_static_analysis.sh` - Code analysis tools
   - `run_tidy.sh` - Clang-tidy formatting
 - **`dev/`** - Development and deployment scripts
-  - `flash_both.sh` - Flash firmware to devices
+  - `flash_unified.sh` - Flash unified firmware to single device
+  - `flash_both.sh` - Flash unified firmware to both devices
   - `create_release.sh` - Create release packages
 - **`optimize/`** - Performance optimization tools
   - `optimize_clang_tidy_cache.sh` - Build cache optimization
@@ -342,6 +353,9 @@ uint8_t percent = Power::getBatteryPercent();
 - [x] GPS Integration (UC6580)
 - [x] Comprehensive Testing
 - [x] Build System Optimization
+- [x] Unified Firmware Architecture
+- [x] Web Interface & Role Management
+- [x] Web Server Performance Optimization
 
 ### Phase 2: Lightning Detection 🚧
 - [ ] AS3935 Sensor Integration

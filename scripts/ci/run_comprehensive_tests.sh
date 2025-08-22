@@ -34,11 +34,8 @@ run_comprehensive_test() {
     # Compile the test
     echo "Compiling..."
     local compile_cmd="g++ -std=c++17 -D UNIT_TEST -D ARDUINO_MOCK $include_paths $dependencies -o $temp_test_dir/test_runner $temp_test_dir/$(basename $test_file)"
-    echo "Compile command: $compile_cmd"
-    echo "Checking Unity library..."
-    ls -la .pio/libdeps/native/Unity/src/ || echo "Unity not found!"
 
-    if eval "$compile_cmd"; then
+    if eval "$compile_cmd" 2>/dev/null; then
         echo "Running..."
         if ./$temp_test_dir/test_runner; then
             echo -e "${GREEN}✅ ${test_name} tests PASSED${NC}"

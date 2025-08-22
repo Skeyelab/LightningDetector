@@ -111,7 +111,7 @@ jobs:
 
     strategy:
       matrix:
-        environment: [sender, receiver]
+        environment: [unified, sender, receiver]  # Build unified (primary) + legacy compatibility
 
     steps:
     - name: Checkout code
@@ -288,6 +288,7 @@ jobs:
       run: |
         echo "Generating compilation database for static analysis..."
         # Build environments to generate compile_commands.json
+        pio run -e unified --target compiledb || true
         pio run -e sender-tidy --target compiledb || true
         pio run -e receiver-tidy --target compiledb || true
 
