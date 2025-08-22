@@ -333,6 +333,13 @@ static void drawStatusBar() {
     char battStr[8];
     snprintf(battStr, sizeof(battStr), "%u%%", batt);
 
+    // Debug output for battery level
+    static uint32_t lastBattDebug = 0;
+    if (millis() - lastBattDebug >= 5000) { // Debug every 5 seconds
+      Serial.printf("[STATUS_BAR] Battery level: %u%%\n", batt);
+      lastBattDebug = millis();
+    }
+
     // Right-align battery text within 64px width screen
     int textWidth = strlen(battStr) * 6; // 6px per char (5x7 font +1 spacing)
     int drawX = 62 - textWidth;          // leave 2px margin

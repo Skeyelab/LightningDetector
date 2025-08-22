@@ -1,5 +1,12 @@
 #include "web_server.h"
 #include "config/role_config.h"
+#include "hardware/hardware_abstraction.h"
+
+#include <Arduino.h>
+#include <ArduinoJson.h>
+#include <Preferences.h>
+#include <WiFi.h>
+#include <WebServer.h>
 
 static String getContentType(const String &path) {
     if (path.endsWith(".html")) return "text/html";
@@ -103,6 +110,10 @@ void WebServerManager::registerRoutes() {
     // Placeholder WiFi routes
     server_.on("/api/v1/wifi", HTTP_GET, [this]() { handleWifiGet(); });
     server_.on("/api/v1/wifi", HTTP_POST, [this]() { handleWifiPost(); });
+
+    // ADC multiplier calibration endpoints
+    server_.on("/api/adc_multiplier", HTTP_GET, [this]() { handleGetAdcMultiplier(); });
+    server_.on("/api/adc_multiplier", HTTP_POST, [this]() { handleSetAdcMultiplier(); });
 }
 
 void WebServerManager::handleStaticFile(const String& path) {
@@ -288,6 +299,53 @@ void WebServerManager::handleNotFound() {
     }
     Serial.printf("[WEB] File not found: %s\n", path.c_str());
     server_.send(404, "text/plain", "Not Found");
+}
+
+// ADC multiplier calibration handlers
+void WebServerManager::handleGetAdcMultiplier() {
+    float multiplier = HardwareAbstraction::Power::getAdcMultiplier();
+    
+    DynamicJsonDocument doc(256);
+    doc["adc_multiplier"] = multiplier;
+    doc["status"] = "success";
+    
+    String response;
+    serializeJson(doc, response);
+    server_.send(200, "application/json", response);
+}
+
+void WebServerManager::handleSetAdcMultiplier() {
+    DynamicJsonDocument doc(256);
+    if (!readJsonBody(server_, doc)) {
+        server_.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Invalid JSON\"}");
+        return;
+    }
+    
+    if (!doc.containsKey("adc_multiplier")) {
+        server_.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing adc_multiplier\"}");
+        return;
+    }
+    
+    float multiplier = doc["adc_multiplier"];
+    
+    // Validate range (2.0 to 6.0 as per Meshtastic documentation)
+    if (multiplier < 2.0f || multiplier > 6.0f) {
+        server_.send(400, "application/json", "{\"status\":\"error\",\"message\":\"ADC multiplier must be between 2.0 and 6.0\"}");
+        return;
+    }
+    
+    // Set the new multiplier
+    HardwareAbstraction::Power::setAdcMultiplier(multiplier);
+    
+    // Return success response
+    DynamicJsonDocument responseDoc(256);
+    responseDoc["status"] = "success";
+    responseDoc["message"] = "ADC multiplier updated";
+    responseDoc["adc_multiplier"] = multiplier;
+    
+    String response;
+    serializeJson(responseDoc, response);
+    server_.send(200, "application/json", response);
 }
 
 bool WebServerManager::readJsonBody(WebServer &server, DynamicJsonDocument &doc) {

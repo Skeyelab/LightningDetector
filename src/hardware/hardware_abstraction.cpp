@@ -1,9 +1,10 @@
 #include "hardware_abstraction.h"
+#include <Arduino.h>
+#include <Preferences.h>
 #include <cstddef>
 #include <cstdlib>
 
 #ifdef ARDUINO
-#include <Arduino.h>
 #include <Wire.h>
 #include <SPI.h>
 #include <esp_system.h>
@@ -555,28 +556,40 @@ namespace HardwareAbstraction {
             // Convert GPIO to ADC channel for ESP32-S3
             adc1_channel_t channel;
             switch (pin) {
-                case 1: channel = ADC1_CHANNEL_0; break;
-                case 2: channel = ADC1_CHANNEL_1; break;
-                case 3: channel = ADC1_CHANNEL_2; break;
-                case 4: channel = ADC1_CHANNEL_3; break;
-                case 5: channel = ADC1_CHANNEL_4; break;
-                case 6: channel = ADC1_CHANNEL_5; break;
-                case 7: channel = ADC1_CHANNEL_6; break;
-                case 8: channel = ADC1_CHANNEL_7; break;
-                case 9: channel = ADC1_CHANNEL_8; break;
-                case 10: channel = ADC1_CHANNEL_9; break;
-                // ESP32-S3 specific mappings
-                case 11: channel = ADC1_CHANNEL_0; break; // GPIO1
-                case 12: channel = ADC1_CHANNEL_1; break; // GPIO2
-                case 13: channel = ADC1_CHANNEL_2; break; // GPIO3
-                case 14: channel = ADC1_CHANNEL_3; break; // GPIO4
-                case 15: channel = ADC1_CHANNEL_4; break; // GPIO5
-                case 16: channel = ADC1_CHANNEL_5; break; // GPIO6
-                case 17: channel = ADC1_CHANNEL_6; break; // GPIO7
-                case 18: channel = ADC1_CHANNEL_7; break; // GPIO8
-                case 19: channel = ADC1_CHANNEL_8; break; // GPIO9
-                case 20: channel = ADC1_CHANNEL_9; break; // GPIO10
+                // ESP32-S3 ADC1 channel mapping (GPIO -> ADC1_CHANNEL)
+                case 1: channel = ADC1_CHANNEL_0; break;   // GPIO1 -> ADC1_CHANNEL_0
+                case 2: channel = ADC1_CHANNEL_1; break;   // GPIO2 -> ADC1_CHANNEL_1
+                case 3: channel = ADC1_CHANNEL_2; break;   // GPIO3 -> ADC1_CHANNEL_2
+                case 4: channel = ADC1_CHANNEL_3; break;   // GPIO4 -> ADC1_CHANNEL_3
+                case 5: channel = ADC1_CHANNEL_4; break;   // GPIO5 -> ADC1_CHANNEL_4
+                case 6: channel = ADC1_CHANNEL_5; break;   // GPIO6 -> ADC1_CHANNEL_5
+                case 7: channel = ADC1_CHANNEL_6; break;   // GPIO7 -> ADC1_CHANNEL_6
+                case 8: channel = ADC1_CHANNEL_7; break;   // GPIO8 -> ADC1_CHANNEL_7
+                case 9: channel = ADC1_CHANNEL_8; break;   // GPIO9 -> ADC1_CHANNEL_8
+                case 10: channel = ADC1_CHANNEL_9; break;  // GPIO10 -> ADC1_CHANNEL_9
                 default: return Result::ERROR_INVALID_PARAMETER;
+            }
+
+            // Configure channel
+            esp_err_t ret = adc1_config_channel_atten(channel, ADC_ATTEN);
+            if (ret != ESP_OK) {
+                Serial.printf("[ADC] Failed to configure channel %d: %d\n", channel, ret);
+                return Result::ERROR_HARDWARE_FAULT;
+            }
+
+            // Read raw value
+            int raw_value = adc1_get_raw(channel);
+            if (raw_value < 0) {
+                Serial.printf("[ADC] Failed to read raw value from channel %d: %d\n", channel, raw_value);
+                return Result::ERROR_HARDWARE_FAULT;
+            }
+
+            value = static_cast<uint16_t>(raw_value);
+            
+            // Debug output for battery pin
+            if (pin == 1) {
+                Serial.printf("[ADC] GPIO%d -> Channel %d, Raw: %d (0x%04X), Atten: %d\n", 
+                            pin, channel, raw_value, raw_value, ADC_ATTEN);
             }
             #else
             // Mock channel for testing - validate pin range
@@ -584,23 +597,6 @@ namespace HardwareAbstraction {
                 return Result::ERROR_INVALID_PARAMETER;
             }
             int channel = pin % 10;
-            #endif
-
-            #ifdef ARDUINO
-            // Configure channel
-            esp_err_t ret = adc1_config_channel_atten(channel, ADC_ATTEN);
-            if (ret != ESP_OK) {
-                return Result::ERROR_HARDWARE_FAULT;
-            }
-
-            // Read raw value
-            int raw_value = adc1_get_raw(channel);
-            if (raw_value < 0) {
-                return Result::ERROR_HARDWARE_FAULT;
-            }
-
-            value = static_cast<uint16_t>(raw_value);
-            #else
             value = 2048; // Mock middle value
             #endif
 
@@ -622,8 +618,16 @@ namespace HardwareAbstraction {
             if (s_adc_chars != nullptr) {
                 uint32_t voltage_mv = esp_adc_cal_raw_to_voltage(raw_value, s_adc_chars);
                 voltage = voltage_mv / 1000.0f;
+                if (pin == 1) {
+                    Serial.printf("[ADC_VOLT] Pin %d: Raw=%d, Calibrated=%dmV, Voltage=%.3fV\n", 
+                                pin, raw_value, voltage_mv, voltage);
+                }
             } else {
                 voltage = (raw_value / 4095.0f) * 3.3f; // Fallback calculation
+                if (pin == 1) {
+                    Serial.printf("[ADC_VOLT] Pin %d: Raw=%d, Fallback=%.3fV (no calibration)\n", 
+                                pin, raw_value, voltage);
+                }
             }
             #else
             voltage = (raw_value / 4095.0f) * 3.3f; // Mock calculation
@@ -881,16 +885,69 @@ namespace HardwareAbstraction {
 
         float getBatteryVoltage() {
             #ifdef ARDUINO
-            // Heltec V3 has battery voltage divider on GPIO1 (ADC1_CH0)
-            constexpr uint8_t kBatteryAdcPin = 1;          // GPIO1 -> ADC1_CH0
-            constexpr float kAdcMultiplier   = 4.9f;       // (R1+R2)/R2 for onboard divider
+            // Heltec V3 has battery voltage divider on GPIO1 (ADC1_CHANNEL_0)
+            constexpr uint8_t kBatteryAdcPin = 1;          // GPIO1 -> ADC1_CHANNEL_0
+            
+            // Configurable ADC multiplier for calibration (default 4.9 for Heltec V3)
+            // This can be adjusted via web interface or preferences
+            static float kAdcMultiplier = 4.9f;            // Default for Heltec V3
+            
+            // Try to load calibrated multiplier from preferences
+            static bool multiplierLoaded = false;
+            if (!multiplierLoaded) {
+                Preferences prefs;
+                if (prefs.begin("LtngDet", true)) {
+                    if (prefs.isKey("adc_multiplier")) {
+                        kAdcMultiplier = prefs.getFloat("adc_multiplier", 4.9f);
+                        Serial.printf("[BATTERY] Loaded calibrated ADC multiplier: %.2f\n", kAdcMultiplier);
+                    } else {
+                        Serial.printf("[BATTERY] Using default ADC multiplier: %.2f\n", kAdcMultiplier);
+                    }
+                    prefs.end();
+                }
+                multiplierLoaded = true;
+            }
 
             float voltageOnPin = 0.0f;
             if (ADC::readVoltage(kBatteryAdcPin, voltageOnPin) == Result::SUCCESS) {
-                return voltageOnPin * kAdcMultiplier;      // Scale back to actual battery voltage
+                float batteryVoltage = voltageOnPin * kAdcMultiplier;
+                Serial.printf("[BATTERY] ADC Pin: %d, Raw Voltage: %.3fV, Multiplier: %.2f, Battery: %.3fV\n", 
+                            kBatteryAdcPin, voltageOnPin, kAdcMultiplier, batteryVoltage);
+                return batteryVoltage;
+            } else {
+                Serial.printf("[BATTERY] Failed to read ADC pin %d\n", kBatteryAdcPin);
             }
             #endif
             return 0.0f;
+        }
+        
+        void setAdcMultiplier(float multiplier) {
+            if (multiplier < 2.0f || multiplier > 6.0f) {
+                Serial.printf("[BATTERY] Invalid ADC multiplier: %.2f (must be 2.0-6.0)\n", multiplier);
+                return;
+            }
+            
+            // Save to preferences
+            Preferences prefs;
+            if (prefs.begin("LtngDet", false)) {
+                prefs.putFloat("adc_multiplier", multiplier);
+                prefs.end();
+                Serial.printf("[BATTERY] ADC multiplier saved: %.2f\n", multiplier);
+            }
+            
+            // Update the static multiplier (will take effect on next battery read)
+            static float kAdcMultiplier = 4.9f;
+            kAdcMultiplier = multiplier;
+        }
+        
+        float getAdcMultiplier() {
+            Preferences prefs;
+            if (prefs.begin("LtngDet", true)) {
+                float multiplier = prefs.getFloat("adc_multiplier", 4.9f);
+                prefs.end();
+                return multiplier;
+            }
+            return 4.9f; // Default fallback
         }
 
         uint8_t getBatteryPercent() {

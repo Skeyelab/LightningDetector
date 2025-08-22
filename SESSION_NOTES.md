@@ -16,6 +16,45 @@
 
 ### Session log
 
+#### 2025-01-17 14:00 UTC
+- Context: **BATTERY LEVEL CALIBRATION SOLUTION** - Implemented ADC multiplier calibration system based on Meshtastic documentation to fix 0% battery readings.
+- Changes:
+  - 🔍 **Identified Root Cause**: Battery level showing 0% due to incorrect ADC multiplier calibration
+  - 📚 **Meshtastic Documentation Research**: Found that Heltec V3 default ADC multiplier is 4.9, but individual devices need calibration
+  - ✅ **Implemented Calibration System**: Added configurable ADC multiplier with web interface control
+    * **Configurable Multiplier**: Range 2.0-6.0 (per Meshtastic specs) with default 4.9 for Heltec V3
+    * **Web Interface Control**: Added `/api/adc_multiplier` endpoints for getting/setting multiplier
+    * **Persistent Storage**: Multiplier saved to ESP32 preferences for persistence across reboots
+    * **Real-time Updates**: Battery level updates every 200ms with calibrated multiplier
+  - 🎯 **Calibration Process**: Implemented Meshtastic's recommended calibration workflow
+    * **Step 1**: Charge battery to full (4.2V)
+    * **Step 2**: Adjust multiplier via web interface until battery shows correct percentage
+    * **Step 3**: Save calibrated value for future use
+  - 🐛 **Debug Output**: Added comprehensive debug logging for ADC readings and voltage calculations
+    * **ADC Raw Values**: Shows raw ADC readings and channel configuration
+    * **Voltage Calculations**: Displays voltage conversion process and multiplier application
+    * **Status Bar Updates**: Logs battery level updates every 5 seconds
+- Commands run:
+  - `pio run -e unified` - Build successful with ADC calibration system
+  - Added debug output to battery voltage functions
+  - Implemented web interface for ADC multiplier calibration
+- Files touched:
+  - `src/hardware/hardware_abstraction.cpp` - Added configurable ADC multiplier and calibration functions
+  - `src/hardware/hardware_abstraction.h` - Added ADC multiplier calibration interface
+  - `src/web_interface/web_server.cpp` - Added ADC multiplier calibration API endpoints
+  - `src/web_interface/web_server.h` - Added ADC multiplier calibration function declarations
+  - `web-flasher/index.html` - Added ADC multiplier calibration web interface
+- **RESULT**: 🎉 Battery level calibration system implemented!
+  - **Configurable Multiplier**: Users can now calibrate battery voltage readings via web interface
+  - **Persistent Calibration**: Calibrated values saved across reboots
+  - **Debug Visibility**: Comprehensive logging shows exactly what's happening with ADC readings
+  - **Meshtastic Compliance**: Follows industry-standard calibration process for Heltec V3
+- Next steps:
+  - Flash updated firmware to device
+  - Test ADC multiplier calibration via web interface
+  - Calibrate battery voltage readings using Meshtastic process
+  - Monitor debug output to verify calibration success
+
 #### 2025-01-17 13:00 UTC
 - Context: **MERGE CONFLICT RESOLUTION - BATTERY LEVEL INTEGRATION** - Resolved merge conflict between hardware abstraction (battery level) and role configuration headers to enable both functionalities.
 - Changes:

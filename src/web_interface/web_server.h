@@ -34,6 +34,15 @@ private:
     void handleStaticFile(const String& path);
     void handleNotFound();
 
+    // Configuration management
+    void handleGetConfig();
+    void handleUpdateConfig();
+    void handleApplyPreset();
+    
+    // ADC multiplier calibration for battery voltage
+    void handleSetAdcMultiplier();
+    void handleGetAdcMultiplier();
+
     static bool readJsonBody(WebServer &server, DynamicJsonDocument &doc);
 };
 
