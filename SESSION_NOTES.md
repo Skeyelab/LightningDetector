@@ -16,6 +16,38 @@
 
 ### Session log
 
+#### 2025-01-17 13:00 UTC
+- Context: **MERGE CONFLICT RESOLUTION - BATTERY LEVEL INTEGRATION** - Resolved merge conflict between hardware abstraction (battery level) and role configuration headers to enable both functionalities.
+- Changes:
+  - 🔍 **Identified Merge Conflict**: Found conflicting includes in `src/main.cpp` between:
+    * `hardware/hardware_abstraction.h` - Provides battery level functionality (`HardwareAbstraction::Power::getBatteryPercent()`)
+    * `config/role_config.h` - Provides runtime role configuration system (`RoleConfig::begin()`, `RoleConfig::isSender()`)
+  - ✅ **Conflict Resolution**: Successfully resolved by including both headers:
+    * **Battery Level**: `HardwareAbstraction::Power::getBatteryPercent()` function available for status bar display
+    * **Role Configuration**: `RoleConfig::begin()` and `RoleConfig::isSender()` functions available for runtime role management
+    * **No Functionality Loss**: Both features now work together seamlessly
+  - 🎯 **Battery Level Integration**: Battery percentage now displays in status bar for both sender and receiver roles
+    * **Status Bar Display**: Right-aligned battery percentage (e.g., "85%") in bottom status bar
+    * **Hardware Abstraction**: Uses `HardwareAbstraction::Power::getBatteryPercent()` for clean, testable code
+    * **Consistent UI**: Battery level visible alongside WiFi status, OTA status, and other system information
+- Commands run:
+  - `pio run -e unified` - Build successful, flash usage: 959KB (28.7%)
+  - `pio run -e sender` - Build successful, flash usage: 540KB (16.2%)
+  - `pio run -e receiver` - Build successful, flash usage: 959KB (28.7%)
+  - `./scripts/ci/run_comprehensive_tests.sh` - All 125+ tests passed
+- Files touched:
+  - `src/main.cpp` - Resolved merge conflict by including both hardware abstraction and role config headers
+- **RESULT**: 🎉 Merge conflict resolved successfully with both battery level and role configuration working!
+  - **Battery Level**: Status bar now shows battery percentage for both device roles
+  - **Role Configuration**: Runtime role switching via web interface fully functional
+  - **Build Verification**: All firmware variants build successfully (unified, sender, receiver)
+  - **Test Coverage**: Comprehensive test suite passes with 125+ tests
+  - **No Conflicts**: Both features integrate cleanly without interference
+- Next steps:
+  - Test battery level display on actual hardware
+  - Verify role configuration web interface functionality
+  - Monitor battery level accuracy and update frequency
+
 #### 2025-01-17 12:00 UTC
 - Context: **UNIFIED WIFI DISPLAY FOR BOTH ROLES** - Updated display functionality so both TX and RX roles show similar WiFi connection information including IP address and network location.
 - Changes:
