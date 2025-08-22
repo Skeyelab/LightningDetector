@@ -928,13 +928,21 @@ namespace HardwareAbstraction {
             if (!pinTested) {
                 uint8_t testPins[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};  // Valid ESP32-S3 ADC1 pins
                 Serial.println("[BATTERY] Starting battery pin detection...");
+                Serial.printf("[BATTERY] Will test %d pins: ", sizeof(testPins)/sizeof(testPins[0]));
+                for (uint8_t i = 0; i < sizeof(testPins)/sizeof(testPins[0]); i++) {
+                    Serial.printf("GPIO%d ", testPins[i]);
+                }
+                Serial.println();
                 
                 for (uint8_t pin : testPins) {
                     float testVoltage = 0.0f;
                     Serial.printf("[BATTERY] Testing GPIO%d for battery voltage...\n", pin);
 
                     // Try using our ADC abstraction first
-                    if (ADC::readVoltage(pin, testVoltage) == Result::SUCCESS && testVoltage > 0.1f) {
+                    Result adcResult = ADC::readVoltage(pin, testVoltage);
+                    Serial.printf("[BATTERY] GPIO%d ADC result: %s, voltage: %.3fV\n", pin, resultToString(adcResult), testVoltage);
+                    
+                    if (adcResult == Result::SUCCESS && testVoltage > 0.1f) {
                         kBatteryAdcPin = pin;
                         pinTested = true;
                         Serial.printf("[BATTERY] SUCCESS: Found battery voltage on GPIO%d: %.3fV (using ADC abstraction)\n", pin, testVoltage);
@@ -951,7 +959,7 @@ namespace HardwareAbstraction {
                             Serial.printf("[BATTERY] SUCCESS: Found battery voltage on GPIO%d via analogRead: %.3fV\n", pin, analogVoltage);
                             break;
                         } else {
-                            Serial.printf("[BATTERY] GPIO%d: No valid voltage detected\n", pin);
+                            Serial.printf("[BATTERY] GPIO%d: No valid voltage detected (both methods failed)\n", pin);
                         }
                     }
                 }
