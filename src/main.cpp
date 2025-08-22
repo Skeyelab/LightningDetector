@@ -366,6 +366,21 @@ static void drawPingDot() {
 }
 
 static void oledMsg(const char* l1, const char* l2 = nullptr, const char* l3 = nullptr) {
+  // Enhanced rate limiting to prevent I2C bus contention with faster main loop
+  static uint32_t lastOledUpdate = 0;
+  uint32_t now = millis();
+  if (now - lastOledUpdate < 200) { // Increased to 200ms to prevent I2C bus contention
+    return;
+  }
+  lastOledUpdate = now;
+  
+  // Add I2C mutex protection
+  static bool oledBusy = false;
+  if (oledBusy) {
+    return; // Skip if already in use
+  }
+  oledBusy = true;
+  
   u8g2.clearBuffer();
   u8g2.setFont(u8g2_font_6x10_tr);
 
@@ -403,6 +418,9 @@ static void oledMsg(const char* l1, const char* l2 = nullptr, const char* l3 = n
   drawPingDot();
 
   u8g2.sendBuffer();
+  
+  // Release I2C mutex
+  oledBusy = false;
 }
 
 // Role display logic moved; device role is now chosen at runtime via RoleConfig
@@ -485,11 +503,15 @@ static void initDisplay() {
   digitalWrite(OLED_RST_PIN, HIGH);
   delay(50);
 
-  // I2C
-  Wire.begin(17, 18);
-  Wire.setTimeOut(1000);
-  Wire.setClock(100000);
-  delay(100);
+  // I2C - Check if already initialized to prevent bus contention
+  static bool i2cInitialized = false;
+  if (!i2cInitialized) {
+    Wire.begin(17, 18);
+    Wire.setTimeOut(1000);
+    Wire.setClock(100000);
+    i2cInitialized = true;
+    delay(100);
+  }
 
   u8g2.setI2CAddress(0x3C << 1);
   if (!u8g2.begin()) {
@@ -602,7 +624,7 @@ static void tryReceiveConfigOnControlChannel(uint32_t durationMs) {
       webServerManager.loop();
     }
     #endif
-    
+
     String rx;
     int r = radio.receive(rx, 0); // Make non-blocking
     if (r == RADIOLIB_ERR_NONE && rx.startsWith("CFG ")) {
@@ -1024,7 +1046,7 @@ void loop() {
       Serial.printf("[MAIN] Calling webServerManager.loop(), WiFi status: %s\n", WiFi.status() == WL_CONNECTED ? "CONNECTED" : "DISCONNECTED");
       lastWebDebug = millis();
     }
-    
+
     // Call web server multiple times per loop for better responsiveness
     for (int i = 0; i < 3; i++) {
       webServerManager.loop();
