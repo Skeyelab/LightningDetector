@@ -100,6 +100,7 @@ void WebServerManager::registerRoutes() {
     server_.on("/api/v1/config", HTTP_GET, [this]() { handleConfigGet(); });
     server_.on("/api/v1/config", HTTP_POST, [this]() { handleConfigPost(); });
     server_.on("/api/v1/preset", HTTP_POST, [this]() { handlePresetPost(); });
+    server_.on("/api/v1/reboot", HTTP_POST, [this]() { handleReboot(); });
 
     // Placeholder WiFi routes
     server_.on("/api/v1/wifi", HTTP_GET, [this]() { handleWifiGet(); });
@@ -237,6 +238,19 @@ void WebServerManager::handlePresetPost() {
     } else {
         server_.send(400, "application/json", "{\"error\":\"Missing preset parameter\"}");
     }
+}
+
+void WebServerManager::handleReboot() {
+    Serial.println("[WEB] Reboot requested via web interface");
+    
+    // Send response first
+    server_.send(200, "application/json", "{\"status\":\"rebooting\"}");
+    
+    // Small delay to ensure response is sent
+    delay(100);
+    
+    // Reboot the device
+    ESP.restart();
 }
 
 void WebServerManager::handleWifiGet() {

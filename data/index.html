@@ -36,6 +36,30 @@
         </div>
     </section>
 
+    <section id="device-mode">
+        <h2>Device Mode Configuration</h2>
+        <div style="margin-bottom: 15px;">
+            <label for="deviceModeSelect">Device Mode:</label>
+            <select id="deviceModeSelect">
+                <option value="sender">📡 Sender (TX) - Broadcasts LoRa messages</option>
+                <option value="receiver">📥 Receiver (RX) - Listens for LoRa messages + WiFi OTA</option>
+            </select>
+        </div>
+        <div id="mode-info" style="padding: 10px; background: #f8f9fa; border-radius: 4px; font-size: 14px;">
+            <strong>Current Mode:</strong> <span id="current-mode">Loading...</span><br>
+            <strong>Description:</strong> <span id="mode-description">-</span>
+        </div>
+        <div style="margin-top: 15px;">
+            <button id="saveModeBtn" style="background: #667eea; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer;">
+                Save Mode & Reboot
+            </button>
+            <span id="mode-status" style="margin-left: 10px; font-weight: bold;"></span>
+        </div>
+        <div style="margin-top: 10px; font-size: 12px; color: #666; font-style: italic;">
+            Note: Changing device mode requires a reboot to take effect. The device will automatically reboot after saving.
+        </div>
+    </section>
+
     <script src="js/main.js"></script>
 </body>
 </html>

@@ -72,3 +72,43 @@ section h2 {
     border-color: #667eea;
     box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
 }
+
+#device-mode {
+    background: #e8f4fd;
+    border: 1px solid #bee5eb;
+}
+
+#device-mode label {
+    display: block;
+    margin-bottom: 10px;
+    font-weight: bold;
+    color: #0c5460;
+}
+
+#deviceModeSelect {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #bee5eb;
+    border-radius: 4px;
+    font-size: 16px;
+    background: white;
+}
+
+#deviceModeSelect:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+}
+
+#saveModeBtn:hover {
+    background: #5a6fd8;
+}
+
+#saveModeBtn:active {
+    background: #4a5fc8;
+}
+
+#mode-status {
+    display: inline-block;
+    min-width: 200px;
+}

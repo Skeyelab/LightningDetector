@@ -29,6 +29,7 @@ private:
     void handleConfigGet();
     void handleConfigPost();
     void handlePresetPost();
+    void handleReboot();
     void handleWifiGet();
     void handleWifiPost();
     void handleStaticFile(const String& path);

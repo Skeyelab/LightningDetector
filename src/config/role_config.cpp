@@ -11,7 +11,7 @@
 namespace RoleConfig {
 
     // Current role cached in RAM
-    static Role currentRole = Role::Sender;
+    static Role currentRole = Role::Receiver;
 
 #ifdef ARDUINO
     static Preferences prefs;
