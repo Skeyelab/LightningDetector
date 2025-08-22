@@ -135,26 +135,10 @@ cp wifi_networks_example.h src/wifi_networks.h
 // Heltec V3 Pin Configuration (src/config/system_config.h)
 #define VEXT_PIN 36        // Power control
 #define OLED_RST_PIN 21    // OLED reset
-#define BUTTON_PIN 0       // User button (GPIO0)
+#define BUTTON_PIN 0       // User button
 #define LORA_NSS 8         // LoRa chip select
 #define LORA_DIO1 14       // LoRa interrupt
 ```
-
-#### Button Controls
-**Button Actions (GPIO0):**
-- **Short/Medium Press (100ms-6s)**: Cycle through LoRa presets
-  - Cycles through 8 predefined LoRa configurations (bandwidth, spreading factor)
-  - Both Sender and Receiver modes support preset cycling
-  - Presets are automatically synchronized between devices
-- **Long Press (>6s)**: Enter deep sleep mode
-  - Device enters low-power sleep state
-  - Wake up via button press or timer
-
-**Role Configuration:**
-- **NOT via button** - Device role (Sender/Receiver) is configured via web interface
-- Access web interface at device IP or `esp32.local`
-- Navigate to **Device Mode** section to change role
-- Role changes require reboot and are stored persistently
 
 ## 📁 Repository Structure
 
@@ -280,24 +264,6 @@ if (GPS::hasGPSFix()) {
 ```
 
 ## 📡 Communication Protocol
-
-### LoRa Configuration & Presets
-The system includes 8 predefined LoRa configurations that can be cycled via button press:
-
-**Available Presets:**
-- **Long Range - Fast**: 125kHz, SF10 (best range, moderate speed)
-- **Long Range - Slow**: 125kHz, SF12 (maximum range, slowest speed)  
-- **Long Range - Moderate**: 125kHz, SF11 (good range, balanced speed)
-- **Medium Range - Slow**: 125kHz, SF10 (moderate range, good speed)
-- **Medium Range - Fast**: 250kHz, SF9 (shorter range, faster speed)
-- **Short Range - Slow**: 125kHz, SF8 (short range, fast speed)
-- **Short Range - Fast**: 250kHz, SF7 (very short range, very fast)
-- **Short Range - Turbo**: 500kHz, SF7 (shortest range, maximum speed)
-
-**Preset Synchronization:**
-- Receivers automatically broadcast preset changes to all devices
-- All devices on the network automatically sync to the same preset
-- Presets are stored persistently and survive reboots
 
 ### LoRa Messaging
 ```cpp

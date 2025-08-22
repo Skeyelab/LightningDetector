@@ -22,25 +22,26 @@
   - 🔍 **Identified Documentation Error**: Found incorrect button behavior description in output after flashing
     * **WRONG**: "Short button press: Toggle between Sender/Receiver, Medium press: Cycle Spreading Factor, Long press: Cycle Bandwidth"
     * **ACTUAL**: Button only controls LoRa presets and sleep mode, NOT role switching
-  - ✅ **Updated README.md**: Added accurate button control documentation
-    * **Button Actions**: Short/Medium press (100ms-6s) cycles through 8 LoRa presets, Long press (>6s) enters sleep mode
+  - ✅ **Updated Flash Scripts**: Fixed incorrect button instructions in both flashing scripts
+    * **flash_both.sh**: Corrected button behavior description
+    * **flash_unified.sh**: Corrected button behavior description
+    * **Button Actions**: Short/Medium press (100ms-6s) cycles LoRa presets, Long press (>6s) enters sleep mode
     * **Role Configuration**: Clearly states role switching is via web interface, NOT button
-    * **LoRa Presets**: Added comprehensive list of 8 available presets with bandwidth/spreading factor details
-    * **Preset Synchronization**: Documents automatic preset broadcasting and device synchronization
   - 🎯 **User Experience Improvement**: Eliminates confusion about button functionality
     * Users now understand button only controls LoRa parameters, not device role
     * Clear guidance that role switching requires web interface access
-    * Complete documentation of available LoRa presets and their characteristics
+    * Consistent documentation across all scripts and user-facing content
 - Commands run:
-  - Reviewed `src/app_logic.cpp` to understand actual button behavior
-  - Reviewed `src/main.cpp` button handling functions
-  - Updated `README.md` with accurate button documentation
+  - Reviewed `src/app_logic.cpp` and `src/main.cpp` to understand actual button behavior
+  - Updated `scripts/dev/flash_both.sh` with correct button instructions
+  - Updated `scripts/dev/flash_unified.sh` with correct button instructions
 - Files touched:
-  - `README.md` (corrected button behavior and added LoRa presets documentation)
+  - `scripts/dev/flash_both.sh` (corrected button behavior description)
+  - `scripts/dev/flash_unified.sh` (corrected button behavior description)
 - **RESULT**: 🎉 Button documentation now accurately reflects actual functionality!
   - **User Clarity**: No more confusion about button vs web interface for role switching
-  - **Complete Documentation**: All 8 LoRa presets documented with characteristics
-  - **Accurate Instructions**: Users know exactly what buttons do and don't control
+  - **Script Accuracy**: Flash scripts now show correct button behavior
+  - **Consistent Documentation**: All user-facing content shows accurate button controls
   - **Better UX**: Clear separation between button controls (LoRa presets) and web interface (role management)
 - Next steps:
   - Test button functionality to verify documentation accuracy
