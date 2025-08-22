@@ -16,6 +16,37 @@
 
 ### Session log
 
+#### 2025-01-17 00:15 UTC
+- Context: **RESOLVED MERGE CONFLICTS** - Successfully resolved all merge conflicts between cursor/ERI-24-unify-firmware-and-ensure-test-compatibility-8389 and main branches.
+- Changes:
+  - 🔧 **Resolved Test Script Conflicts**: Chose main branch approach for Unity library dependencies in `scripts/ci/run_comprehensive_tests.sh`
+    * Kept full PlatformIO Unity library (`.pio/libdeps/native/Unity/src/`) over Unity stub approach
+    * Included new mock files: `wifi_mocks.cpp`, `preferences_mocks.cpp` for comprehensive testing
+  - ✅ **All Conflicts Resolved**: Successfully resolved conflicts in 4 files:
+    * `SESSION_NOTES.md` - Integrated both sets of changes
+    * `scripts/ci/run_comprehensive_tests.sh` - Chose main branch Unity approach
+    * `src/main.cpp` - Integrated unified firmware changes
+    * `src/web_interface/web_server.cpp` - Integrated web interface enhancements
+  - 🎯 **Merge Ready**: All conflicts resolved, ready to commit merge
+- Commands run:
+  - `git add` for all conflicted files to mark conflicts as resolved
+  - Verified no remaining conflict markers in any files
+- Files touched:
+  - `SESSION_NOTES.md` (conflicts resolved)
+  - `scripts/ci/run_comprehensive_tests.sh` (chose main branch Unity approach)
+  - `src/main.cpp` (integrated unified firmware)
+  - `src/web_interface/web_server.cpp` (integrated web interface)
+- **RESULT**: 🎉 Complete merge conflict resolution!
+  - **All 4 conflicted files resolved** with appropriate changes from both branches
+  - **Main branch Unity approach chosen** for comprehensive testing (full Unity library + new mocks)
+  - **Unified firmware changes integrated** from cursor branch
+  - **Web interface enhancements integrated** from cursor branch
+  - **Ready for merge commit** to complete the integration
+- Next steps:
+  - Commit the merge to complete the integration
+  - Verify all tests still pass after merge
+  - Continue with unified firmware development
+
 #### 2025-01-16 23:58 UTC
 - Context: **FIXED UNITY LIBRARY ENVIRONMENT-SPECIFIC INSTALLATION** - CI was installing Unity library but not in the native environment context.
 - Changes:
