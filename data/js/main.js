@@ -49,7 +49,7 @@ function updateModeInfo(mode) {
     const modeInfo = {
         sender: {
             name: "Sender (TX)",
-            description: "Broadcasts LoRa messages to other devices. No WiFi or web interface."
+            description: "Broadcasts LoRa messages to other devices. Includes WiFi and web interface for remote configuration."
         },
         receiver: {
             name: "Receiver (RX)", 

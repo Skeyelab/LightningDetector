@@ -3,7 +3,6 @@
 
 #include <Arduino.h>
 
-#if defined(ROLE_RECEIVER) || defined(ENABLE_WEB_INTERFACE)
 #include <WebServer.h>
 #include <FS.h>
 #include <SPIFFS.h>
@@ -39,7 +38,5 @@ private:
 };
 
 extern WebServerManager webServerManager;
-
-#endif // ROLE_RECEIVER || ENABLE_WEB_INTERFACE
 
 #endif // WEB_INTERFACE_WEB_SERVER_H

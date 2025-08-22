@@ -1,8 +1,6 @@
 #include "web_server.h"
 #include "config/role_config.h"
 
-#if defined(ROLE_RECEIVER) || defined(ENABLE_WEB_INTERFACE)
-
 static String getContentType(const String &path) {
     if (path.endsWith(".html")) return "text/html";
     if (path.endsWith(".css"))  return "text/css";
@@ -299,5 +297,3 @@ bool WebServerManager::readJsonBody(WebServer &server, DynamicJsonDocument &doc)
     }
     return false;
 }
-
-#endif // ROLE_RECEIVER || ENABLE_WEB_INTERFACE
