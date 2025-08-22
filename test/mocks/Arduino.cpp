@@ -109,6 +109,11 @@ void SerialClass::write(uint8_t val) {
     (void)val;
 }
 
+void SerialClass::printf(const char* format, ...) {
+    (void)format;
+    // Mock printf - do nothing in test environment
+}
+
 // Mock Wire (I2C)
 TwoWire Wire;
 
