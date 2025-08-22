@@ -53,6 +53,7 @@ public:
     int available();
     int read();
     void write(uint8_t val);
+    void printf(const char* format, ...);
 };
 
 extern SerialClass Serial;

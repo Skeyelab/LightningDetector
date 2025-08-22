@@ -65,17 +65,32 @@ public:
         }
     }
 
+    void putFloat(const char* key, float value) {
+        if (initialized) {
+            floatValues[key] = value;
+        }
+    }
+
+    float getFloat(const char* key, float defaultValue) {
+        if (!initialized) return defaultValue;
+
+        auto it = floatValues.find(key);
+        return (it != floatValues.end()) ? it->second : defaultValue;
+    }
+
     void end() {
         initialized = false;
         intValues.clear();
         boolValues.clear();
         stringValues.clear();
+        floatValues.clear();
     }
 
     bool clear() {
         intValues.clear();
         boolValues.clear();
         stringValues.clear();
+        floatValues.clear();
         return true;
     }
 
@@ -85,6 +100,7 @@ public:
         intValues.erase(key);
         boolValues.erase(key);
         stringValues.erase(key);
+        floatValues.erase(key);
         return true;
     }
 
@@ -93,6 +109,7 @@ private:
     std::map<std::string, int> intValues;
     std::map<std::string, bool> boolValues;
     std::map<std::string, std::string> stringValues;
+    std::map<std::string, float> floatValues;
 };
 
 #endif // ARDUINO_MOCK

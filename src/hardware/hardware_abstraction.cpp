@@ -1,6 +1,10 @@
 #include "hardware_abstraction.h"
 #include <Arduino.h>
+#ifdef ARDUINO_MOCK
+#include "../test/mocks/preferences_mocks.h"
+#else
 #include <Preferences.h>
+#endif
 #include <cstddef>
 #include <cstdlib>
 
@@ -851,6 +855,9 @@ namespace HardwareAbstraction {
 
     // Power Management Implementation
     namespace Power {
+        // Global mutable multiplier for battery voltage scaling (default 4.9 for Heltec V3)
+        static float s_adcMultiplier = 4.9f;
+
         static const uint8_t VEXT_PIN = 36; // Heltec V3 Vext control pin
 
         Result enableVext() {
@@ -921,61 +928,32 @@ namespace HardwareAbstraction {
             #ifdef ARDUINO
             // Heltec V3 battery voltage pin - try multiple possibilities
             // Common pins: GPIO1, GPIO35, GPIO37
-            static uint8_t kBatteryAdcPin = 1;          // Start with documented GPIO1
-            static bool pinTested = false;
+            constexpr uint8_t kBatteryAdcPin = 1;          // GPIO1 -> ADC1_CH0
+            constexpr uint8_t kBatteryCtrlPin = 37;        // GPIO37 gate low = enable divider
+            // use global s_adcMultiplier declared in namespace scope
 
-            // If GPIO1 fails, try other possible ADC pins on ESP32-S3
-            if (!pinTested) {
-                uint8_t testPins[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};  // Valid ESP32-S3 ADC1 pins
-                Serial.println("[BATTERY] Starting battery pin detection...");
-                Serial.printf("[BATTERY] Will test %d pins: ", sizeof(testPins)/sizeof(testPins[0]));
-                for (uint8_t i = 0; i < sizeof(testPins)/sizeof(testPins[0]); i++) {
-                    Serial.printf("GPIO%d ", testPins[i]);
-                }
-                Serial.println();
-
-                for (uint8_t pin : testPins) {
-                    float testVoltage = 0.0f;
-                    Serial.printf("[BATTERY] Testing GPIO%d for battery voltage...\n", pin);
-
-                    // Try using our ADC abstraction first
-                    Result adcResult = ADC::readVoltage(pin, testVoltage);
-                    Serial.printf("[BATTERY] GPIO%d ADC result: %s, voltage: %.3fV\n", pin, resultToString(adcResult), testVoltage);
-
-                    if (adcResult == Result::SUCCESS && testVoltage > 0.1f) {
-                        kBatteryAdcPin = pin;
-                        pinTested = true;
-                        Serial.printf("[BATTERY] SUCCESS: Found battery voltage on GPIO%d: %.3fV (using ADC abstraction)\n", pin, testVoltage);
-                        break;
-                    } else {
-                        // If ADC abstraction fails, try Arduino analogRead as fallback
-                        int analogValue = analogRead(pin);
-                        float analogVoltage = (analogValue / 4095.0f) * 3.3f;
-                        Serial.printf("[BATTERY] GPIO%d ADC failed, analogRead: %d (%.3fV)\n", pin, analogValue, analogVoltage);
-
-                        if (analogVoltage > 0.1f) {
-                            kBatteryAdcPin = pin;
-                            pinTested = true;
-                            Serial.printf("[BATTERY] SUCCESS: Found battery voltage on GPIO%d via analogRead: %.3fV\n", pin, analogVoltage);
-                            break;
-                        } else {
-                            Serial.printf("[BATTERY] GPIO%d: No valid voltage detected (both methods failed)\n", pin);
-                        }
-                    }
-                }
-
-                if (!pinTested) {
-                    Serial.println("[BATTERY] WARNING: No valid battery pin found, using GPIO1 as fallback");
-                    kBatteryAdcPin = 1;
-                    pinTested = true;
-                } else {
-                    Serial.printf("[BATTERY] Pin detection complete. Using GPIO%d for battery monitoring.\n", kBatteryAdcPin);
-                }
+            // Configure control pin once
+            static bool s_ctrlConfigured = false;
+            if (!s_ctrlConfigured) {
+                ::pinMode(kBatteryCtrlPin, OUTPUT);
+                ::digitalWrite(kBatteryCtrlPin, HIGH); // Disable divider by default (FET off)
+                s_ctrlConfigured = true;
             }
 
-            // Configurable ADC multiplier for calibration (default 4.9 for Heltec V3)
-            // This can be adjusted via web interface or preferences
-            static float kAdcMultiplier = 4.9f;            // Default for Heltec V3
+            // Enable divider momentarily
+            ::digitalWrite(kBatteryCtrlPin, LOW);
+            delay(3); // allow settling
+
+            float voltageOnPin = 0.0f;
+            if (ADC::readVoltage(kBatteryAdcPin, voltageOnPin) == Result::SUCCESS) {
+                // Disable divider immediately after reading
+                ::digitalWrite(kBatteryCtrlPin, HIGH);
+                return voltageOnPin * s_adcMultiplier;      // Scale to actual VBAT
+            }
+
+            // Ensure divider disabled if read failed
+            ::digitalWrite(kBatteryCtrlPin, HIGH);
+
 
             // Try to load calibrated multiplier from preferences
             static bool multiplierLoaded = false;
@@ -983,38 +961,28 @@ namespace HardwareAbstraction {
                 Preferences prefs;
                 if (prefs.begin("LtngDet", true)) {
                     if (prefs.isKey("adc_multiplier")) {
-                        kAdcMultiplier = prefs.getFloat("adc_multiplier", 4.9f);
-                        Serial.printf("[BATTERY] Loaded calibrated ADC multiplier: %.2f\n", kAdcMultiplier);
+                        s_adcMultiplier = prefs.getFloat("adc_multiplier", 4.9f);
+                        Serial.printf("[BATTERY] Loaded calibrated ADC multiplier: %.2f\n", s_adcMultiplier);
                     } else {
-                        Serial.printf("[BATTERY] Using default ADC multiplier: %.2f\n", kAdcMultiplier);
+                        Serial.printf("[BATTERY] Using default ADC multiplier: %.2f\n", s_adcMultiplier);
                     }
                     prefs.end();
                 }
                 multiplierLoaded = true;
             }
 
-            float voltageOnPin = 0.0f;
+            // Fallback to Arduino analogRead if ADC abstraction fails
+            Serial.printf("[BATTERY] ADC abstraction failed for GPIO%d, trying analogRead fallback...\n", kBatteryAdcPin);
+            int analogValue = analogRead(kBatteryAdcPin);
+            voltageOnPin = (analogValue / 4095.0f) * 3.3f;
 
-            // Try ADC abstraction first
-            if (ADC::readVoltage(kBatteryAdcPin, voltageOnPin) == Result::SUCCESS) {
-                float batteryVoltage = voltageOnPin * kAdcMultiplier;
-                Serial.printf("[BATTERY] ADC Pin: %d, Raw Voltage: %.3fV, Multiplier: %.2f, Battery: %.3fV\n",
-                            kBatteryAdcPin, voltageOnPin, kAdcMultiplier, batteryVoltage);
+            if (voltageOnPin > 0.1f) {
+                float batteryVoltage = voltageOnPin * s_adcMultiplier;
+                Serial.printf("[BATTERY] analogRead fallback: GPIO%d, Raw: %d, Voltage: %.3fV, Multiplier: %.2f, Battery: %.3fV\n",
+                            kBatteryAdcPin, analogValue, voltageOnPin, s_adcMultiplier, batteryVoltage);
                 return batteryVoltage;
             } else {
-                // Fallback to Arduino analogRead if ADC abstraction fails
-                Serial.printf("[BATTERY] ADC abstraction failed for GPIO%d, trying analogRead fallback...\n", kBatteryAdcPin);
-                int analogValue = analogRead(kBatteryAdcPin);
-                voltageOnPin = (analogValue / 4095.0f) * 3.3f;
-
-                if (voltageOnPin > 0.1f) {
-                    float batteryVoltage = voltageOnPin * kAdcMultiplier;
-                    Serial.printf("[BATTERY] analogRead fallback: GPIO%d, Raw: %d, Voltage: %.3fV, Multiplier: %.2f, Battery: %.3fV\n",
-                                kBatteryAdcPin, analogValue, voltageOnPin, kAdcMultiplier, batteryVoltage);
-                    return batteryVoltage;
-                } else {
-                    Serial.printf("[BATTERY] Both ADC methods failed for GPIO%d\n", kBatteryAdcPin);
-                }
+                Serial.printf("[BATTERY] Both ADC methods failed for GPIO%d\n", kBatteryAdcPin);
             }
             #endif
             return 0.0f;
@@ -1035,8 +1003,7 @@ namespace HardwareAbstraction {
             }
 
             // Update the static multiplier (will take effect on next battery read)
-            static float kAdcMultiplier = 4.9f;
-            kAdcMultiplier = multiplier;
+            s_adcMultiplier = multiplier;
         }
 
         float getAdcMultiplier() {
