@@ -596,8 +596,15 @@ static void tryReceiveConfigOnControlChannel(uint32_t durationMs) {
   uint32_t start = millis();
   bool configUpdated = false;
   while (millis() - start < durationMs) {
+    // Handle web server during control channel listening
+    #ifdef ENABLE_WIFI_OTA
+    if (WiFi.status() == WL_CONNECTED) {
+      webServerManager.loop();
+    }
+    #endif
+    
     String rx;
-    int r = radio.receive(rx);
+    int r = radio.receive(rx, 0); // Make non-blocking
     if (r == RADIOLIB_ERR_NONE && rx.startsWith("CFG ")) {
       float nf = currentFreq;
       float nb = currentBW;
@@ -631,7 +638,7 @@ static void tryReceiveConfigOnControlChannel(uint32_t durationMs) {
         break;
       }
     }
-    delay(50);
+    delay(10); // Reduced from 50ms to 10ms for better responsiveness
   }
 
   // Restore operational settings - use updated values if config was received
@@ -1017,7 +1024,11 @@ void loop() {
       Serial.printf("[MAIN] Calling webServerManager.loop(), WiFi status: %s\n", WiFi.status() == WL_CONNECTED ? "CONNECTED" : "DISCONNECTED");
       lastWebDebug = millis();
     }
-    webServerManager.loop();
+    
+    // Call web server multiple times per loop for better responsiveness
+    for (int i = 0; i < 3; i++) {
+      webServerManager.loop();
+    }
   }
 #endif
 
@@ -1123,7 +1134,7 @@ void loop() {
     // Non-blocking RX every 50ms
     if (now - lastRxMs >= 50) {
       String rx;
-      int st = radio.receive(rx);
+      int st = radio.receive(rx, 0); // 0 = immediate return, non-blocking
       if (st == RADIOLIB_ERR_NONE) {
         float rssi = radio.getRSSI();
         float snr  = radio.getSNR();
@@ -1270,7 +1281,7 @@ void loop() {
   lastDotState = dotBlinkActive;
 
   // Small delay to prevent overwhelming the system, but keep button responsive
-  delay(10);
+  delay(1); // Reduced from 10ms to 1ms for better web server responsiveness
 }
 
 // WiFi and OTA Functions (Receiver only)

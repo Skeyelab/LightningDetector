@@ -68,9 +68,9 @@ bool WebServerManager::begin() {
 void WebServerManager::loop() {
     server_.handleClient();
 
-    // Periodically sync web config with device preferences (every 2 seconds)
+    // Periodically sync web config with device preferences (every 5 seconds)
     static uint32_t lastSync = 0;
-    if (millis() - lastSync >= 2000) {
+    if (millis() - lastSync >= 5000) { // Reduced sync frequency for better performance
         lastSync = millis();
         configManager_.load(); // This will sync with main device preferences
     }

@@ -52,7 +52,7 @@ function updateModeInfo(mode) {
             description: "Broadcasts LoRa messages to other devices. Includes WiFi and web interface for remote configuration."
         },
         receiver: {
-            name: "Receiver (RX)", 
+            name: "Receiver (RX)",
             description: "Listens for LoRa messages and provides WiFi OTA updates + web interface."
         }
     };
@@ -101,7 +101,7 @@ async function saveConfig() {
 async function saveMode() {
     const mode = document.getElementById('deviceModeSelect').value;
     const statusSpan = document.getElementById('mode-status');
-    
+
     try {
         const response = await fetch('/api/v1/config', {
             method: 'POST',
@@ -113,10 +113,10 @@ async function saveMode() {
             console.log('Mode saved successfully:', mode);
             statusSpan.textContent = 'Mode saved! Reboot required.';
             statusSpan.style.color = 'green';
-            
+
             // Update the display
             updateModeInfo(mode);
-            
+
             // Show confirmation dialog
             if (confirm(`Device mode changed to ${mode}. A reboot is required for the change to take effect. Would you like to reboot now?`)) {
                 try {
@@ -124,11 +124,11 @@ async function saveMode() {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' }
                     });
-                    
+
                     if (rebootResponse.ok) {
                         statusSpan.textContent = 'Rebooting device...';
                         statusSpan.style.color = 'blue';
-                        
+
                         // Wait a moment then show reconnection message
                         setTimeout(() => {
                             statusSpan.textContent = 'Device is rebooting. Please wait and refresh the page.';
@@ -154,7 +154,7 @@ async function saveMode() {
         statusSpan.textContent = 'Error saving mode: ' + err.message;
         statusSpan.style.color = 'red';
     }
-    
+
     // Clear status after 5 seconds
     setTimeout(() => {
         statusSpan.textContent = '';
